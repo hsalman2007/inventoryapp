@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/styles.css">
+  <script src="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/_ds_bundle.js"></script>
+  <meta name="ext-resource-dependency" content="./inventory-data.json" data-resource-id="data-json" />
+  <style>
+    #pdf-print-mount { display: none; }
+    @media print {
+      @page { margin: 0.5in; }
+      .page-shell.pdf-printing { display: none !important; }
+      #pdf-print-mount.pdf-printing { display: block !important; }
+    }
+  </style>
+</helmet>
+
+<div class="page-shell" style="min-height: 100vh; background: var(--color-bg); display: flex; justify-content: center;">
+  <div class="app-shell" style="width: 100%; max-width: 480px; min-height: 100vh; background: var(--color-bg); display: flex; flex-direction: column; padding: var(--space-4) var(--space-4) var(--space-8); gap: var(--space-4); box-sizing: border-box;">
+
+    <div class="no-print" style="display: flex; flex-direction: column; gap: var(--space-1);">
+      <h1 style="font-family: var(--font-heading); font-size: 26px; margin: 0; color: var(--color-text);">Stock Lookup</h1>
+      <p style="font-family: var(--font-body); font-size: 14px; margin: 0; color: var(--color-neutral-700);">Pick a store, and pull a low-stock list in seconds.</p>
+    </div>
+
+    <sc-if value="{{isLoading}}" hint-placeholder-val="{{true}}">
+      <div class="card elev-sm" style="padding: var(--space-4); text-align: center; color: var(--color-neutral-700);">Loading store data…</div>
+    </sc-if>
+
+    <sc-if value="{{loadError}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="padding: var(--space-4); color: var(--color-accent-800);">{{loadError}}</div>
+    </sc-if>
+
+    <!-- SELECT SCREEN -->
+    <sc-if value="{{isSelect}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div class="card-title" style="font-size: 18px;">Choose store &amp; quantity</div>
+
+        <div class="field">
+          <label for="store-select">Store</label>
+          <select id="store-select" class="input" value="{{selectedStore}}" onChange="{{onStoreChange}}">
+            <sc-for list="{{storeOptions}}" as="opt" hint-placeholder-count="5">
+              <option value="{{opt.name}}">{{opt.label}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label style="font-size: 13px; font-weight: 600; color: var(--color-text);">Quantity on hand at store</label>
+          <div class="seg" role="radiogroup">
+            <label class="seg-opt">
+              <input type="radio" name="qty" checked="{{qty1Checked}}" onChange="{{onQty1}}">
+              1 pc
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="qty" checked="{{qty2Checked}}" onChange="{{onQty2}}">
+              2 pcs
+            </label>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block" onClick="{{onGenerate}}">Generate report</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}">Look up a SKU across stores</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}">Download a store's complete stock</button>
+      </div>
+    </sc-if>
+
+    <!-- STORE STOCK SCREEN -->
+    <sc-if value="{{isStoreStock}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div class="card-kicker">Complete stock</div>
+        <div class="card-title" style="font-size: 18px;">Download a store's complete stock</div>
+
+        <div class="field">
+          <label for="storestock-select">Store</label>
+          <select id="storestock-select" class="input" value="{{storeStockSelected}}" onChange="{{onStoreStockChange}}">
+            <sc-for list="{{storeOptions}}" as="opt" hint-placeholder-count="5">
+              <option value="{{opt.name}}">{{opt.label}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <span style="font-size: 12px; color: var(--color-neutral-700);">Exports every SKU with a stock value at this store, including quantity, warehouse stock, RSP and status.</span>
+
+        <div class="field">
+          <label for="brand-select">Brand</label>
+          <select id="brand-select" class="input" value="{{storeStockBrand}}" onChange="{{onBrandChange}}">
+            <option value="">All brands</option>
+            <sc-for list="{{brandOptions}}" as="b" hint-placeholder-count="3">
+              <option value="{{b}}">{{b}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="category-select">Category</label>
+          <select id="category-select" class="input" value="{{storeStockCategory}}" onChange="{{onCategoryChange}}">
+            <option value="">All categories</option>
+            <sc-for list="{{categoryOptions}}" as="c" hint-placeholder-count="3">
+              <option value="{{c}}">{{c}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <sc-if value="{{hasSubCategoryOptions}}" hint-placeholder-val="{{false}}">
+          <div class="field">
+            <label for="subcategory-select">Sub-category</label>
+            <select id="subcategory-select" class="input" value="{{storeStockSubCategory}}" onChange="{{onSubCategoryChange}}">
+              <option value="">All sub-categories</option>
+              <sc-for list="{{subCategoryOptions}}" as="sc" hint-placeholder-count="3">
+                <option value="{{sc}}">{{sc}}</option>
+              </sc-for>
+            </select>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{hasDiscountFile}}" hint-placeholder-val="{{false}}">
+          <div class="seg" role="radiogroup" aria-label="Discount pricing toggle">
+            <label class="seg-opt">
+              <input type="radio" name="discountToggle" checked="{{discountOffChecked}}" onChange="{{onDiscountOff}}">
+              Standard columns
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="discountToggle" checked="{{discountOnChecked}}" onChange="{{onDiscountOn}}">
+              Include discount pricing
+            </label>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{discountOnChecked}}" hint-placeholder-val="{{false}}">
+          <div class="field">
+            <label for="pct-range-select">Discount range</label>
+            <select id="pct-range-select" class="input" value="{{storeStockPctRange}}" onChange="{{onPctRangeChange}}">
+              <option value="">All discounts</option>
+              <option value="10-20">10% to 20%</option>
+              <option value="21-30">21% to 30%</option>
+              <option value="31-40">31% to 40%</option>
+              <option value="41-50">41% to 50%</option>
+              <option value="51-60">51% to 60%</option>
+              <option value="61-70">61% to 70%</option>
+            </select>
+          </div>
+        </sc-if>
+
+        <button class="btn btn-primary btn-block" onClick="{{onDownloadStoreStockPdf}}">Download PDF</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onDownloadStoreStockExcel}}">Download Excel</button>
+        <button class="btn btn-ghost btn-block" onClick="{{onBackFromStoreStock}}">← Back</button>
+      </div>
+    </sc-if>
+
+    <!-- RESULTS SCREEN -->
+    <sc-if value="{{isResults}}" hint-placeholder-val="{{false}}">
+      <div class="results-wrap" style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <div class="no-print" style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackToSelect}}" style="flex: none;">← Back</button>
+          <button class="btn btn-primary" onClick="{{onDownloadPdf}}" style="flex: 1;">Download PDF</button>
+          <button class="btn btn-secondary" onClick="{{onDownloadExcel}}" style="flex: 1;">Download Excel</button>
+        </div>
+
+        <div id="printable-report" style="display: block;">
+          <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--space-3);">
+            <div style="font-family: var(--font-heading); font-size: 20px; color: var(--color-text);">{{resultStoreLabel}}</div>
+            <div style="font-size: 13px; color: var(--color-neutral-700);">Quantity = {{resultQty}} pc(s) · {{resultCount}} SKUs · {{today}}</div>
+          </div>
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+            <span class="tag tag-accent-2">{{continueCount}} continuing</span>
+            <span class="tag tag-outline">{{discontinuedCount}} discontinued</span>
+            <span class="tag tag-neutral">{{inOrderCount}} on order</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">
+            <div class="seg" role="radiogroup" aria-label="Status filter">
+              <label class="seg-opt">
+                <input type="radio" name="statusFilter" checked="{{statusAllChecked}}" onChange="{{onStatusAll}}">
+                All status
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="statusFilter" checked="{{statusContinueChecked}}" onChange="{{onStatusContinue}}">
+                Continue
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="statusFilter" checked="{{statusDiscontinuedChecked}}" onChange="{{onStatusDiscontinued}}">
+                Discontinued
+              </label>
+            </div>
+            <span style="font-size: 11px; font-weight: 600; color: var(--color-neutral-700); text-transform: uppercase; letter-spacing: 0.02em;">WH Avl</span>
+            <div class="seg" role="radiogroup" aria-label="Warehouse stock filter">
+              <label class="seg-opt">
+                <input type="radio" name="stockFilter" checked="{{stockAllChecked}}" onChange="{{onStockAll}}">
+                All stock
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="stockFilter" checked="{{stockInChecked}}" onChange="{{onStockIn}}">
+                In stock
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="stockFilter" checked="{{stockOutChecked}}" onChange="{{onStockOut}}">
+                Out of stock
+              </label>
+            </div>
+            <div class="seg" role="radiogroup" aria-label="Overall stock filter">
+              <label class="seg-opt">
+                <input type="radio" name="lowStockFilter" checked="{{lowStockAllChecked}}" onChange="{{onLowStockAll}}">
+                All
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="lowStockFilter" checked="{{lowStockOnChecked}}" onChange="{{onLowStockOn}}">
+                Overall stock &lt; 30
+              </label>
+            </div>
+          </div>
+
+          <sc-if value="{{hasResults}}" hint-placeholder-val="{{true}}">
+            <div class="report-table-wrap" style="overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--color-neutral-300); background: #fff;">
+              <table class="table" style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed;">
+                <thead>
+                  <tr>
+                    <th style="width: 12%;"></th>
+                    <th style="width: 9%;">SKU</th>
+                    <th style="width: 35%;">DESCRIPTION</th>
+                    <th style="width: 7%; text-align: center;">Qty</th>
+                    <th style="width: 10%; text-align: center">WH Stock</th>
+                    <th style="width: 14%;">STATUS</th>
+                    <th style="width: 13%;">In Order</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{results}}" as="row" hint-placeholder-count="6">
+                    <tr>
+                      <td style="padding: 6px; line-height: 1.1;">
+                        <sc-if value="{{row.image}}" hint-placeholder-val="{{false}}">
+                          <img src="{{row.image}}" referrerpolicy="no-referrer" style="width: 46px; height: 46px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); display: block;">
+                        </sc-if>
+                      </td>
+                      <td style="font-weight: 600; white-space: nowrap; padding: 6px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis;">{{row.itemNo}}</td>
+                      <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px; line-height: 1.3;">{{row.description2}}</td>
+                      <td style="text-align: center; padding: 6px; line-height: 1.3;">{{row.quantity}}</td>
+                      <td style="text-align: center; padding: 6px; line-height: 1.3;">{{row.whStock}}</td>
+                      <td style="font-weight: 700; color: {{row.discontinuedColor}}; padding: 6px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{row.discontinuedLabel}}</td>
+                      <td style="font-weight: 700; color: {{row.inOrderColor}}; padding: 6px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{row.inOrderLabel}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </sc-if>
+          <sc-if value="{{hasNoResults}}" hint-placeholder-val="{{false}}">
+            <div class="card" style="padding: var(--space-4); text-align: center; color: var(--color-neutral-700);">No SKUs match this store and quantity.</div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- SKU LOOKUP SCREEN -->
+    <sc-if value="{{isSkuLookup}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromSku}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">SKU stock across stores</div>
+        </div>
+
+        <div class="field">
+          <label for="sku-search">SKU or description</label>
+          <input id="sku-search" class="input" type="text" placeholder="Type a SKU or description…" value="{{skuQuery}}" onChange="{{onSkuQueryChange}}">
+        </div>
+
+        <sc-if value="{{skuQueryTooShort}}" hint-placeholder-val="{{false}}">
+          <div style="font-size: 13px; color: var(--color-neutral-700);">Type at least 2 characters to search.</div>
+        </sc-if>
+
+        <sc-if value="{{skuNoMatches}}" hint-placeholder-val="{{false}}">
+          <div class="card" style="padding: var(--space-4); text-align: center; color: var(--color-neutral-700);">No SKUs match "{{skuQuery}}".</div>
+        </sc-if>
+
+        <sc-for list="{{skuMatches}}" as="item" hint-placeholder-count="0">
+          <div style="display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-lg); padding: var(--space-3); background: #fff;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <sc-if value="{{item.image}}" hint-placeholder-val="{{false}}">
+                <img src="{{item.image}}" referrerpolicy="no-referrer" style="width: 41px; height: 41px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); flex: none;">
+              </sc-if>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <div style="font-weight: 700; font-size: 13px; color: var(--color-text);">{{item.itemNo}}</div>
+                <sc-if value="{{item.rsp}}" hint-placeholder-val="{{false}}">
+                  <div style="font-size: 12px; font-weight: 600; color: var(--color-accent-700);">RSP {{item.rsp}}</div>
+                </sc-if>
+                <div style="font-size: 12px; color: var(--color-neutral-700);">{{item.description2}}</div>
+              </div>
+            </div>
+            <div style="overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--color-neutral-200);">
+              <table class="table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                <thead>
+                  <tr><th>Store</th><th style="text-align: center;">Qty available</th></tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{item.storeRows}}" as="sr" hint-placeholder-count="3">
+                    <tr>
+                      <td style="padding: 5px 6px;">{{sr.label}}</td>
+                      <td style="padding: 5px 6px; text-align: center; font-weight: 600;">{{sr.qty}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+                <tfoot>
+                  <tr style="border-top: 1px solid var(--color-neutral-300);">
+                    <td style="padding: 6px; font-weight: 700; color: var(--color-text);">Total</td>
+                    <td style="padding: 6px; text-align: center; font-weight: 700; color: var(--color-text);">{{item.totalQty}}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+<div id="pdf-print-mount"></div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const EXCLUDED_STORES = new Set([
+  'qaseem 4x', 'al ahsa 1', 'exit 15', 'al jouf', 'jeddah 1', 'al qods',
+  'shifa 4x', 'al ula', 'baljuraishi', 'damages & shortages ryd', 'exit 5 wh',
+  'exit 5 workshop', 'hafr al batin 1', 'hail 1', 'jeddah 4x', 'salbukh wh',
+  'damages & shortages abha', 'unaiza wh', 'tabuk 1',
+]);
+
+function naturalCompare(a, b) {
+  const ax = [], bx = [];
+  String(a).replace(/(\d+)|(\D+)/g, (_, d, s) => { ax.push([d ? parseInt(d, 10) : Infinity, s || '']); return ''; });
+  String(b).replace(/(\d+)|(\D+)/g, (_, d, s) => { bx.push([d ? parseInt(d, 10) : Infinity, s || '']); return ''; });
+  while (ax.length && bx.length) {
+    const an = ax.shift(), bn = bx.shift();
+    const cmp = (an[0] - bn[0]) || an[1].localeCompare(bn[1]);
+    if (cmp) return cmp;
+  }
+  return ax.length - bx.length;
+}
+
+class Component extends DCLogic {
+  state = {
+    loading: true,
+    loadError: '',
+    screen: 'loading',
+    parsed: null,
+    storeInfoMap: null,
+    storeOptions: [],
+    selectedStore: '',
+    selectedQty: 1,
+    results: null,
+    resultStore: '',
+    resultQty: 1,
+    statusFilter: 'all',
+    stockFilter: 'all',
+    lowStockFilter: 'all',
+    skuQuery: '',
+    storeStockShowDiscount: false,
+    storeStockPctRange: '',
+    storeStockBrand: '',
+    storeStockCategory: '',
+    storeStockSubCategory: '',
+    storeStockSelected: '__ALL__',
+  };
+
+  async componentDidMount() {
+    try {
+      const dataUrl = (window.__resources && window.__resources['data-json']) || './inventory-data.json';
+      const res = await fetch(dataUrl);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const snap = await res.json();
+      const retailMap = new Map(snap.retailMap);
+      const openOrders = new Set(snap.openOrders);
+      const discountMap = new Map(snap.discountMap || []);
+      const storeInfoMap = new Map(snap.storeInfoMap);
+      const storeOptions = (snap.storeOptions || []).filter(opt => {
+        const info = storeInfoMap.get(opt.name);
+        const displayName = (info && (info.shortName || opt.name) || opt.name).trim().toLowerCase();
+        return !EXCLUDED_STORES.has(displayName);
+      });
+      this.setState({
+        loading: false,
+        parsed: { matrix: snap.matrix, retailMap, openOrders, discountMap },
+        storeInfoMap,
+        storeOptions,
+        selectedStore: storeOptions[0] ? storeOptions[0].name : '',
+        screen: 'select',
+      });
+    } catch (err) {
+      this.setState({ loading: false, loadError: 'Could not load store data: ' + err.message, screen: 'error' });
+    }
+  }
+
+  onStoreChange(e) { this.setState({ selectedStore: e.target.value }); }
+  onQty1() { this.setState({ selectedQty: 1 }); }
+  onQty2() { this.setState({ selectedQty: 2 }); }
+  onBackToSelect() { this.setState({ screen: 'select' }); }
+  onGoSkuLookup() { this.setState({ screen: 'skulookup' }); }
+  onBackFromSku() { this.setState({ screen: 'select' }); }
+  onGoStoreStock() { this.setState({ screen: 'storestock', storeStockSelected: this.state.storeOptions[0] ? this.state.storeOptions[0].name : '' }); }
+  onBackFromStoreStock() { this.setState({ screen: 'select' }); }
+  onStoreStockChange(e) { this.setState({ storeStockSelected: e.target.value }); }
+  onDiscountOn() { this.setState({ storeStockShowDiscount: true }); }
+  onDiscountOff() { this.setState({ storeStockShowDiscount: false, storeStockPctRange: '' }); }
+  onPctRangeChange(e) { this.setState({ storeStockPctRange: e.target.value }); }
+  onBrandChange(e) { this.setState({ storeStockBrand: e.target.value }); }
+  onCategoryChange(e) { this.setState({ storeStockCategory: e.target.value, storeStockSubCategory: '' }); }
+  onSubCategoryChange(e) { this.setState({ storeStockSubCategory: e.target.value }); }
+  getCategoryOptions() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix, retailMap } = st.parsed;
+    const set = new Set();
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo);
+      if (r && r.category && r.category.trim()) set.add(r.category.trim());
+    }
+    return Array.from(set).sort();
+  }
+  getSubCategoryOptions() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix, retailMap } = st.parsed;
+    const set = new Set();
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo);
+      if (!r || !r.subCategory || !r.subCategory.trim()) continue;
+      if (st.storeStockCategory && (r.category || '').trim() !== st.storeStockCategory) continue;
+      set.add(r.subCategory.trim());
+    }
+    return Array.from(set).sort();
+  }
+  getBrandOptions() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix, retailMap } = st.parsed;
+    const set = new Set();
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo);
+      if (r && r.brand) set.add(r.brand.trim());
+    }
+    return Array.from(set).sort();
+  }
+  getStoreStockRows() {
+    const st = this.state;
+    const store = st.storeStockSelected;
+    const { matrix, retailMap, discountMap } = st.parsed;
+    const showDiscount = st.storeStockShowDiscount;
+    const allStores = store === '__ALL__';
+    const storeList = allStores
+      ? matrix.storeNames.filter(name => {
+          const info = st.storeInfoMap && st.storeInfoMap.get(name);
+          if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return false;
+          return !EXCLUDED_STORES.has((info.shortName || name).trim().toLowerCase());
+        })
+      : [store];
+    const rows = [];
+    for (const it of matrix.items) {
+      let qty = 0;
+      for (const s of storeList) {
+        const raw = it.stores[s];
+        if (raw !== undefined && raw !== '') qty += Number(raw) || 0;
+      }
+      if (qty === 0) continue;
+      const r = retailMap.get(it.itemNo) || {};
+      const abha = Number(it.stores['Sub Warehouse - Abha'] || 0) || 0;
+      const riyadh = Number(it.stores['Main Warehouse - Riyadh'] || 0) || 0;
+      const disc = showDiscount && discountMap ? discountMap.get(it.itemNo) : null;
+      if (showDiscount && !disc) continue;
+      const pctNum = disc && /%$/.test(disc.pct) ? parseFloat(disc.pct) : null;
+      if (showDiscount && st.storeStockPctRange) {
+        const [lo, hi] = st.storeStockPctRange.split('-').map(Number);
+        if (pctNum === null || pctNum < lo || pctNum > hi) continue;
+      }
+      const brand = (r.brand || '').trim();
+      if (st.storeStockBrand && brand !== st.storeStockBrand) continue;
+      if (st.storeStockCategory && (r.category || '').trim() !== st.storeStockCategory) continue;
+      if (st.storeStockSubCategory && (r.subCategory || '').trim() !== st.storeStockSubCategory) continue;
+      rows.push({
+        itemNo: it.itemNo,
+        description2: r.description2 || it.description2,
+        qty,
+        whStock: abha + riyadh,
+        rsp: it.rsp || '',
+        image: r.image && r.image !== '(blank)' ? r.image : '',
+        was: disc ? disc.was : '',
+        now: disc ? disc.now : '',
+        pct: disc ? disc.pct : '',
+        highlight: pctNum !== null && pctNum >= 50 && pctNum <= 70,
+        brand,
+      });
+    }
+    rows.sort((a, b) => naturalCompare(a.itemNo, b.itemNo));
+    return rows;
+  }
+
+  printHtmlInPage(styleCss, bodyHtml, fileTitle) {
+    const mount = document.getElementById('pdf-print-mount');
+    if (!mount) return;
+    mount.innerHTML = '<style>' + styleCss + '</style>' + bodyHtml;
+    const outerTitle = document.title;
+    const pageShell = document.querySelector('.page-shell');
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      document.body.classList.remove('pdf-printing');
+      if (pageShell) pageShell.classList.remove('pdf-printing');
+      mount.classList.remove('pdf-printing');
+      document.title = outerTitle;
+      mount.innerHTML = '';
+      window.removeEventListener('afterprint', cleanup);
+    };
+    const doPrint = () => {
+      document.title = fileTitle;
+      document.body.classList.add('pdf-printing');
+      if (pageShell) pageShell.classList.add('pdf-printing');
+      mount.classList.add('pdf-printing');
+      window.addEventListener('afterprint', cleanup, { once: true });
+      try {
+        window.print();
+      } catch (e) {
+        this.setState({ loadError: 'Could not generate the PDF: ' + e.message });
+        cleanup();
+        return;
+      }
+      setTimeout(cleanup, 30000);
+    };
+    const imgs = Array.from(mount.querySelectorAll('img'));
+    const pending = imgs.filter(img => !img.complete);
+    if (!pending.length) { doPrint(); return; }
+    let settled = 0;
+    const done = () => { settled++; if (settled >= pending.length) doPrint(); };
+    pending.forEach(img => {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    });
+    setTimeout(() => {
+      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
+      doPrint();
+    }, 9000);
+  }
+
+  onDownloadStoreStockPdf() {
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const fmtNum = v => {
+      if (v === '' || v === null || v === undefined || isNaN(Number(v))) return esc(v);
+      return Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    };
+    const st = this.state;
+    const store = st.storeStockSelected;
+    const info = st.storeInfoMap && st.storeInfoMap.get(store);
+    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
+    const allRows = this.getStoreStockRows();
+    const showDiscount = st.storeStockShowDiscount;
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const MAX_PDF_ROWS = 4000;
+    const noImages = allRows.length > 1200;
+    const truncated = allRows.length > MAX_PDF_ROWS;
+    const rows = truncated ? allRows.slice(0, MAX_PDF_ROWS) : allRows;
+
+    const rowsHtml = rows.map(r => (
+      '<tr' + (r.highlight ? ' style="background:#fbe1de;"' : '') + '>'
+      + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" referrerpolicy="no-referrer" />' : '') + '</td>')
+      + '<td class="itemno">' + esc(r.itemNo) + '</td>'
+      + '<td class="desc">' + esc(r.description2) + '</td>'
+      + '<td class="ctr">' + fmtNum(r.qty) + '</td>'
+      + '<td class="ctr">' + fmtNum(r.whStock) + '</td>'
+      + (showDiscount ? '<td class="ctr" style="' + (r.pct === 'Was/Now Just' ? 'font-weight:700;color:#8b1a1a;' : '') + '">' + fmtNum(r.was) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + fmtNum(r.now) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + esc(r.pct) + '</td>' : '')
+      + '</tr>'
+    )).join('');
+
+    const fileTitle = (storeLabel + '-Promo-Stocks-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const extraCols = showDiscount ? '<col class="c-rsp"><col class="c-rsp"><col class="c-rsp">' : '';
+    const extraHead = showDiscount ? '<th>Was</th><th>Now</th><th>%</th>' : '';
+    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
+      + 'h1{font-size:20px;margin:0 0 4px;}'
+      + '.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
+      + 'table{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed;}'
+      + 'col.c-img{width:14%}col.c-item{width:' + (noImages ? '18' : '16') + '%}col.c-desc{width:' + (showDiscount ? (noImages ? '38' : '32') : (noImages ? '58' : '52')) + '%}col.c-qty{width:10%}col.c-wh{width:10%}col.c-rsp{width:10%}'
+      + 'th{text-align:center;font-size:11px;text-transform:uppercase;color:#6b6360;padding:6px;border-bottom:2px solid #201e1d;}'
+      + 'th:first-child,th:nth-child(2){text-align:left;}'
+      + 'td{padding:6px;border-bottom:1px solid #e6ddd2;white-space:normal;overflow-wrap:break-word;word-break:break-word;text-wrap:pretty;break-inside:avoid;vertical-align:middle;}'
+      + 'td.ctr{white-space:nowrap;}'
+      + 'td.ctr{text-align:center}'
+      + 'td.img-cell{overflow:hidden;}'
+      + 'td.img-cell img{width:100%;height:56px;object-fit:contain;display:block;}';
+    const bodyHtml = '<h1>' + esc(storeLabel) + '</h1>'
+      + '<div class="meta">Promo stocks · ' + rows.length + (truncated ? ' of ' + allRows.length : '') + ' SKUs' + (truncated ? ' (showing first ' + MAX_PDF_ROWS + ' — use Excel for the full list)' : '') + ' · ' + today + '</div>'
+      + '<table><colgroup>' + (noImages ? '' : '<col class="c-img">') + '<col class="c-item"><col class="c-desc"><col class="c-qty"><col class="c-wh">' + extraCols + '</colgroup>'
+      + '<thead><tr>' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th>' + extraHead + '</tr></thead>'
+      + '<tbody>' + rowsHtml + '</tbody></table>';
+
+    this.printHtmlInPage(styleCss, bodyHtml, fileTitle);
+  }
+
+  onDownloadStoreStockExcel() {
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const fmtNum = v => {
+      if (v === '' || v === null || v === undefined || isNaN(Number(v))) return esc(v);
+      return Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    };
+    const st = this.state;
+    const store = st.storeStockSelected;
+    const info = st.storeInfoMap && st.storeInfoMap.get(store);
+    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const rows = this.getStoreStockRows();
+    const showDiscount = st.storeStockShowDiscount;
+    const colCount = showDiscount ? 8 : 5;
+
+    const rowsHtml = rows.map(r => (
+      '<tr' + (r.highlight ? ' style="background:#fbe1de;"' : '') + '>'
+      + '<td style="mso-number-format:\'\\@\';" x:str>' + esc(r.itemNo) + '</td>'
+      + '<td style="mso-number-format:\'\\@\';" x:str>' + esc(r.description2) + '</td>'
+      + '<td>' + fmtNum(r.qty) + '</td>'
+      + '<td>' + fmtNum(r.whStock) + '</td>'
+      + (showDiscount ? '<td style="' + (r.pct === 'Was/Now Just' ? 'font-weight:bold;color:#8b1a1a;' : '') + '">' + fmtNum(r.was) + '</td><td style="font-weight:bold;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + fmtNum(r.now) + '</td><td style="font-weight:bold;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + esc(r.pct) + '</td>' : '')
+      + '<td>' + (r.image ? esc(r.image) : '') + '</td>'
+      + '</tr>'
+    )).join('');
+
+    const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
+      + '<head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>'
+      + '<x:Name>Stock</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->'
+      + '</head><body>'
+      + '<table border="1">'
+      + '<tr><td colspan="' + colCount + '"><b>' + esc(storeLabel) + '</b></td></tr>'
+      + '<tr><td colspan="' + colCount + '">Promo stocks &middot; ' + rows.length + ' SKUs &middot; ' + today + '</td></tr>'
+      + '<tr>' + Array(colCount).fill('<td></td>').join('') + '</tr>'
+      + '<tr><th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th>' + (showDiscount ? '<th>Was</th><th>Now</th><th>%</th>' : '') + '<th>Image Link</th></tr>'
+      + rowsHtml
+      + '</table></body></html>';
+
+    const fileTitle = (storeLabel + '-Promo-Stocks-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileTitle + '.xls';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  }
+
+  onSkuQueryChange(e) { this.setState({ skuQuery: e.target.value }); }
+
+  getSkuMatches(query) {
+    const s = this.state;
+    if (!s.parsed || !query || query.trim().length < 2) return [];
+    const q = query.trim().toLowerCase();
+    const { matrix, retailMap } = s.parsed;
+    const storeCols = matrix.storeNames.filter(name => {
+      const info = s.storeInfoMap && s.storeInfoMap.get(name);
+      if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return false;
+      const displayName = (info.shortName || name).trim().toLowerCase();
+      return !EXCLUDED_STORES.has(displayName);
+    });
+    const matches = matrix.items.filter(it => {
+      const r = retailMap.get(it.itemNo) || {};
+      const desc = (r.description2 || it.description2 || '');
+      return it.itemNo.toLowerCase() === q;
+    }).slice(0, 25);
+    return matches.map(it => {
+      const r = retailMap.get(it.itemNo) || {};
+      const storeRows = storeCols
+        .map(name => {
+          const qty = Number(it.stores[name] || 0) || 0;
+          const info = s.storeInfoMap.get(name);
+          return { label: info.shortName || name, qty };
+        })
+        .filter(sr => sr.qty > 0)
+        .sort((a, b) => b.qty - a.qty);
+      const totalQty = storeRows.reduce((sum, sr) => sum + sr.qty, 0);
+      return {
+        itemNo: it.itemNo,
+        description2: r.description2 || it.description2,
+        rsp: it.rsp || '',
+        image: r.image && r.image !== '(blank)' ? r.image : '',
+        storeRows,
+        totalQty,
+      };
+    });
+  }
+
+  onStatusFilter(val) { this.setState({ statusFilter: val }); }
+  onStockFilter(val) { this.setState({ stockFilter: val }); }
+  onLowStockFilter(val) { this.setState({ lowStockFilter: val }); }
+  filterResults(results, statusFilter, stockFilter, lowStockFilter) {
+    return (results || []).filter(r => {
+      if (statusFilter === 'continue' && r.discontinued) return false;
+      if (statusFilter === 'discontinued' && !r.discontinued) return false;
+      if (stockFilter === 'in' && r.whStock <= 0) return false;
+      if (stockFilter === 'out' && r.whStock > 0) return false;
+      if (lowStockFilter === 'low' && !(r.totalStock < 30)) return false;
+      return true;
+    });
+  }
+
+  onDownloadPdf() {
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const st = this.state;
+    const info = st.storeInfoMap && st.storeInfoMap.get(st.resultStore);
+    const storeLabel = info ? (info.shortName || st.resultStore) + ' — ' + info.region : st.resultStore;
+    const results = this.filterResults(st.results, st.statusFilter, st.stockFilter, st.lowStockFilter);
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const continueCount = results.filter(r => !r.discontinued).length;
+    const discontinuedCount = results.filter(r => r.discontinued).length;
+    const inOrderCount = results.filter(r => r.inOrder).length;
+
+    const MAROON = '#643312', GREEN = '#3d472b', GREY = '#645c50';
+    const rowsHtml = results.map(r => (
+      '<tr>'
+      + '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" referrerpolicy="no-referrer" />' : '') + '</td>'
+      + '<td class="itemno">' + esc(r.itemNo) + '</td>'
+      + '<td class="desc">' + esc(r.description2) + '</td>'
+      + '<td class="ctr">' + r.quantity + '</td>'
+      + '<td class="ctr">' + r.whStock + '</td>'
+      + '<td style="color:' + (r.discontinued ? MAROON : GREEN) + ';font-weight:700;">' + r.discontinuedLabel + '</td>'
+      + '<td style="color:' + (r.inOrder ? GREEN : GREY) + ';font-weight:700;">' + r.inOrderLabel + '</td>'
+      + '</tr>'
+    )).join('');
+
+    const fileTitle = (storeLabel + '-Inventory-Report-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
+      + 'h1{font-size:20px;margin:0 0 4px;}'
+      + '.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
+      + '.tags span{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;margin-right:8px;}'
+      + 'table{width:100%;border-collapse:collapse;font-size:10.5px;table-layout:fixed;}'
+      + 'col.c-img{width:9%}col.c-item{width:11%}col.c-desc{width:37%}col.c-qty{width:7%}col.c-wh{width:10%}col.c-disc{width:14%}col.c-order{width:12%}'
+      + 'th{text-align:left;font-size:9.5px;text-transform:uppercase;color:#6b6360;padding:5px;border-bottom:2px solid #201e1d;}'
+      + 'td{padding:5px 6px;border-bottom:1px solid #e6ddd2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;break-inside:avoid;}'
+      + 'td.ctr{text-align:center}'
+      + 'td.img-cell img{width:30px;height:30px;object-fit:contain;display:block;}';
+    const bodyHtml = '<h1>' + esc(storeLabel) + '</h1>'
+      + '<div class="meta">Quantity = ' + st.resultQty + ' pc(s) · ' + results.length + ' SKUs · ' + today + '</div>'
+      + '<div class="tags">'
+      + '<span style="background:#eef3e6;color:#4b6136;">' + continueCount + ' continuing</span>'
+      + '<span style="border:1px solid #c67139;color:#c67139;">' + discontinuedCount + ' discontinued</span>'
+      + '<span style="background:#f1efec;color:#55504c;">' + inOrderCount + ' on order</span>'
+      + '</div>'
+      + '<table><colgroup><col class="c-img"><col class="c-item"><col class="c-desc"><col class="c-qty"><col class="c-wh"><col class="c-disc"><col class="c-order"></colgroup>'
+      + '<thead><tr><th></th><th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th><th>Discontinued</th><th>In Order</th></tr></thead>'
+      + '<tbody>' + rowsHtml + '</tbody></table>';
+
+    this.printHtmlInPage(styleCss, bodyHtml, fileTitle);
+  }
+
+  onDownloadExcel() {
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const st = this.state;
+    const info = st.storeInfoMap && st.storeInfoMap.get(st.resultStore);
+    const storeLabel = info ? (info.shortName || st.resultStore) + ' — ' + info.region : st.resultStore;
+    const results = this.filterResults(st.results, st.statusFilter, st.stockFilter, st.lowStockFilter);
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+
+    const rowsHtml = results.map(r => (
+      '<tr>'
+      + '<td style="mso-number-format:\'\\@\';" x:str>' + esc(r.itemNo) + '</td>'
+      + '<td style="mso-number-format:\'\\@\';" x:str>' + esc(r.description2) + '</td>'
+      + '<td>' + r.quantity + '</td>'
+      + '<td>' + r.whStock + '</td>'
+      + '<td>' + esc(r.discontinuedLabel) + '</td>'
+      + '<td>' + esc(r.inOrderLabel) + '</td>'
+      + '</tr>'
+    )).join('');
+
+    const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
+      + '<head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>'
+      + '<x:Name>Report</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->'
+      + '</head><body>'
+      + '<table border="1">'
+      + '<tr><td colspan="6"><b>' + esc(storeLabel) + '</b></td></tr>'
+      + '<tr><td colspan="6">Quantity = ' + st.resultQty + ' pc(s) &middot; ' + results.length + ' SKUs &middot; ' + today + '</td></tr>'
+      + '<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>'
+      + '<tr><th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th><th>Discontinued</th><th>In Order</th></tr>'
+      + rowsHtml
+      + '</table></body></html>';
+
+    const fileTitle = (storeLabel + '-Inventory-Report-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileTitle + '.xls';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  }
+
+  onGenerate() {
+    const { matrix, retailMap, openOrders } = this.state.parsed;
+    const store = this.state.selectedStore;
+    const qty = this.state.selectedQty;
+    const results = [];
+    for (const it of matrix.items) {
+      const raw = it.stores[store];
+      if (raw === undefined || raw === '') continue;
+      const q = Number(raw);
+      if (q !== qty) continue;
+      const r = retailMap.get(it.itemNo) || {};
+      const abha = Number(it.stores['Sub Warehouse - Abha'] || 0) || 0;
+      const riyadh = Number(it.stores['Main Warehouse - Riyadh'] || 0) || 0;
+      const totalStock = Object.values(it.stores).reduce((sum, v) => sum + (Number(v) || 0), 0);
+      const discontinued = !!r.discontinued;
+      const inOrder = openOrders.has(it.itemNo);
+      results.push({
+        itemNo: it.itemNo,
+        description2: r.description2 || it.description2,
+        image: r.image && r.image !== '(blank)' ? r.image : '',
+        quantity: q,
+        whStock: abha + riyadh,
+        totalStock,
+        discontinued,
+        discontinuedLabel: discontinued ? 'Discontinued' : 'Continue',
+        discontinuedColor: discontinued ? 'var(--color-accent-800)' : 'var(--color-accent-2-800)',
+        inOrder,
+        inOrderLabel: inOrder ? 'Yes' : 'No',
+        inOrderColor: inOrder ? 'var(--color-accent-2-800)' : 'var(--color-neutral-700)',
+      });
+    }
+    results.sort((a, b) => naturalCompare(a.itemNo, b.itemNo));
+    this.setState({ screen: 'results', results, resultStore: store, resultQty: qty, statusFilter: 'all', stockFilter: 'all', lowStockFilter: 'all' });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const info = s.storeInfoMap && s.storeInfoMap.get(s.resultStore);
+    const filteredResults = this.filterResults(s.results, s.statusFilter, s.stockFilter, s.lowStockFilter);
+    const subCategoryOptions = s.screen === 'storestock' ? this.getSubCategoryOptions() : [];
+    const skuMatches = this.getSkuMatches(s.skuQuery);
+    return {
+      isLoading: s.screen === 'loading',
+      loadError: s.loadError,
+      isSelect: s.screen === 'select',
+      isResults: s.screen === 'results',
+      isSkuLookup: s.screen === 'skulookup',
+      isStoreStock: s.screen === 'storestock',
+      storeStockSelected: s.storeStockSelected,
+      hasDiscountFile: !!(s.parsed && s.parsed.discountMap && s.parsed.discountMap.size),
+      discountOnChecked: s.storeStockShowDiscount,
+      discountOffChecked: !s.storeStockShowDiscount,
+      storeStockPctRange: s.storeStockPctRange,
+      storeStockBrand: s.storeStockBrand,
+      brandOptions: s.screen === 'storestock' ? this.getBrandOptions() : [],
+      storeStockCategory: s.storeStockCategory,
+      storeStockSubCategory: s.storeStockSubCategory,
+      categoryOptions: s.screen === 'storestock' ? this.getCategoryOptions() : [],
+      subCategoryOptions: subCategoryOptions,
+      hasSubCategoryOptions: subCategoryOptions.length > 0,
+      onGoStoreStock: () => this.onGoStoreStock(),
+      onBackFromStoreStock: () => this.onBackFromStoreStock(),
+      onStoreStockChange: e => this.onStoreStockChange(e),
+      onDiscountOn: () => this.onDiscountOn(),
+      onDiscountOff: () => this.onDiscountOff(),
+      onPctRangeChange: e => this.onPctRangeChange(e),
+      onBrandChange: e => this.onBrandChange(e),
+      onCategoryChange: e => this.onCategoryChange(e),
+      onSubCategoryChange: e => this.onSubCategoryChange(e),
+      onDownloadStoreStockPdf: () => this.onDownloadStoreStockPdf(),
+      onDownloadStoreStockExcel: () => this.onDownloadStoreStockExcel(),
+      storeOptions: s.storeOptions,
+      selectedStore: s.selectedStore,
+      qty1Checked: s.selectedQty === 1,
+      qty2Checked: s.selectedQty === 2,
+      onStoreChange: e => this.onStoreChange(e),
+      onQty1: () => this.onQty1(),
+      onQty2: () => this.onQty2(),
+      onGenerate: () => this.onGenerate(),
+      onBackToSelect: () => this.onBackToSelect(),
+      onGoSkuLookup: () => this.onGoSkuLookup(),
+      onBackFromSku: () => this.onBackFromSku(),
+      onSkuQueryChange: e => this.onSkuQueryChange(e),
+      skuQuery: s.skuQuery,
+      skuQueryTooShort: s.screen === 'skulookup' && s.skuQuery.trim().length > 0 && s.skuQuery.trim().length < 2,
+      skuMatches: skuMatches,
+      skuNoMatches: s.screen === 'skulookup' && s.skuQuery.trim().length >= 2 && skuMatches.length === 0,
+      onDownloadPdf: () => this.onDownloadPdf(),
+      onDownloadExcel: () => this.onDownloadExcel(),
+      onStatusAll: () => this.onStatusFilter('all'),
+      onStatusContinue: () => this.onStatusFilter('continue'),
+      onStatusDiscontinued: () => this.onStatusFilter('discontinued'),
+      onStockAll: () => this.onStockFilter('all'),
+      onStockIn: () => this.onStockFilter('in'),
+      onStockOut: () => this.onStockFilter('out'),
+      onLowStockAll: () => this.onLowStockFilter('all'),
+      onLowStockOn: () => this.onLowStockFilter('low'),
+      statusAllChecked: s.statusFilter === 'all',
+      statusContinueChecked: s.statusFilter === 'continue',
+      statusDiscontinuedChecked: s.statusFilter === 'discontinued',
+      stockAllChecked: s.stockFilter === 'all',
+      stockInChecked: s.stockFilter === 'in',
+      stockOutChecked: s.stockFilter === 'out',
+      lowStockAllChecked: s.lowStockFilter === 'all',
+      lowStockOnChecked: s.lowStockFilter === 'low',
+      results: filteredResults,
+      hasResults: !!(filteredResults && filteredResults.length),
+      hasNoResults: !!(s.results && filteredResults.length === 0),
+      resultCount: filteredResults.length,
+      resultQty: s.resultQty,
+      resultStoreLabel: info ? (info.shortName || s.resultStore) + ' — ' + info.region : s.resultStore,
+      discontinuedCount: filteredResults.filter(r => r.discontinued).length,
+      continueCount: filteredResults.filter(r => !r.discontinued).length,
+      inOrderCount: filteredResults.filter(r => r.inOrder).length,
+      today: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
