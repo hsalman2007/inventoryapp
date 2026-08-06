@@ -12,14 +12,7 @@
   <script src="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/_ds_bundle.js"></script>
   <meta name="ext-resource-dependency" content="./inventory-data.json" data-resource-id="data-json" />
   <style>
-    #pdf-print-mount { display: none; }
-    @media print {
-      @page { margin: 0.5in; }
-      .page-shell.pdf-printing { display: none !important; }
-      #pdf-print-mount.pdf-printing { display: block !important; }
-      body { background: #fff !important; }
-      html, body, #dc-root, #dc-root > .sc-host { height: auto !important; }
-    }
+    #pdf-print-frame { position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; visibility: hidden; }
   </style>
 </helmet>
 
@@ -323,8 +316,6 @@
 
   </div>
 </div>
-<div id="pdf-print-mount"></div>
-
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 const EXCLUDED_STORES = new Set([
@@ -503,38 +494,27 @@ class Component extends DCLogic {
   }
 
   printHtmlInPage(styleCss, bodyHtml, fileTitle) {
-    const mount = document.getElementById('pdf-print-mount');
-    if (!mount) return;
-    mount.innerHTML = '<style>' + styleCss + '</style>' + bodyHtml;
-    const outerTitle = document.title;
-    const pageShell = document.querySelector('.page-shell');
-    let cleaned = false;
-    const cleanup = () => {
-      if (cleaned) return;
-      cleaned = true;
-      document.body.classList.remove('pdf-printing');
-      if (pageShell) pageShell.classList.remove('pdf-printing');
-      mount.classList.remove('pdf-printing');
-      document.title = outerTitle;
-      mount.innerHTML = '';
-      window.removeEventListener('afterprint', cleanup);
-    };
+    let frame = document.getElementById('pdf-print-frame');
+    if (!frame) {
+      frame = document.createElement('iframe');
+      frame.id = 'pdf-print-frame';
+      frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+      document.body.appendChild(frame);
+    }
+    const doc = frame.contentDocument;
+    doc.open();
+    doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + fileTitle + '</title><style>@page{margin:0.5in}' + styleCss + '</style></head><body>' + bodyHtml + '</body></html>');
+    doc.close();
+    const win = frame.contentWindow;
     const doPrint = () => {
-      document.title = fileTitle;
-      document.body.classList.add('pdf-printing');
-      if (pageShell) pageShell.classList.add('pdf-printing');
-      mount.classList.add('pdf-printing');
-      window.addEventListener('afterprint', cleanup, { once: true });
       try {
-        window.print();
+        win.focus();
+        win.print();
       } catch (e) {
         this.setState({ loadError: 'Could not generate the PDF: ' + e.message });
-        cleanup();
-        return;
       }
-      setTimeout(cleanup, 30000);
     };
-    const imgs = Array.from(mount.querySelectorAll('img'));
+    const imgs = Array.from(doc.querySelectorAll('img'));
     const pending = imgs.filter(img => !img.complete);
     let printed = false;
     const printOnce = () => { if (printed) return; printed = true; doPrint(); };
