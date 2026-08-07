@@ -60,6 +60,38 @@
           </div>
         </div>
 
+        <div class="field">
+          <label for="select-brand-select">Brand</label>
+          <select id="select-brand-select" class="input" value="{{storeStockBrand}}" onChange="{{onBrandChange}}">
+            <option value="">All brands</option>
+            <sc-for list="{{brandOptions}}" as="b" hint-placeholder-count="3">
+              <option value="{{b}}">{{b}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="select-category-select">Category</label>
+          <select id="select-category-select" class="input" value="{{storeStockCategory}}" onChange="{{onCategoryChange}}">
+            <option value="">All categories</option>
+            <sc-for list="{{categoryOptions}}" as="c" hint-placeholder-count="3">
+              <option value="{{c}}">{{c}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <sc-if value="{{hasSubCategoryOptions}}" hint-placeholder-val="{{false}}">
+          <div class="field">
+            <label for="select-subcategory-select">Sub-category</label>
+            <select id="select-subcategory-select" class="input" value="{{storeStockSubCategory}}" onChange="{{onSubCategoryChange}}">
+              <option value="">All sub-categories</option>
+              <sc-for list="{{subCategoryOptions}}" as="sc" hint-placeholder-count="3">
+                <option value="{{sc}}">{{sc}}</option>
+              </sc-for>
+            </select>
+          </div>
+        </sc-if>
+
         <button class="btn btn-primary btn-block" onClick="{{onGenerate}}">Generate report</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}">Look up a SKU across stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}">Download a store's complete stock</button>
@@ -788,6 +820,7 @@ class Component extends DCLogic {
     const { matrix, retailMap, openOrders } = this.state.parsed;
     const store = this.state.selectedStore;
     const qty = this.state.selectedQty;
+    const { storeStockBrand: brand, storeStockCategory: category, storeStockSubCategory: subCategory } = this.state;
     const results = [];
     for (const it of matrix.items) {
       const raw = it.stores[store];
@@ -795,6 +828,9 @@ class Component extends DCLogic {
       const q = Number(raw);
       if (q !== qty) continue;
       const r = retailMap.get(it.itemNo) || {};
+      if (brand && (r.brand || '').trim() !== brand) continue;
+      if (category && (r.category || '').trim() !== category) continue;
+      if (subCategory && (r.subCategory || '').trim() !== subCategory) continue;
       const abha = Number(it.stores['Sub Warehouse - Abha'] || 0) || 0;
       const riyadh = Number(it.stores['Main Warehouse - Riyadh'] || 0) || 0;
       const totalStock = Object.values(it.stores).reduce((sum, v) => sum + (Number(v) || 0), 0);
@@ -823,7 +859,7 @@ class Component extends DCLogic {
     const s = this.state;
     const info = s.storeInfoMap && s.storeInfoMap.get(s.resultStore);
     const filteredResults = this.filterResults(s.results, s.statusFilter, s.stockFilter, s.lowStockFilter);
-    const subCategoryOptions = s.screen === 'storestock' ? this.getSubCategoryOptions() : [];
+    const subCategoryOptions = (s.screen === 'storestock' || s.screen === 'select') ? this.getSubCategoryOptions() : [];
     const skuMatches = this.getSkuMatches(s.skuQuery);
     return {
       isLoading: s.screen === 'loading',
@@ -838,10 +874,10 @@ class Component extends DCLogic {
       discountOffChecked: !s.storeStockShowDiscount,
       storeStockPctRange: s.storeStockPctRange,
       storeStockBrand: s.storeStockBrand,
-      brandOptions: s.screen === 'storestock' ? this.getBrandOptions() : [],
+      brandOptions: (s.screen === 'storestock' || s.screen === 'select') ? this.getBrandOptions() : [],
       storeStockCategory: s.storeStockCategory,
       storeStockSubCategory: s.storeStockSubCategory,
-      categoryOptions: s.screen === 'storestock' ? this.getCategoryOptions() : [],
+      categoryOptions: (s.screen === 'storestock' || s.screen === 'select') ? this.getCategoryOptions() : [],
       subCategoryOptions: subCategoryOptions,
       hasSubCategoryOptions: subCategoryOptions.length > 0,
       onGoStoreStock: () => this.onGoStoreStock(),
