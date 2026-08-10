@@ -175,7 +175,7 @@
           </div>
         </sc-if>
 
-        <button class="btn btn-primary btn-block" onClick="{{onDownloadStoreStockPdf}}">Download PDF</button>
+        <button class="btn btn-primary btn-block" onClick="{{onDownloadStoreStockPdf}}" disabled="{{storeStockPdfDownloading}}">{{storeStockPdfDownloadLabel}}</button>
         <button class="btn btn-secondary btn-block" onClick="{{onDownloadStoreStockExcel}}">Download Excel</button>
         <button class="btn btn-ghost btn-block" onClick="{{onBackFromStoreStock}}">← Back</button>
       </div>
@@ -525,7 +525,7 @@ class Component extends DCLogic {
     return rows;
   }
 
-  printHtmlInPage(styleCss, bodyHtml, fileTitle) {
+  printHtmlInPage(styleCss, bodyHtml, fileTitle, onDone) {
     let frame = document.getElementById('pdf-print-frame');
     if (!frame) {
       frame = document.createElement('iframe');
@@ -549,7 +549,7 @@ class Component extends DCLogic {
     const imgs = Array.from(doc.querySelectorAll('img'));
     const pending = imgs.filter(img => !img.complete);
     let printed = false;
-    const printOnce = () => { if (printed) return; printed = true; doPrint(); };
+    const printOnce = () => { if (printed) return; printed = true; doPrint(); if (onDone) onDone(); };
     if (!pending.length) { printOnce(); return; }
     let settled = 0;
     const done = () => { settled++; if (settled >= pending.length) printOnce(); };
@@ -564,6 +564,7 @@ class Component extends DCLogic {
   }
 
   onDownloadStoreStockPdf() {
+    this.setState({ storeStockPdfDownloading: true });
     const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const fmtNum = v => {
       if (v === '' || v === null || v === undefined || isNaN(Number(v))) return esc(v);
@@ -615,7 +616,7 @@ class Component extends DCLogic {
       + '<tbody><tr class="hdr">' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th>' + extraHead + '</tr>'
       + rowsHtml + '</tbody></table>';
 
-    this.printHtmlInPage(styleCss, bodyHtml, fileTitle);
+    this.printHtmlInPage(styleCss, bodyHtml, fileTitle, () => this.setState({ storeStockPdfDownloading: false }));
   }
 
   onDownloadStoreStockExcel() {
@@ -889,6 +890,7 @@ class Component extends DCLogic {
       onBrandChange: e => this.onBrandChange(e),
       onCategoryChange: e => this.onCategoryChange(e),
       onSubCategoryChange: e => this.onSubCategoryChange(e),
+      storeStockPdfDownloadLabel: s.storeStockPdfDownloading ? 'Downloading…' : 'Download PDF',
       onDownloadStoreStockPdf: () => this.onDownloadStoreStockPdf(),
       onDownloadStoreStockExcel: () => this.onDownloadStoreStockExcel(),
       storeOptions: s.storeOptions,
