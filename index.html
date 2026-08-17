@@ -350,6 +350,9 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
+const STORE_STOCK_WH_LOCATIONS = ['Inspection & Review Warehouse', 'Damages & Shortages Warehouse - Riyadh', 'Sub Warehouse - Abha', 'Main Warehouse - Riyadh'];
+const STORE_STOCK_WH_LOCATIONS_LC = new Set(STORE_STOCK_WH_LOCATIONS.map(s => s.toLowerCase()));
+
 const EXCLUDED_STORES = new Set([
   'qaseem 4x', 'al ahsa 1', 'exit 15', 'al jouf', 'jeddah 1', 'al qods',
   'shifa 4x', 'al ula', 'baljuraishi', 'damages & shortages ryd', 'exit 5 wh',
@@ -482,7 +485,9 @@ class Component extends DCLogic {
       ? matrix.storeNames.filter(name => {
           const info = st.storeInfoMap && st.storeInfoMap.get(name);
           if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return false;
-          return !EXCLUDED_STORES.has((info.shortName || name).trim().toLowerCase());
+          const displayName = (info.shortName || name).trim().toLowerCase();
+          if (STORE_STOCK_WH_LOCATIONS_LC.has(displayName)) return false;
+          return !EXCLUDED_STORES.has(displayName);
         })
       : [store];
     const rows = [];
@@ -494,8 +499,7 @@ class Component extends DCLogic {
       }
       if (qty === 0) continue;
       const r = retailMap.get(it.itemNo) || {};
-      const abha = Number(it.stores['Sub Warehouse - Abha'] || 0) || 0;
-      const riyadh = Number(it.stores['Main Warehouse - Riyadh'] || 0) || 0;
+      const whStock = STORE_STOCK_WH_LOCATIONS.reduce((sum, loc) => sum + (Number(it.stores[loc] || 0) || 0), 0);
       const disc = showDiscount && discountMap ? discountMap.get(it.itemNo) : null;
       if (showDiscount && !disc) continue;
       const pctNum = disc && /%$/.test(disc.pct) ? parseFloat(disc.pct) : null;
@@ -511,7 +515,7 @@ class Component extends DCLogic {
         itemNo: it.itemNo,
         description2: r.description2 || it.description2,
         qty,
-        whStock: abha + riyadh,
+        whStock,
         rsp: it.rsp || '',
         image: r.image && r.image !== '(blank)' ? r.image : '',
         was: disc ? disc.was : '',
