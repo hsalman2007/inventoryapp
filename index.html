@@ -483,6 +483,7 @@ class Component extends DCLogic {
     const allStores = store === '__ALL__';
     const storeList = allStores
       ? matrix.storeNames.filter(name => {
+          if (STORE_STOCK_WH_LOCATIONS_LC.has(name.trim().toLowerCase())) return false;
           const info = st.storeInfoMap && st.storeInfoMap.get(name);
           if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return false;
           const displayName = (info.shortName || name).trim().toLowerCase();
