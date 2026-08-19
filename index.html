@@ -530,6 +530,38 @@ class Component extends DCLogic {
     return rows;
   }
 
+  scaleImage(url) {
+    this._imgCache = this._imgCache || new Map();
+    if (this._imgCache.has(url)) return this._imgCache.get(url);
+    const p = new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const size = 130;
+          const scale = Math.min(1, size / Math.max(img.naturalWidth || size, img.naturalHeight || size));
+          const w = Math.max(1, Math.round((img.naturalWidth || size) * scale));
+          const h = Math.max(1, Math.round((img.naturalHeight || size) * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.55));
+        } catch (e) { resolve(url); }
+      };
+      img.onerror = () => resolve('');
+      img.src = url;
+    });
+    this._imgCache.set(url, p);
+    return p;
+  }
+
+  async scaleRowImages(rows) {
+    const urls = Array.from(new Set(rows.map(r => r.image).filter(Boolean)));
+    const scaled = await Promise.all(urls.map(u => this.scaleImage(u)));
+    const map = new Map(urls.map((u, i) => [u, scaled[i]]));
+    return rows.map(r => (r.image ? Object.assign({}, r, { image: map.get(r.image) || '' }) : r));
+  }
+
   printHtmlInPage(styleCss, bodyHtml, fileTitle, onDone) {
     let frame = document.getElementById('pdf-print-frame');
     if (!frame) {
@@ -568,7 +600,7 @@ class Component extends DCLogic {
     }, 9000);
   }
 
-  onDownloadStoreStockPdf() {
+  async onDownloadStoreStockPdf() {
     this.setState({ storeStockPdfDownloading: true });
     const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const fmtNum = v => {
@@ -587,7 +619,7 @@ class Component extends DCLogic {
     const truncated = allRows.length > MAX_PDF_ROWS;
     const rows = truncated ? allRows.slice(0, MAX_PDF_ROWS) : allRows;
 
-    const rowsHtml = rows.map(r => (
+    const rowsHtml = (noImages ? rows : await this.scaleRowImages(rows)).map(r => (
       '<tr' + (r.highlight ? ' style="background:#fbe1de;"' : '') + '>'
       + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" referrerpolicy="no-referrer" />' : '') + '</td>')
       + '<td class="itemno">' + esc(r.itemNo) + '</td>'
@@ -728,7 +760,7 @@ class Component extends DCLogic {
     });
   }
 
-  onDownloadPdf() {
+  async onDownloadPdf() {
     const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const st = this.state;
     const info = st.storeInfoMap && st.storeInfoMap.get(st.resultStore);
@@ -740,9 +772,9 @@ class Component extends DCLogic {
     const inOrderCount = results.filter(r => r.inOrder).length;
 
     const MAROON = '#643312', GREEN = '#3d472b', GREY = '#645c50';
-    const rowsHtml = results.map(r => (
+    const rowsHtml = (await this.scaleRowImages(results)).map(r => (
       '<tr>'
-      + '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" referrerpolicy="no-referrer" />' : '') + '</td>'
+      + '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" />' : '') + '</td>'
       + '<td class="itemno">' + esc(r.itemNo) + '</td>'
       + '<td class="desc">' + esc(r.description2) + '</td>'
       + '<td class="ctr">' + r.quantity + '</td>'
