@@ -540,7 +540,7 @@ class Component extends DCLogic {
     }
     const doc = frame.contentDocument;
     doc.open();
-    doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + fileTitle + '</title><style>@page{margin:0.5in}' + styleCss + '</style></head><body>' + bodyHtml + '</body></html>');
+    doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + fileTitle + '</title><style>@page{margin:0}body{margin:0.5in}' + styleCss + '</style></head><body>' + bodyHtml + '</body></html>');
     doc.close();
     const win = frame.contentWindow;
     const doPrint = () => {
