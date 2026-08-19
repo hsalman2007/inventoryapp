@@ -32,10 +32,22 @@
       <div class="card elev-sm" style="padding: var(--space-4); color: var(--color-accent-800);">{{loadError}}</div>
     </sc-if>
 
+    <!-- MENU SCREEN -->
+    <sc-if value="{{isMenu}}" hint-placeholder-val="{{false}}">
+      <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+        <button class="btn btn-secondary btn-block" onClick="{{onGoSelect}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Single Units Report</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Lookup SKU in All Stores</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stock Download</button>
+      </div>
+    </sc-if>
+
     <!-- SELECT SCREEN -->
     <sc-if value="{{isSelect}}" hint-placeholder-val="{{false}}">
       <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
-        <div class="card-title" style="font-size: 18px;">Choose store &amp; quantity</div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromSelect}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">Choose store &amp; quantity</div>
+        </div>
 
         <div class="field">
           <label for="store-select">Store</label>
@@ -93,8 +105,6 @@
         </sc-if>
 
         <button class="btn btn-primary btn-block" onClick="{{onGenerate}}">Generate report</button>
-        <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}">Look up a SKU across stores</button>
-        <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}">Download a store's complete stock</button>
       </div>
     </sc-if>
 
@@ -418,7 +428,7 @@ class Component extends DCLogic {
         storeInfoMap,
         storeOptions,
         selectedStore: storeOptions[0] ? storeOptions[0].name : '',
-        screen: 'select',
+        screen: 'menu',
       });
     } catch (err) {
       this.setState({ loading: false, loadError: 'Could not load store data: ' + err.message, screen: 'error' });
@@ -429,10 +439,12 @@ class Component extends DCLogic {
   onQty1() { this.setState({ selectedQty: 1 }); }
   onQty2() { this.setState({ selectedQty: 2 }); }
   onBackToSelect() { this.setState({ screen: 'select' }); }
+  onGoSelect() { this.setState({ screen: 'select' }); }
+  onBackFromSelect() { this.setState({ screen: 'menu' }); }
   onGoSkuLookup() { this.setState({ screen: 'skulookup' }); }
-  onBackFromSku() { this.setState({ screen: 'select' }); }
+  onBackFromSku() { this.setState({ screen: 'menu' }); }
   onGoStoreStock() { this.setState({ screen: 'storestock', storeStockSelected: this.state.storeOptions[0] ? this.state.storeOptions[0].name : '' }); }
-  onBackFromStoreStock() { this.setState({ screen: 'select' }); }
+  onBackFromStoreStock() { this.setState({ screen: 'menu' }); }
   onStoreStockChange(e) { this.setState({ storeStockSelected: e.target.value }); }
   onDiscountOn() { this.setState({ storeStockShowDiscount: true }); }
   onDiscountOff() { this.setState({ storeStockShowDiscount: false, storeStockPctRange: '' }); }
@@ -563,6 +575,8 @@ class Component extends DCLogic {
   }
 
   printHtmlInPage(styleCss, bodyHtml, fileTitle, onDone) {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) return this.printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone);
     let frame = document.getElementById('pdf-print-frame');
     if (!frame) {
       frame = document.createElement('iframe');
@@ -587,6 +601,57 @@ class Component extends DCLogic {
     const pending = imgs.filter(img => !img.complete);
     let printed = false;
     const printOnce = () => { if (printed) return; printed = true; doPrint(); if (onDone) onDone(); };
+    if (!pending.length) { printOnce(); return; }
+    let settled = 0;
+    const done = () => { settled++; if (settled >= pending.length) printOnce(); };
+    pending.forEach(img => {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    });
+    setTimeout(() => {
+      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
+      printOnce();
+    }, 9000);
+  }
+
+  printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone) {
+    let overlay = document.getElementById('pdf-print-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'pdf-print-overlay';
+      document.body.appendChild(overlay);
+    }
+    let styleEl = document.getElementById('pdf-print-overlay-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'pdf-print-overlay-style';
+      document.head.appendChild(styleEl);
+    }
+    const scoped = styleCss.replace(/(^|\})\s*([^{}]+)\{/g, (m, brace, sel) =>
+      brace + sel.split(',').map(s => '#pdf-print-overlay ' + s.trim()).join(',') + '{');
+    styleEl.textContent = '#pdf-print-overlay{display:none;}'
+      + '@media print{@page{margin:0}body>*:not(#pdf-print-overlay){display:none!important;}#pdf-print-overlay{display:block!important;padding:0.5in;}}'
+      + scoped;
+    overlay.innerHTML = bodyHtml;
+    const prevTitle = document.title;
+    document.title = fileTitle;
+    const cleanup = () => {
+      overlay.innerHTML = '';
+      document.title = prevTitle;
+      window.removeEventListener('afterprint', cleanup);
+      if (onDone) onDone();
+    };
+    window.addEventListener('afterprint', cleanup);
+    const doPrint = () => {
+      try { window.print(); } catch (e) {
+        this.setState({ loadError: 'Could not generate the PDF: ' + e.message });
+        cleanup();
+      }
+    };
+    const imgs = Array.from(overlay.querySelectorAll('img'));
+    const pending = imgs.filter(img => !img.complete);
+    let printed = false;
+    const printOnce = () => { if (printed) return; printed = true; doPrint(); };
     if (!pending.length) { printOnce(); return; }
     let settled = 0;
     const done = () => { settled++; if (settled >= pending.length) printOnce(); };
@@ -902,6 +967,7 @@ class Component extends DCLogic {
     return {
       isLoading: s.screen === 'loading',
       loadError: s.loadError,
+      isMenu: s.screen === 'menu',
       isSelect: s.screen === 'select',
       isResults: s.screen === 'results',
       isSkuLookup: s.screen === 'skulookup',
@@ -918,6 +984,8 @@ class Component extends DCLogic {
       categoryOptions: (s.screen === 'storestock' || s.screen === 'select') ? this.getCategoryOptions() : [],
       subCategoryOptions: subCategoryOptions,
       hasSubCategoryOptions: subCategoryOptions.length > 0,
+      onGoSelect: () => this.onGoSelect(),
+      onBackFromSelect: () => this.onBackFromSelect(),
       onGoStoreStock: () => this.onGoStoreStock(),
       onBackFromStoreStock: () => this.onBackFromStoreStock(),
       onStoreStockChange: e => this.onStoreStockChange(e),
