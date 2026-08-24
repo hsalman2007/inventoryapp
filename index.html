@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="ext-resource-dependency" content="./xlsx-writer.js" data-resource-id="xlsx-js" />
 <script src="./support.js"></script>
 </head>
 <body>
@@ -792,12 +793,7 @@ class Component extends DCLogic {
     this.printHtmlInPage(styleCss, bodyHtml, fileTitle, () => this.setState({ storeStockPdfDownloading: false }));
   }
 
-  onDownloadStoreStockExcel() {
-    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const fmtNum = v => {
-      if (v === '' || v === null || v === undefined || isNaN(Number(v))) return esc(v);
-      return Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
-    };
+  async onDownloadStoreStockExcel() {
     const st = this.state;
     const store = st.storeStockSelected;
     const info = st.storeInfoMap && st.storeInfoMap.get(store);
@@ -805,41 +801,36 @@ class Component extends DCLogic {
     const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     const rows = this.getStoreStockRows();
     const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500;
-    const colCount = showDiscount ? 8 : 5;
+    const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
 
-    const rowsHtml = rows.map(r => (
-      '<tr' + (r.highlight ? ' style="background:#fbe1de;"' : '') + '>'
-      + '<td style="mso-number-format:\'\\@\';" x:str>' + esc(r.itemNo) + '</td>'
-      + '<td style="mso-number-format:\'\\@\';" x:str>' + esc(r.description2) + '</td>'
-      + '<td>' + fmtNum(r.qty) + '</td>'
-      + '<td>' + fmtNum(r.whStock) + '</td>'
-      + (showDiscount ? '<td style="' + (r.pct === 'Was/Now Just' ? 'font-weight:bold;color:#8b1a1a;' : '') + '">' + fmtNum(r.was) + '</td><td style="font-weight:bold;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + fmtNum(r.now) + '</td><td style="font-weight:bold;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + esc(r.pct) + '</td>' : '')
-      + '<td>' + (r.image ? esc(r.image) : '') + '</td>'
-      + '</tr>'
-    )).join('');
-
-    const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
-      + '<head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>'
-      + '<x:Name>Stock</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->'
-      + '</head><body>'
-      + '<table border="1">'
-      + '<tr><td colspan="' + colCount + '"><b>' + esc(storeLabel) + '</b></td></tr>'
-      + '<tr><td colspan="' + colCount + '">Promo stocks &middot; ' + rows.length + ' SKUs &middot; ' + today + '</td></tr>'
-      + '<tr>' + Array(colCount).fill('<td></td>').join('') + '</tr>'
-      + '<tr><th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th>' + (showDiscount ? '<th>Was</th><th>Now</th><th>%</th>' : '') + '<th>Image Link</th></tr>'
-      + rowsHtml
-      + '</table></body></html>';
-
+    const header = ['Item No.', 'Description 2', 'Qty', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
+    const aoa = [
+      [{ v: storeLabel, s: 1 }],
+      ['Promo stocks · ' + rows.length + ' SKUs · ' + today],
+      [],
+      header.map(h => ({ v: h, s: 5 })),
+    ];
+    for (const r of rows) {
+      const promo = r.pct === 'Was/Now Just';
+      const base = r.highlight ? 3 : 0;
+      const strong = promo ? (r.highlight ? 4 : 2) : base;
+      const line = [
+        { v: r.itemNo, t: 's', s: base },
+        { v: r.description2, t: 's', s: base },
+        { v: num(r.qty), s: base },
+        { v: num(r.whStock), s: base },
+      ];
+      if (showDiscount) line.push({ v: num(r.was), s: strong }, { v: num(r.now), s: strong }, { v: r.pct, t: 's', s: strong });
+      line.push({ v: r.image || '', t: 's', s: base });
+      aoa.push(line);
+    }
+    const cols = [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 11 }]
+      .concat(showDiscount ? [{ width: 10 }, { width: 10 }, { width: 14 }] : [])
+      .concat([{ width: 42 }]);
     const fileTitle = (storeLabel + '-Promo-Stocks-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
-    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileTitle + '.xls';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    const modUrl = (window.__resources && window.__resources['xlsx-js']) || './xlsx-writer.js';
+    const mod = await import(modUrl);
+    mod.downloadXlsx(aoa, fileTitle, { sheetName: 'Stock', cols });
   }
 
   onSkuQueryChange(e) { this.setState({ skuQuery: e.target.value }); }
@@ -950,47 +941,37 @@ class Component extends DCLogic {
     this.printHtmlInPage(styleCss, bodyHtml, fileTitle);
   }
 
-  onDownloadExcel() {
-    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  async onDownloadExcel() {
     const st = this.state;
     const info = st.storeInfoMap && st.storeInfoMap.get(st.resultStore);
     const storeLabel = info ? (info.shortName || st.resultStore) + ' — ' + info.region : st.resultStore;
     const results = this.filterResults(st.results, st.statusFilter, st.stockFilter, st.lowStockFilter);
     const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
 
-    const rowsHtml = results.map(r => (
-      '<tr>'
-      + '<td style="mso-number-format:\'\\@\';" x:str>' + esc(r.itemNo) + '</td>'
-      + '<td style="mso-number-format:\'\\@\';" x:str>' + esc(r.description2) + '</td>'
-      + '<td>' + r.quantity + '</td>'
-      + '<td>' + r.whStock + '</td>'
-      + '<td>' + esc(r.discontinuedLabel) + '</td>'
-      + '<td>' + esc(r.inOrderLabel) + '</td>'
-      + '</tr>'
-    )).join('');
-
-    const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
-      + '<head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>'
-      + '<x:Name>Report</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->'
-      + '</head><body>'
-      + '<table border="1">'
-      + '<tr><td colspan="6"><b>' + esc(storeLabel) + '</b></td></tr>'
-      + '<tr><td colspan="6">Quantity = ' + st.resultQty + ' pc(s) &middot; ' + results.length + ' SKUs &middot; ' + today + '</td></tr>'
-      + '<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>'
-      + '<tr><th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th><th>Discontinued</th><th>In Order</th></tr>'
-      + rowsHtml
-      + '</table></body></html>';
-
+    const aoa = [
+      [{ v: storeLabel, s: 1 }],
+      ['Quantity = ' + st.resultQty + ' pc(s) · ' + results.length + ' SKUs · ' + today],
+      [],
+      ['Item No.', 'Description 2', 'Qty', 'WH Stock', 'Discontinued', 'In Order'].map(h => ({ v: h, s: 5 })),
+    ];
+    for (const r of results) {
+      aoa.push([
+        { v: r.itemNo, t: 's' },
+        { v: r.description2, t: 's' },
+        { v: num(r.quantity) },
+        { v: num(r.whStock) },
+        { v: r.discontinuedLabel, t: 's' },
+        { v: r.inOrderLabel, t: 's' },
+      ]);
+    }
     const fileTitle = (storeLabel + '-Inventory-Report-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
-    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileTitle + '.xls';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    const modUrl = (window.__resources && window.__resources['xlsx-js']) || './xlsx-writer.js';
+    const mod = await import(modUrl);
+    mod.downloadXlsx(aoa, fileTitle, {
+      sheetName: 'Report',
+      cols: [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 11 }, { width: 14 }, { width: 12 }],
+    });
   }
 
   onGenerate() {
