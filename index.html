@@ -10,7 +10,7 @@
 <helmet>
   <link rel="stylesheet" href="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/styles.css">
   <script src="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/_ds_bundle.js"></script>
-  <meta name="ext-resource-dependency" content="./inventory-data.json" data-resource-id="data-json" />
+  <meta name="ext-resource-dependency" content="./inventory-data.json" data-resource-id="data-json">
   <style>
     #pdf-print-frame { position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; visibility: hidden; }
   </style>
@@ -21,7 +21,7 @@
 
     <div class="no-print" style="display: flex; flex-direction: column; gap: var(--space-1);">
       <h1 style="font-family: var(--font-heading); font-size: 26px; margin: 0; color: var(--color-text);">Stock Lookup</h1>
-      <p style="font-family: var(--font-body); font-size: 14px; margin: 0; color: var(--color-neutral-700);">Pick a store, and pull a low-stock list in seconds.</p>
+      <p style="font-family: var(--font-body); font-size: 14px; margin: 0; color: var(--color-neutral-700);">Pick a store, and pull stock details.</p>
     </div>
 
     <sc-if value="{{isLoading}}" hint-placeholder-val="{{true}}">
@@ -35,9 +35,9 @@
     <!-- MENU SCREEN -->
     <sc-if value="{{isMenu}}" hint-placeholder-val="{{false}}">
       <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-        <button class="btn btn-secondary btn-block" onClick="{{onGoSelect}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Single Units Report</button>
-        <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Lookup SKU in All Stores</button>
-        <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stock Download</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoSelect}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Last Pcs Report</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Item Lookup in All Stores</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
       </div>
     </sc-if>
 
@@ -328,9 +328,17 @@
               </sc-if>
               <div style="display: flex; flex-direction: column; gap: 2px;">
                 <div style="font-weight: 700; font-size: 13px; color: var(--color-text);">{{item.itemNo}}</div>
-                <sc-if value="{{item.rsp}}" hint-placeholder-val="{{false}}">
-                  <div style="font-size: 12px; font-weight: 600; color: var(--color-accent-700);">RSP {{item.rsp}}</div>
-                </sc-if>
+                <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                  <sc-if value="{{item.rsp}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--color-accent-700);">RSP {{item.rsp}}</div>
+                  </sc-if>
+                  <sc-if value="{{item.now}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size: 12px; font-weight: 700; color: #8b1a1a;">Now {{item.now}}</div>
+                  </sc-if>
+                  <sc-if value="{{item.pct}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size: 11px; font-weight: 700; color: #fff; background: #8b1a1a; border-radius: 999px; padding: 1px 7px;">{{item.pct}}</div>
+                  </sc-if>
+                </div>
                 <div style="font-size: 12px; color: var(--color-neutral-700);">{{item.description2}}</div>
               </div>
             </div>
@@ -787,7 +795,7 @@ class Component extends DCLogic {
     const s = this.state;
     if (!s.parsed || !query || query.trim().length < 2) return [];
     const q = query.trim().toLowerCase();
-    const { matrix, retailMap } = s.parsed;
+    const { matrix, retailMap, discountMap } = s.parsed;
     const storeCols = matrix.storeNames.filter(name => {
       const info = s.storeInfoMap && s.storeInfoMap.get(name);
       if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return false;
@@ -810,10 +818,13 @@ class Component extends DCLogic {
         .filter(sr => sr.qty > 0)
         .sort((a, b) => b.qty - a.qty);
       const totalQty = storeRows.reduce((sum, sr) => sum + sr.qty, 0);
+      const disc = discountMap ? discountMap.get(it.itemNo) : null;
       return {
         itemNo: it.itemNo,
         description2: r.description2 || it.description2,
         rsp: it.rsp || '',
+        now: disc ? disc.now : '',
+        pct: disc ? disc.pct : '',
         image: r.image && r.image !== '(blank)' ? r.image : '',
         storeRows,
         totalQty,
