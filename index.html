@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="ext-resource-dependency" content="./xlsx-writer.js" data-resource-id="xlsx-js" />
 <script src="./support.js"></script>
 </head>
 <body>
@@ -39,6 +38,7 @@
         <button class="btn btn-secondary btn-block" onClick="{{onGoSelect}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Last Pcs Report</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Item Lookup in All Stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
 
         <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2);">
           <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
@@ -226,6 +226,91 @@
       </div>
     </sc-if>
 
+    <!-- NEGATIVE INVENTORY SCREEN -->
+    <sc-if value="{{isNegInv}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromNegInv}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">Negative inventory</div>
+        </div>
+
+        <sc-if value="{{hasNegInvStores}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="font-size: 13px; font-weight: 700; color: var(--color-text);">Negative stock by location</div>
+            <div style="overflow-x: auto;">
+              <table class="table" style="width: 100%; font-size: 12.5px;">
+                <tbody>
+                  <tr>
+                    <th style="text-align: left;">Location</th>
+                    <th style="text-align: right;">Neg. qty</th>
+                    <th style="text-align: right;">Neg. value</th>
+                  </tr>
+                  <sc-for list="{{negInvByStore}}" as="row" hint-placeholder-count="4">
+                    <tr onClick="{{row.onOpen}}" style="cursor: pointer;" style-hover="background: var(--color-accent-100);">
+                      <td style="color: var(--color-accent-700); font-weight: 600;">{{row.label}}</td>
+                      <td style="text-align: right; font-weight: 700; color: #8b1a1a;">{{row.qtyText}}</td>
+                      <td style="text-align: right; font-weight: 700; color: #8b1a1a;">{{row.valueText}}</td>
+                    </tr>
+                  </sc-for>
+                  <tr onClick="{{onOpenNegInvAll}}" style="cursor: pointer;" style-hover="background: var(--color-accent-100);">
+                    <td style="font-weight: 700; border-top: 2px solid var(--color-text);">Grand total</td>
+                    <td style="text-align: right; font-weight: 700; color: #8b1a1a; border-top: 2px solid var(--color-text);">{{negInvGrandQty}}</td>
+                    <td style="text-align: right; font-weight: 700; color: #8b1a1a; border-top: 2px solid var(--color-text);">{{negInvGrandValue}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </sc-if>
+
+        <span style="font-size: 12px; color: var(--color-neutral-700);">Tap a location to see its items and export.</span>
+      </div>
+
+      <sc-if value="{{negInvModalOpen}}" hint-placeholder-val="{{false}}">
+        <div class="dialog-backdrop" style="position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: var(--space-3); z-index: 60;">
+          <div class="dialog" style="width: 100%; max-width: 460px; max-height: 88vh; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4);">
+            <div class="dialog-title" style="font-size: 17px;">{{negInvModalTitle}}</div>
+            <div style="font-size: 12.5px; color: var(--color-neutral-700);">{{negInvModalMeta}}</div>
+
+            <div style="overflow: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-300);">
+              <table class="table" style="width: 100%; font-size: 12px;">
+                <tbody>
+                  <tr>
+                    <th style="text-align: left;">Item</th>
+                    <th style="text-align: right;">Qty</th>
+                    <th style="text-align: right;">RSP</th>
+                    <th style="text-align: right;">Value</th>
+                  </tr>
+                  <sc-for list="{{negInvModalRows}}" as="row" hint-placeholder-count="6">
+                    <tr>
+                      <td>
+                        <div style="font-weight: 700;">{{row.itemNo}}</div>
+                        <div style="color: var(--color-neutral-700); font-size: 11.5px;">{{row.description2}}</div>
+                        <div style="color: var(--color-neutral-700); font-size: 11px;">{{row.location}}</div>
+                      </td>
+                      <td style="text-align: right; font-weight: 700; color: #8b1a1a;">{{row.qtyText}}</td>
+                      <td style="text-align: right;">{{row.rspText}}</td>
+                      <td style="text-align: right; font-weight: 700; color: #8b1a1a;">{{row.valueText}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+
+            <sc-if value="{{negInvModalTruncated}}" hint-placeholder-val="{{false}}">
+              <span style="font-size: 11.5px; color: var(--color-neutral-700);">{{negInvModalTruncatedNote}}</span>
+            </sc-if>
+
+            <div class="dialog-actions" style="display: flex; flex-direction: column; gap: var(--space-2);">
+              <button class="btn btn-primary btn-block" onClick="{{onDownloadNegInvPdf}}" disabled="{{negInvPdfDownloading}}">{{negInvPdfLabel}}</button>
+              <button class="btn btn-secondary btn-block" onClick="{{onDownloadNegInvExcel}}">Download Excel</button>
+              <button class="btn btn-ghost btn-block" onClick="{{onCloseNegInvModal}}">Close</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
     <!-- RESULTS SCREEN -->
     <sc-if value="{{isResults}}" hint-placeholder-val="{{false}}">
       <div class="results-wrap" style="display: flex; flex-direction: column; gap: var(--space-4);">
@@ -308,7 +393,7 @@
                     <tr>
                       <td style="padding: 6px; line-height: 1.1;">
                         <sc-if value="{{row.image}}" hint-placeholder-val="{{false}}">
-                          <img src="{{row.image}}" referrerpolicy="no-referrer" style="width: 46px; height: 46px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); display: block;">
+                          <img src="{{row.image}}" loading="lazy" referrerpolicy="no-referrer" style="width: 46px; height: 46px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); display: block;">
                         </sc-if>
                       </td>
                       <td style="font-weight: 600; white-space: nowrap; padding: 6px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis;">{{row.itemNo}}</td>
@@ -427,6 +512,186 @@ function naturalCompare(a, b) {
   return ax.length - bx.length;
 }
 
+// ---- Embedded xlsx writer (no external module; works offline / on static hosts) ----
+// Minimal real .xlsx writer (no deps). Builds a ZIP with STORED (uncompressed) entries,
+// so it needs no compression API and opens in Excel, Numbers, Google Sheets, WPS, mobile viewers.
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+const enc = new TextEncoder();
+
+function dosDateTime(d) {
+  const time = ((d.getHours() & 31) << 11) | ((d.getMinutes() & 63) << 5) | ((d.getSeconds() / 2) & 31);
+  const date = (((d.getFullYear() - 1980) & 127) << 9) | (((d.getMonth() + 1) & 15) << 5) | (d.getDate() & 31);
+  return { time, date };
+}
+
+function zipStored(files) {
+  const now = dosDateTime(new Date());
+  const chunks = [];
+  const central = [];
+  let offset = 0;
+  for (const f of files) {
+    const nameBytes = enc.encode(f.name);
+    const data = typeof f.data === 'string' ? enc.encode(f.data) : f.data;
+    const crc = crc32(data);
+    const local = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0, true);
+    lv.setUint16(8, 0, true); // stored
+    lv.setUint16(10, now.time, true);
+    lv.setUint16(12, now.date, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, data.length, true);
+    lv.setUint32(22, data.length, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    chunks.push(local, data);
+
+    const cd = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, now.time, true);
+    cv.setUint16(14, now.date, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true);
+    cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint32(42, offset, true);
+    cd.set(nameBytes, 46);
+    central.push(cd);
+    offset += local.length + data.length;
+  }
+  let cdSize = 0;
+  for (const c of central) cdSize += c.length;
+  const end = new Uint8Array(22);
+  const ev = new DataView(end.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, central.length, true);
+  ev.setUint16(10, central.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, offset, true);
+  return new Blob([...chunks, ...central, end], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+}
+
+const escXml = s => String(s ?? '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
+
+function colName(n) {
+  let s = '';
+  n += 1;
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+// Style indices available to callers:
+// 0 default · 1 bold · 2 bold red · 3 pink fill · 4 pink fill + bold red · 5 header (bold, bottom border)
+const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FF8B1A1A"/><sz val="11"/><name val="Calibri"/></font></fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFBE1DE"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top/><bottom style="medium"><color rgb="FF201E1D"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="6">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="0" fillId="2" borderId="0" xfId="0" applyFill="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFill="1"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyBorder="1"/>
+</cellXfs>
+</styleSheet>`;
+
+/**
+ * rows: array of arrays. A cell is either a primitive (string/number/null)
+ *       or { v: value, s: styleIndex, t: 'n'|'s' }.
+ * opts: { sheetName, cols: [{ width }] }
+ */
+function buildXlsx(rows, opts = {}) {
+  const sheetName = (opts.sheetName || 'Sheet1').replace(/[\\/*?:[\]]/g, '').slice(0, 31) || 'Sheet1';
+  const colsXml = opts.cols && opts.cols.length
+    ? '<cols>' + opts.cols.map((c, i) => `<col min="${i + 1}" max="${i + 1}" width="${c.width || 12}" customWidth="1"/>`).join('') + '</cols>'
+    : '';
+
+  let sheetRows = '';
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r] || [];
+    let cells = '';
+    for (let c = 0; c < row.length; c++) {
+      const raw = row[c];
+      if (raw === null || raw === undefined || raw === '') continue;
+      const cell = (typeof raw === 'object' && !(raw instanceof Date)) ? raw : { v: raw };
+      const ref = colName(c) + (r + 1);
+      const style = cell.s ? ` s="${cell.s}"` : '';
+      const isNum = cell.t === 'n' || (cell.t !== 's' && typeof cell.v === 'number' && isFinite(cell.v));
+      if (isNum) {
+        cells += `<c r="${ref}"${style}><v>${cell.v}</v></c>`;
+      } else {
+        cells += `<c r="${ref}"${style} t="inlineStr"><is><t xml:space="preserve">${escXml(cell.v)}</t></is></c>`;
+      }
+    }
+    sheetRows += `<row r="${r + 1}">${cells}</row>`;
+  }
+
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr/><dimension ref="A1"/><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/>${colsXml}<sheetData>${sheetRows}</sheetData></worksheet>`;
+
+  const files = [
+    { name: '[Content_Types].xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>` },
+    { name: '_rels/.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+    { name: 'xl/workbook.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${escXml(sheetName)}" sheetId="1" r:id="rId1"/></sheets></workbook>` },
+    { name: 'xl/_rels/workbook.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+    { name: 'xl/styles.xml', data: STYLES },
+    { name: 'xl/worksheets/sheet1.xml', data: sheet },
+  ];
+  return zipStored(files);
+}
+
+function downloadXlsx(rows, filename, opts) {
+  const blob = buildXlsx(rows, opts);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = /\.xlsx$/i.test(filename) ? filename : filename + '.xlsx';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+// ---- end xlsx writer ----
+
 class Component extends DCLogic {
   state = {
     loading: true,
@@ -451,6 +716,9 @@ class Component extends DCLogic {
     storeStockCategory: '',
     storeStockSubCategory: '',
     storeStockSelected: '__ALL__',
+    negInvLocation: '__ALL__',
+    negInvModalOpen: false,
+    negInvPdfDownloading: false,
     isAdmin: false,
     adminPromptOpen: false,
     adminPw: '',
@@ -557,6 +825,199 @@ class Component extends DCLogic {
     }
     return Array.from(set).sort();
   }
+  onGoNegInv() { this.setState({ screen: 'neginv' }); }
+  onBackFromNegInv() { this.setState({ screen: 'menu', negInvModalOpen: false }); }
+  onOpenNegInvModal(name) { this.setState({ negInvLocation: name, negInvModalOpen: true }); }
+  onCloseNegInvModal() { this.setState({ negInvModalOpen: false }); }
+  onNegInvLocationChange(e) { this.setState({ negInvLocation: e.target.value }); }
+
+  getNegInvLocationOptions() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    if (!this._storeInfoCI && st.storeInfoMap) {
+      this._storeInfoCI = new Map();
+      for (const [k, v] of st.storeInfoMap) this._storeInfoCI.set(String(k).trim().toLowerCase(), v);
+    }
+    const ci = this._storeInfoCI;
+    return st.parsed.matrix.storeNames
+      .map(name => {
+        const info = (st.storeInfoMap && st.storeInfoMap.get(name))
+          || (ci && ci.get(String(name).trim().toLowerCase()))
+          || null;
+        if (info && info.storeType && info.storeType !== 'Store' && info.storeType !== 'Warehouse') return null;
+        const displayName = ((info && info.shortName) || name).trim();
+        if (EXCLUDED_STORES.has(displayName.toLowerCase())) return null;
+        if (EXCLUDED_STORES.has(String(name).trim().toLowerCase())) return null;
+        return { name, label: info && info.region ? displayName + ' — ' + info.region : displayName };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  getNegInvModalView() {
+    const st = this.state;
+    if (st.screen !== 'neginv' || !st.negInvModalOpen) return { title: '', meta: '', rows: [], truncated: false, truncatedNote: '' };
+    const money = v => Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const opts = this.getNegInvLocationOptions();
+    const title = st.negInvLocation === '__ALL__'
+      ? 'All locations'
+      : ((opts.find(o => o.name === st.negInvLocation) || {}).label || st.negInvLocation);
+    const all = this.getNegInvRows();
+    const LIMIT = 250;
+    const shown = all.slice(0, LIMIT);
+    const totalQty = all.reduce((sum, r) => sum + r.qty, 0);
+    const totalValue = all.reduce((sum, r) => sum + r.value, 0);
+    return {
+      title,
+      meta: all.length.toLocaleString() + ' lines · qty ' + totalQty.toLocaleString() + ' · value ' + money(totalValue),
+      rows: shown.map(r => ({
+        itemNo: r.itemNo,
+        description2: r.description2,
+        location: r.location,
+        qtyText: r.qty.toLocaleString(),
+        rspText: r.rsp ? money(r.rsp) : '',
+        valueText: money(r.value),
+      })),
+      truncated: all.length > LIMIT,
+      truncatedNote: 'Showing first ' + LIMIT + ' of ' + all.length.toLocaleString() + ' lines — the PDF and Excel contain all of them.',
+    };
+  }
+
+  getNegInvByStore() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix } = st.parsed;
+    const opts = this.getNegInvLocationOptions();
+    const totals = new Map(opts.map(o => [o.name, { name: o.name, label: o.label, qty: 0, value: 0, lines: 0 }]));
+    for (const it of matrix.items) {
+      const rsp = Number(it.rsp) || 0;
+      for (const o of opts) {
+        const raw = it.stores[o.name];
+        if (raw === undefined || raw === '') continue;
+        const qty = Number(raw);
+        if (!(qty < 0)) continue;
+        const t = totals.get(o.name);
+        t.qty += qty;
+        t.value += qty * rsp;
+        t.lines += 1;
+      }
+    }
+    const money = v => Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return Array.from(totals.values())
+      .filter(t => t.lines > 0)
+      .sort((a, b) => a.value - b.value)
+      .map(t => ({ name: t.name, label: t.label, lines: t.lines, qty: t.qty, value: t.value, qtyText: t.qty.toLocaleString(), valueText: money(t.value), onOpen: () => this.onOpenNegInvModal(t.name) }));
+  }
+
+  getNegInvRows() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix, retailMap } = st.parsed;
+    const opts = this.getNegInvLocationOptions();
+    const locations = st.negInvLocation === '__ALL__' ? opts : opts.filter(o => o.name === st.negInvLocation);
+    const rows = [];
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo) || {};
+      for (const loc of locations) {
+        const raw = it.stores[loc.name];
+        if (raw === undefined || raw === '') continue;
+        const qty = Number(raw);
+        if (!(qty < 0)) continue;
+        rows.push({
+          itemNo: it.itemNo,
+          description2: r.description2 || it.description2 || '',
+          location: loc.label,
+          qty,
+          rsp: Number(it.rsp) || 0,
+          value: qty * (Number(it.rsp) || 0),
+          image: r.image || '',
+        });
+      }
+    }
+    rows.sort((a, b) => a.location.localeCompare(b.location) || a.qty - b.qty);
+    return rows;
+  }
+
+  async onDownloadNegInvPdf() {
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const st = this.state;
+    const rows = this.getNegInvRows();
+    const scope = st.negInvLocation === '__ALL__' ? 'All locations' : (this.getNegInvLocationOptions().find(o => o.name === st.negInvLocation) || {}).label || st.negInvLocation;
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    this.setState({ negInvPdfDownloading: true });
+    const noImages = rows.length > 5000;
+    const imgRows = noImages ? rows : await this.scaleRowImages(rows);
+    const money = v => Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const totalQty = rows.reduce((sum, r) => sum + r.qty, 0);
+    const totalValue = rows.reduce((sum, r) => sum + r.value, 0);
+    const rowsHtml = imgRows.map(r => (
+      '<tr>'
+      + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" referrerpolicy="no-referrer" />' : '') + '</td>')
+      + '<td class="itemno">' + esc(r.itemNo) + '</td><td class="desc">' + esc(r.description2) + '</td>'
+      + '<td>' + esc(r.location) + '</td><td class="ctr neg">' + r.qty + '</td>'
+      + '<td class="ctr">' + (r.rsp ? money(r.rsp) : '') + '</td><td class="ctr neg">' + money(r.value) + '</td></tr>'
+    )).join('')
+    + '<tr class="totals">'
+    + (noImages ? '' : '<td></td>')
+    + '<td colspan="2">Total · ' + rows.length + ' lines</td><td></td>'
+    + '<td class="ctr neg">' + totalQty + '</td><td></td><td class="ctr neg">' + money(totalValue) + '</td></tr>';
+    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
+      + 'h1{font-size:20px;margin:0 0 4px;}'
+      + '.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
+      + 'table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;table-layout:fixed;}'
+      + 'tr{break-inside:avoid;}'
+      + 'col.c-img{width:12%}col.c-item{width:' + (noImages ? '15' : '13') + '%}col.c-desc{width:' + (noImages ? '33' : '25') + '%}col.c-loc{width:' + (noImages ? '20' : '18') + '%}col.c-qty{width:9%}col.c-rsp{width:11%}col.c-val{width:12%}'
+      + 'th{text-align:left;font-size:10.5px;text-transform:uppercase;color:#6b6360;padding:6px;border-bottom:2px solid #201e1d;}'
+      + 'td{padding:6px;border-bottom:1px solid #e6ddd2;overflow-wrap:break-word;word-break:break-word;}'
+      + 'td.ctr{text-align:center;white-space:nowrap;}td.neg{font-weight:700;color:#8b1a1a;}'
+      + 'td{vertical-align:middle;}td.img-cell{overflow:hidden;}td.img-cell img{width:100%;height:52px;object-fit:contain;display:block;}'
+      + 'tr.totals td{border-top:2px solid #201e1d;border-bottom:none;font-weight:700;padding-top:8px;}';
+    const bodyHtml = '<h1>Negative inventory</h1>'
+      + '<div class="meta">' + esc(scope) + ' · ' + rows.length + ' negative lines · ' + today + '</div>'
+      + '<table><colgroup>' + (noImages ? '' : '<col class="c-img">') + '<col class="c-item"><col class="c-desc"><col class="c-loc"><col class="c-qty"><col class="c-rsp"><col class="c-val"></colgroup>'
+      + '<tbody><tr>' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Location</th><th>Qty</th><th>RSP</th><th>Value</th></tr>'
+      + rowsHtml + '</tbody></table>';
+    const fileTitle = ('Negative-Inventory-' + scope + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    this.printHtmlInPage(styleCss, bodyHtml, fileTitle, () => this.setState({ negInvPdfDownloading: false }));
+  }
+
+  onDownloadNegInvExcel() {
+    const st = this.state;
+    const rows = this.getNegInvRows();
+    const scope = st.negInvLocation === '__ALL__' ? 'All locations' : (this.getNegInvLocationOptions().find(o => o.name === st.negInvLocation) || {}).label || st.negInvLocation;
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const aoa = [
+      [{ v: 'Negative inventory', s: 1 }],
+      [scope + ' · ' + rows.length + ' negative lines · ' + today],
+      [],
+      ['Item No.', 'Description 2', 'Location', 'Qty', 'RSP', 'Value'].map(h => ({ v: h, s: 5 })),
+    ];
+    for (const r of rows) {
+      aoa.push([
+        { v: r.itemNo, t: 's' },
+        { v: r.description2, t: 's' },
+        { v: r.location, t: 's' },
+        { v: r.qty, s: 2 },
+        { v: r.rsp || '', s: 0 },
+        { v: Number(r.value.toFixed(2)), s: 2 },
+      ]);
+    }
+    aoa.push([]);
+    aoa.push([
+      { v: 'Total · ' + rows.length + ' lines', s: 1 },
+      '',
+      '',
+      { v: rows.reduce((sum, r) => sum + r.qty, 0), s: 2 },
+      '',
+      { v: Number(rows.reduce((sum, r) => sum + r.value, 0).toFixed(2)), s: 2 },
+    ]);
+    const fileTitle = ('Negative-Inventory-' + scope + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    downloadXlsx(aoa, fileTitle, {
+      sheetName: 'Negative Inv',
+      cols: [{ width: 16 }, { width: 44 }, { width: 26 }, { width: 9 }, { width: 11 }, { width: 14 }],
+    });
+  }
+
   getStoreStockRows() {
     const st = this.state;
     const store = st.storeStockSelected;
@@ -828,9 +1289,7 @@ class Component extends DCLogic {
       .concat(showDiscount ? [{ width: 10 }, { width: 10 }, { width: 14 }] : [])
       .concat([{ width: 42 }]);
     const fileTitle = (storeLabel + '-Promo-Stocks-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
-    const modUrl = (window.__resources && window.__resources['xlsx-js']) || './xlsx-writer.js';
-    const mod = await import(modUrl);
-    mod.downloadXlsx(aoa, fileTitle, { sheetName: 'Stock', cols });
+    downloadXlsx(aoa, fileTitle, { sheetName: 'Stock', cols });
   }
 
   onSkuQueryChange(e) { this.setState({ skuQuery: e.target.value }); }
@@ -966,9 +1425,7 @@ class Component extends DCLogic {
       ]);
     }
     const fileTitle = (storeLabel + '-Inventory-Report-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
-    const modUrl = (window.__resources && window.__resources['xlsx-js']) || './xlsx-writer.js';
-    const mod = await import(modUrl);
-    mod.downloadXlsx(aoa, fileTitle, {
+    downloadXlsx(aoa, fileTitle, {
       sheetName: 'Report',
       cols: [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 11 }, { width: 14 }, { width: 12 }],
     });
@@ -1019,10 +1476,38 @@ class Component extends DCLogic {
     const filteredResults = this.filterResults(s.results, s.statusFilter, s.stockFilter, s.lowStockFilter);
     const subCategoryOptions = (s.screen === 'storestock' || s.screen === 'select') ? this.getSubCategoryOptions() : [];
     const skuMatches = this.getSkuMatches(s.skuQuery);
+    const negInvByStore = s.screen === 'neginv' ? this.getNegInvByStore() : [];
+    const negInvModal = this.getNegInvModalView();
+    const negInvGrandQty = negInvByStore.reduce((sum, r) => sum + r.qty, 0).toLocaleString();
+    const negInvGrandValue = negInvByStore.reduce((sum, r) => sum + r.value, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return {
       isLoading: s.screen === 'loading',
       loadError: s.loadError,
       isMenu: s.screen === 'menu',
+      isNegInv: s.screen === 'neginv',
+      negInvByStore: negInvByStore,
+      hasNegInvStores: negInvByStore.length > 0,
+      negInvGrandQty: negInvGrandQty,
+      negInvGrandValue: negInvGrandValue,
+      negInvLocation: s.negInvLocation,
+      negInvLocationOptions: s.screen === 'neginv' ? this.getNegInvLocationOptions() : [],
+      negInvSummary: s.screen === 'neginv' ? (this.getNegInvRows().length + ' negative stock lines found') : '',
+      negInvPdfDownloading: s.negInvPdfDownloading,
+      negInvPdfLabel: s.negInvPdfDownloading ? 'Downloading…' : 'Download PDF',
+      negInvModalOpen: s.negInvModalOpen,
+      negInvModalTitle: negInvModal.title,
+      negInvModalMeta: negInvModal.meta,
+      negInvModalRows: negInvModal.rows,
+      negInvModalTruncated: negInvModal.truncated,
+      negInvModalTruncatedNote: negInvModal.truncatedNote,
+      onOpenNegInvAll: () => this.onOpenNegInvModal('__ALL__'),
+      onCloseNegInvModal: () => this.onCloseNegInvModal(),
+      onGoNegInv: () => this.onGoNegInv(),
+      onBackFromNegInv: () => this.onBackFromNegInv(),
+      onNegInvLocationChange: e => this.onNegInvLocationChange(e),
+      onDownloadNegInvPdf: () => this.onDownloadNegInvPdf(),
+      onDownloadNegInvExcel: () => this.onDownloadNegInvExcel(),
+
       isAdmin: s.isAdmin,
       adminSignedOut: !s.isAdmin,
       adminPromptOpen: s.adminPromptOpen,
