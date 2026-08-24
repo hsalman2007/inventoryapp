@@ -278,7 +278,6 @@
                   <tr>
                     <th style="text-align: left;">Item</th>
                     <th style="text-align: right;">Qty</th>
-                    <th style="text-align: right;">RSP</th>
                     <th style="text-align: right;">Value</th>
                   </tr>
                   <sc-for list="{{negInvModalRows}}" as="row" hint-placeholder-count="6">
@@ -289,7 +288,6 @@
                         <div style="color: var(--color-neutral-700); font-size: 11px;">{{row.location}}</div>
                       </td>
                       <td style="text-align: right; font-weight: 700; color: #8b1a1a;">{{row.qtyText}}</td>
-                      <td style="text-align: right;">{{row.rspText}}</td>
                       <td style="text-align: right; font-weight: 700; color: #8b1a1a;">{{row.valueText}}</td>
                     </tr>
                   </sc-for>
