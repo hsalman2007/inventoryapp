@@ -38,6 +38,33 @@
         <button class="btn btn-secondary btn-block" onClick="{{onGoSelect}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Last Pcs Report</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Item Lookup in All Stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
+
+        <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2);">
+          <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
+            <div style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
+              <span class="tag tag-accent-2">Admin mode on</span>
+              <button class="btn btn-ghost" onClick="{{onAdminSignOut}}" style="font-size: 13px;">Sign out</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{adminSignedOut}}" hint-placeholder-val="{{true}}">
+            <sc-if value="{{adminPromptOpen}}" hint-placeholder-val="{{false}}">
+              <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                <label for="admin-pw" style="font-size: 13px; font-weight: 600; color: var(--color-text);">Admin password</label>
+                <div style="display: flex; gap: 8px;">
+                  <input id="admin-pw" class="input" type="password" inputmode="numeric" value="{{adminPw}}" onChange="{{onAdminPwChange}}" onKeyDown="{{onAdminPwKeyDown}}" placeholder="••••" style="flex: 1;">
+                  <button class="btn btn-primary" onClick="{{onAdminSubmit}}" style="flex: none;">Unlock</button>
+                </div>
+                <sc-if value="{{adminError}}" hint-placeholder-val="{{false}}">
+                  <span style="font-size: 12px; color: var(--color-accent-800);">{{adminError}}</span>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{adminPromptClosed}}" hint-placeholder-val="{{true}}">
+              <button class="btn btn-ghost btn-block" onClick="{{onAdminOpen}}" style="font-size: 13px;">Admin sign in</button>
+            </sc-if>
+          </sc-if>
+        </div>
       </div>
     </sc-if>
 
@@ -117,6 +144,9 @@
         <div class="field">
           <label for="storestock-select">Store</label>
           <select id="storestock-select" class="input" value="{{storeStockSelected}}" onChange="{{onStoreStockChange}}">
+            <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
+              <option value="__ALL__">All stores</option>
+            </sc-if>
             <sc-for list="{{storeOptions}}" as="opt" hint-placeholder-count="5">
               <option value="{{opt.name}}">{{opt.label}}</option>
             </sc-for>
@@ -420,7 +450,27 @@ class Component extends DCLogic {
     storeStockCategory: '',
     storeStockSubCategory: '',
     storeStockSelected: '__ALL__',
+    isAdmin: false,
+    adminPromptOpen: false,
+    adminPw: '',
+    adminError: '',
   };
+
+  onAdminOpen() { this.setState({ adminPromptOpen: true, adminPw: '', adminError: '' }); }
+  onAdminPwChange(e) { this.setState({ adminPw: e.target.value, adminError: '' }); }
+  onAdminPwKeyDown(e) { if (e.key === 'Enter') this.onAdminSubmit(); }
+  onAdminSubmit() {
+    if (this.state.adminPw.trim() === '30558') {
+      this.setState({ isAdmin: true, adminPromptOpen: false, adminPw: '', adminError: '' });
+      try { localStorage.setItem('inv-admin', '1'); } catch (e) {}
+    } else {
+      this.setState({ adminError: 'Incorrect password.' });
+    }
+  }
+  onAdminSignOut() {
+    this.setState({ isAdmin: false, adminPromptOpen: false, adminPw: '', adminError: '' });
+    try { localStorage.removeItem('inv-admin'); } catch (e) {}
+  }
 
   async componentDidMount() {
     try {
@@ -437,8 +487,11 @@ class Component extends DCLogic {
         const displayName = (info && (info.shortName || opt.name) || opt.name).trim().toLowerCase();
         return !EXCLUDED_STORES.has(displayName);
       });
+      let wasAdmin = false;
+      try { wasAdmin = localStorage.getItem('inv-admin') === '1'; } catch (e) {}
       this.setState({
         loading: false,
+        isAdmin: wasAdmin,
         parsed: { matrix: snap.matrix, retailMap, openOrders, discountMap },
         storeInfoMap,
         storeOptions,
@@ -458,7 +511,7 @@ class Component extends DCLogic {
   onBackFromSelect() { this.setState({ screen: 'menu' }); }
   onGoSkuLookup() { this.setState({ screen: 'skulookup' }); }
   onBackFromSku() { this.setState({ screen: 'menu' }); }
-  onGoStoreStock() { this.setState({ screen: 'storestock', storeStockSelected: this.state.storeOptions[0] ? this.state.storeOptions[0].name : '' }); }
+  onGoStoreStock() { this.setState({ screen: 'storestock', storeStockSelected: this.state.isAdmin ? '__ALL__' : (this.state.storeOptions[0] ? this.state.storeOptions[0].name : '') }); }
   onBackFromStoreStock() { this.setState({ screen: 'menu' }); }
   onStoreStockChange(e) { this.setState({ storeStockSelected: e.target.value }); }
   onDiscountOn() { this.setState({ storeStockShowDiscount: true, storeStockAddnl1500: false }); }
@@ -989,6 +1042,17 @@ class Component extends DCLogic {
       isLoading: s.screen === 'loading',
       loadError: s.loadError,
       isMenu: s.screen === 'menu',
+      isAdmin: s.isAdmin,
+      adminSignedOut: !s.isAdmin,
+      adminPromptOpen: s.adminPromptOpen,
+      adminPromptClosed: !s.adminPromptOpen,
+      adminPw: s.adminPw,
+      adminError: s.adminError,
+      onAdminOpen: () => this.onAdminOpen(),
+      onAdminPwChange: e => this.onAdminPwChange(e),
+      onAdminPwKeyDown: e => this.onAdminPwKeyDown(e),
+      onAdminSubmit: () => this.onAdminSubmit(),
+      onAdminSignOut: () => this.onAdminSignOut(),
       isSelect: s.screen === 'select',
       isResults: s.screen === 'results',
       isSkuLookup: s.screen === 'skulookup',
