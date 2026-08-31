@@ -479,27 +479,32 @@
                 </sc-if>
               </div>
             </sc-if>
-            <div style="overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--color-neutral-200);">
-              <table class="table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                <thead>
-                  <tr><th>Store</th><th style="text-align: center;">Qty available</th></tr>
-                </thead>
-                <tbody>
-                  <sc-for list="{{item.storeRows}}" as="sr" hint-placeholder-count="3">
-                    <tr>
-                      <td style="padding: 5px 6px;">{{sr.label}}</td>
-                      <td style="padding: 5px 6px; text-align: center; font-weight: 600;">{{sr.qty}}</td>
+            <sc-if value="{{item.expanded}}" hint-placeholder-val="{{false}}">
+              <div style="overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--color-neutral-200);">
+                <table class="table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                  <thead>
+                    <tr><th>Store</th><th style="text-align: center;">Qty available</th></tr>
+                  </thead>
+                  <tbody>
+                    <sc-for list="{{item.storeRows}}" as="sr" hint-placeholder-count="3">
+                      <tr>
+                        <td style="padding: 5px 6px;">{{sr.label}}</td>
+                        <td style="padding: 5px 6px; text-align: center; font-weight: 600;">{{sr.qty}}</td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                  <tfoot>
+                    <tr style="border-top: 1px solid var(--color-neutral-300);">
+                      <td style="padding: 6px; font-weight: 700; color: var(--color-text);">Total</td>
+                      <td style="padding: 6px; text-align: center; font-weight: 700; color: var(--color-text);">{{item.totalQty}}</td>
                     </tr>
-                  </sc-for>
-                </tbody>
-                <tfoot>
-                  <tr style="border-top: 1px solid var(--color-neutral-300);">
-                    <td style="padding: 6px; font-weight: 700; color: var(--color-text);">Total</td>
-                    <td style="padding: 6px; text-align: center; font-weight: 700; color: var(--color-text);">{{item.totalQty}}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                  </tfoot>
+                </table>
+              </div>
+            </sc-if>
+            <sc-if value="{{item.collapsed}}" hint-placeholder-val="{{false}}">
+              <button class="btn btn-ghost" onClick="{{item.onToggle}}" style="align-self: flex-start; font-size: 12px; padding: 4px 12px;">Show store stock ({{item.totalQty}} total) →</button>
+            </sc-if>
           </div>
         </sc-for>
       </div>
@@ -730,6 +735,7 @@ class Component extends DCLogic {
     stockFilter: 'all',
     lowStockFilter: 'all',
     skuQuery: '',
+    skuExpanded: '',
     storeStockShowDiscount: false,
     storeStockAddnl1500: false,
     storeStockPctRange: '',
@@ -1343,7 +1349,7 @@ class Component extends DCLogic {
     downloadXlsx(aoa, fileTitle, { sheetName: 'Stock', cols });
   }
 
-  onSkuQueryChange(e) { this.setState({ skuQuery: e.target.value }); }
+  onSkuQueryChange(e) { this.setState({ skuQuery: e.target.value, skuExpanded: '' }); }
 
   getSkuMatches(query) {
     const s = this.state;
@@ -1356,11 +1362,24 @@ class Component extends DCLogic {
       const displayName = (info.shortName || name).trim().toLowerCase();
       return !EXCLUDED_STORES.has(displayName);
     });
-    const matches = matrix.items.filter(it => {
+    const terms = q.split(/\s+/).filter(Boolean);
+    const scored = [];
+    for (const it of matrix.items) {
       const r = retailMap.get(it.itemNo) || {};
-      const desc = (r.description2 || it.description2 || '');
-      return it.itemNo.toLowerCase() === q;
-    }).slice(0, 25);
+      const sku = it.itemNo.toLowerCase();
+      const desc = (r.description2 || it.description2 || '').toLowerCase();
+      let rank = null;
+      if (sku === q) rank = 0;
+      else if (sku.startsWith(q)) rank = 1;
+      else if (sku.includes(q)) rank = 2;
+      else if (terms.every(t => desc.includes(t))) rank = desc.startsWith(q) ? 3 : 4;
+      if (rank !== null) scored.push({ it, rank, desc });
+    }
+    const matches = scored
+      .sort((a, b) => a.rank - b.rank || naturalCompare(a.it.itemNo, b.it.itemNo))
+      .slice(0, 25)
+      .map(x => x.it);
+    const expandAll = matches.length === 1;
     return matches.map(it => {
       const r = retailMap.get(it.itemNo) || {};
       const storeRows = storeCols
@@ -1382,6 +1401,9 @@ class Component extends DCLogic {
         image: r.image && r.image !== '(blank)' ? r.image : '',
         storeRows,
         totalQty,
+        expanded: expandAll || s.skuExpanded === it.itemNo,
+        collapsed: !(expandAll || s.skuExpanded === it.itemNo),
+        onToggle: () => this.setState(st => ({ skuExpanded: st.skuExpanded === it.itemNo ? '' : it.itemNo })),
         ...this.costMetrics(it.itemNo, it.rsp, disc),
       };
     });
