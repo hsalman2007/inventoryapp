@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/styles.css">
   <script src="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/_ds_bundle.js"></script>
   <meta name="ext-resource-dependency" content="./inventory-data.json" data-resource-id="data-json">
+  <meta name="ext-resource-dependency" content="./cost-data.json" data-resource-id="cost-json">
   <style>
     #pdf-print-frame { position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; visibility: hidden; }
   </style>
@@ -456,6 +457,28 @@
                 <div style="font-size: 12px; color: var(--color-neutral-700);">{{item.description2}}</div>
               </div>
             </div>
+            <sc-if value="{{item.showCost}}" hint-placeholder-val="{{false}}">
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; background: var(--color-accent-2-100); border: 1px solid var(--color-accent-2-300); border-radius: var(--radius-md); padding: 8px 10px;">
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Cost incl. VAT</span>
+                  <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{item.costText}}</span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Markup vs RSP</span>
+                  <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{item.markupText}}</span>
+                </div>
+                <sc-if value="{{item.hasDiscMargin}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #8b1a1a;">Now price</span>
+                    <span style="font-size: 13px; font-weight: 700; color: #8b1a1a;">{{item.nowText}}</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #8b1a1a;">Margin after disc.</span>
+                    <span style="font-size: 13px; font-weight: 700; color: #8b1a1a;">{{item.discMarginText}}</span>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
             <div style="overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--color-neutral-200);">
               <table class="table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
                 <thead>
@@ -717,6 +740,7 @@ class Component extends DCLogic {
     negInvLocation: '__ALL__',
     negInvModalOpen: false,
     negInvPdfDownloading: false,
+    costMap: null,
     isAdmin: false,
     adminPromptOpen: false,
     adminPw: '',
@@ -725,10 +749,38 @@ class Component extends DCLogic {
 
   onAdminOpen() { this.setState({ adminPromptOpen: true, adminPw: '', adminError: '' }); }
   onAdminPwChange(e) { this.setState({ adminPw: e.target.value, adminError: '' }); }
+  async loadCostMap() {
+    if (this._costLoading) return;
+    this._costLoading = true;
+    try {
+      const url = (window.__resources && window.__resources['cost-json']) || './cost-data.json';
+      const res = await fetch(url);
+      if (res.ok) this.setState({ costMap: await res.json() });
+    } catch (e) {}
+  }
+  costMetrics(itemNo, rsp, disc) {
+    const cm = this.state.isAdmin ? this.state.costMap : null;
+    const num = v => { const n = parseFloat(String(v ?? '').replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : 0; };
+    const cost = cm ? num(cm[itemNo]) : 0;
+    if (!cost) return { showCost: false };
+    const money = n => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const rspN = num(rsp);
+    const nowN = disc ? num(disc.now) : 0;
+    const line = (price) => money(price - cost) + '  (' + ((price - cost) / cost * 100).toFixed(1) + '%)';
+    return {
+      showCost: true,
+      costText: money(cost),
+      markupText: rspN ? line(rspN) : '—',
+      hasDiscMargin: !!(nowN && nowN !== rspN),
+      nowText: nowN ? money(nowN) : '',
+      discMarginText: nowN ? line(nowN) : '',
+    };
+  }
   onAdminPwKeyDown(e) { if (e.key === 'Enter') this.onAdminSubmit(); }
   onAdminSubmit() {
     if (this.state.adminPw.trim() === '30558') {
       this.setState({ isAdmin: true, adminPromptOpen: false, adminPw: '', adminError: '' });
+      this.loadCostMap();
       try { localStorage.setItem('inv-admin', '1'); } catch (e) {}
     } else {
       this.setState({ adminError: 'Incorrect password.' });
@@ -756,6 +808,7 @@ class Component extends DCLogic {
       });
       let wasAdmin = false;
       try { wasAdmin = localStorage.getItem('inv-admin') === '1'; } catch (e) {}
+      if (wasAdmin) this.loadCostMap();
       this.setState({
         loading: false,
         isAdmin: wasAdmin,
@@ -1062,7 +1115,7 @@ class Component extends DCLogic {
         whStock,
         rsp: it.rsp || '',
         image: r.image && r.image !== '(blank)' ? r.image : '',
-        was: disc ? disc.was : '',
+        was: disc ? (disc.was || it.rsp || '') : '',
         now: disc ? disc.now : '',
         pct: disc ? disc.pct : '',
         highlight: pctNum !== null && pctNum >= 50 && pctNum <= 70,
@@ -1329,6 +1382,7 @@ class Component extends DCLogic {
         image: r.image && r.image !== '(blank)' ? r.image : '',
         storeRows,
         totalQty,
+        ...this.costMetrics(it.itemNo, it.rsp, disc),
       };
     });
   }
