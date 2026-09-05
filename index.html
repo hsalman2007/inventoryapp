@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/styles.css">
+  <script src="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/_ds_bundle.js"></script>
+  <meta name="ext-resource-dependency" content="./inventory-data.json" data-resource-id="data-json">
+  <meta name="ext-resource-dependency" content="./cost-data.json" data-resource-id="cost-json">
+  <style>
+    #pdf-print-frame { position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; visibility: hidden; }
+  </style>
+</helmet>
+
+<div class="page-shell" style="min-height: 100vh; background: var(--color-bg); display: flex; justify-content: center;">
+  <div class="app-shell" style="width: 100%; max-width: 480px; min-height: 100vh; background: var(--color-bg); display: flex; flex-direction: column; padding: var(--space-4) var(--space-4) var(--space-8); gap: var(--space-4); box-sizing: border-box;">
+
+    <div class="no-print" style="display: flex; flex-direction: column; gap: var(--space-1);">
+      <h1 style="font-family: var(--font-heading); font-size: 26px; margin: 0; color: var(--color-text);">Stock Lookup</h1>
+      <p style="font-family: var(--font-body); font-size: 14px; margin: 0; color: var(--color-neutral-700);">Pick a store, and pull stock details.</p>
+    </div>
+
+    <sc-if value="{{isLoading}}" hint-placeholder-val="{{true}}">
+      <div class="card elev-sm" style="padding: var(--space-4); text-align: center; color: var(--color-neutral-700);">Loading store data…</div>
+    </sc-if>
+
+    <sc-if value="{{loadError}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="padding: var(--space-4); color: var(--color-accent-800);">{{loadError}}</div>
+    </sc-if>
+
+    <!-- MENU SCREEN -->
+    <sc-if value="{{isMenu}}" hint-placeholder-val="{{false}}">
+      <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+        <button class="btn btn-secondary btn-block" onClick="{{onGoSelect}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Last Pcs Report</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Item Lookup in All Stores</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
+
+        <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2);">
+          <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
+            <div style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
+              <span class="tag tag-accent-2">Admin mode on</span>
+              <button class="btn btn-ghost" onClick="{{onAdminSignOut}}" style="font-size: 13px;">Sign out</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{adminSignedOut}}" hint-placeholder-val="{{true}}">
+            <sc-if value="{{adminPromptOpen}}" hint-placeholder-val="{{false}}">
+              <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                <label for="admin-pw" style="font-size: 13px; font-weight: 600; color: var(--color-text);">Admin password</label>
+                <div style="display: flex; gap: 8px;">
+                  <input id="admin-pw" class="input" type="password" inputmode="numeric" value="{{adminPw}}" onChange="{{onAdminPwChange}}" onKeyDown="{{onAdminPwKeyDown}}" placeholder="••••" style="flex: 1;">
+                  <button class="btn btn-primary" onClick="{{onAdminSubmit}}" style="flex: none;">Unlock</button>
+                </div>
+                <sc-if value="{{adminError}}" hint-placeholder-val="{{false}}">
+                  <span style="font-size: 12px; color: var(--color-accent-800);">{{adminError}}</span>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{adminPromptClosed}}" hint-placeholder-val="{{true}}">
+              <button class="btn btn-ghost btn-block" onClick="{{onAdminOpen}}" style="font-size: 13px;">Admin sign in</button>
+            </sc-if>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- SELECT SCREEN -->
+    <sc-if value="{{isSelect}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromSelect}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">Choose store &amp; quantity</div>
+        </div>
+
+        <div class="field">
+          <label for="store-select">Store</label>
+          <select id="store-select" class="input" value="{{selectedStore}}" onChange="{{onStoreChange}}">
+            <sc-for list="{{storeOptions}}" as="opt" hint-placeholder-count="5">
+              <option value="{{opt.name}}">{{opt.label}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label style="font-size: 13px; font-weight: 600; color: var(--color-text);">Quantity on hand at store</label>
+          <div class="seg" role="radiogroup">
+            <label class="seg-opt">
+              <input type="radio" name="qty" checked="{{qty1Checked}}" onChange="{{onQty1}}">
+              1 pc
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="qty" checked="{{qty2Checked}}" onChange="{{onQty2}}">
+              2 pcs
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="select-brand-select">Brand</label>
+          <select id="select-brand-select" class="input" value="{{storeStockBrand}}" onChange="{{onBrandChange}}">
+            <option value="">All brands</option>
+            <sc-for list="{{brandOptions}}" as="b" hint-placeholder-count="3">
+              <option value="{{b}}">{{b}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="select-category-select">Category</label>
+          <select id="select-category-select" class="input" value="{{storeStockCategory}}" onChange="{{onCategoryChange}}">
+            <option value="">All categories</option>
+            <sc-for list="{{categoryOptions}}" as="c" hint-placeholder-count="3">
+              <option value="{{c}}">{{c}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <sc-if value="{{hasSubCategoryOptions}}" hint-placeholder-val="{{false}}">
+          <div class="field">
+            <label for="select-subcategory-select">Sub-category</label>
+            <select id="select-subcategory-select" class="input" value="{{storeStockSubCategory}}" onChange="{{onSubCategoryChange}}">
+              <option value="">All sub-categories</option>
+              <sc-for list="{{subCategoryOptions}}" as="sc" hint-placeholder-count="3">
+                <option value="{{sc}}">{{sc}}</option>
+              </sc-for>
+            </select>
+          </div>
+        </sc-if>
+
+        <button class="btn btn-primary btn-block" onClick="{{onGenerate}}">Generate report</button>
+      </div>
+    </sc-if>
+
+    <!-- STORE STOCK SCREEN -->
+    <sc-if value="{{isStoreStock}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div class="card-kicker">Complete stock</div>
+        <div class="card-title" style="font-size: 18px;">Download a store's complete stock</div>
+
+        <div class="field">
+          <label for="storestock-select">Store</label>
+          <select id="storestock-select" class="input" value="{{storeStockSelected}}" onChange="{{onStoreStockChange}}">
+            <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
+              <option value="__ALL__">All stores</option>
+            </sc-if>
+            <sc-for list="{{storeOptions}}" as="opt" hint-placeholder-count="5">
+              <option value="{{opt.name}}">{{opt.label}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <span style="font-size: 12px; color: var(--color-neutral-700);">Exports every SKU with a stock value at this store, including quantity, warehouse stock, RSP and status.</span>
+
+        <div class="field">
+          <label for="brand-select">Brand</label>
+          <select id="brand-select" class="input" value="{{storeStockBrand}}" onChange="{{onBrandChange}}">
+            <option value="">All brands</option>
+            <sc-for list="{{brandOptions}}" as="b" hint-placeholder-count="3">
+              <option value="{{b}}">{{b}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="category-select">Category</label>
+          <select id="category-select" class="input" value="{{storeStockCategory}}" onChange="{{onCategoryChange}}">
+            <option value="">All categories</option>
+            <sc-for list="{{categoryOptions}}" as="c" hint-placeholder-count="3">
+              <option value="{{c}}">{{c}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <sc-if value="{{hasSubCategoryOptions}}" hint-placeholder-val="{{false}}">
+          <div class="field">
+            <label for="subcategory-select">Sub-category</label>
+            <select id="subcategory-select" class="input" value="{{storeStockSubCategory}}" onChange="{{onSubCategoryChange}}">
+              <option value="">All sub-categories</option>
+              <sc-for list="{{subCategoryOptions}}" as="sc" hint-placeholder-count="3">
+                <option value="{{sc}}">{{sc}}</option>
+              </sc-for>
+            </select>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{hasDiscountFile}}" hint-placeholder-val="{{false}}">
+          <div class="seg" role="radiogroup" aria-label="Discount pricing toggle">
+            <label class="seg-opt">
+              <input type="radio" name="discountToggle" checked="{{discountOffChecked}}" onChange="{{onDiscountOff}}">
+              Standard columns
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="discountToggle" checked="{{discountOnChecked}}" onChange="{{onDiscountOn}}">
+              Include discount pricing
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="discountToggle" checked="{{addnl1500Checked}}" onChange="{{onAddnl1500On}}">
+              Addnl. 1500
+            </label>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showDiscountRange}}" hint-placeholder-val="{{false}}">
+          <div class="field">
+            <label for="pct-range-select">Discount range</label>
+            <select id="pct-range-select" class="input" value="{{storeStockPctRange}}" onChange="{{onPctRangeChange}}">
+              <option value="">All discounts</option>
+              <option value="10-20">10% to 20%</option>
+              <option value="21-30">21% to 30%</option>
+              <option value="31-40">31% to 40%</option>
+              <option value="41-50">41% to 50%</option>
+              <option value="51-60">51% to 60%</option>
+              <option value="61-70">61% to 70%</option>
+            </select>
+          </div>
+        </sc-if>
+
+        <button class="btn btn-primary btn-block" onClick="{{onDownloadStoreStockPdf}}" disabled="{{storeStockPdfDownloading}}">{{storeStockPdfDownloadLabel}}</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onDownloadStoreStockExcel}}">Download Excel</button>
+        <button class="btn btn-ghost btn-block" onClick="{{onBackFromStoreStock}}">← Back</button>
+      </div>
+    </sc-if>
+
+    <!-- NEGATIVE INVENTORY SCREEN -->
+    <sc-if value="{{isNegInv}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromNegInv}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">Negative inventory</div>
+        </div>
+
+        <sc-if value="{{hasNegInvStores}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="font-size: 13px; font-weight: 700; color: var(--color-text);">Negative stock by location</div>
+            <div style="overflow-x: auto;">
+              <table class="table" style="width: 100%; font-size: 12.5px;">
+                <tbody>
+                  <tr>
+                    <th style="text-align: left;">Location</th>
+                    <th style="text-align: right;">Neg. qty</th>
+                    <th style="text-align: right;">Neg. value</th>
+                  </tr>
+                  <sc-for list="{{negInvByStore}}" as="row" hint-placeholder-count="4">
+                    <tr onClick="{{row.onOpen}}" style="cursor: pointer;" style-hover="background: var(--color-accent-100);">
+                      <td style="color: var(--color-accent-700); font-weight: 600;">{{row.label}}</td>
+                      <td style="text-align: right; font-weight: 700; color: #8b1a1a;">{{row.qtyText}}</td>
+                      <td style="text-align: right; font-weight: 700; color: #8b1a1a;">{{row.valueText}}</td>
+                    </tr>
+                  </sc-for>
+                  <tr onClick="{{onOpenNegInvAll}}" style="cursor: pointer;" style-hover="background: var(--color-accent-100);">
+                    <td style="font-weight: 700; border-top: 2px solid var(--color-text);">Grand total</td>
+                    <td style="text-align: right; font-weight: 700; color: #8b1a1a; border-top: 2px solid var(--color-text);">{{negInvGrandQty}}</td>
+                    <td style="text-align: right; font-weight: 700; color: #8b1a1a; border-top: 2px solid var(--color-text);">{{negInvGrandValue}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </sc-if>
+
+        <span style="font-size: 12px; color: var(--color-neutral-700);">Tap a location to see its items and export.</span>
+      </div>
+
+      <sc-if value="{{negInvModalOpen}}" hint-placeholder-val="{{false}}">
+        <div class="dialog-backdrop" style="position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: var(--space-3); z-index: 60;">
+          <div class="dialog" style="width: 100%; max-width: 460px; max-height: 88vh; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4);">
+            <div class="dialog-title" style="font-size: 17px;">{{negInvModalTitle}}</div>
+            <div style="font-size: 12.5px; color: var(--color-neutral-700);">{{negInvModalMeta}}</div>
+
+            <div style="overflow: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-300);">
+              <table class="table" style="width: 100%; font-size: 12px;">
+                <tbody>
+                  <tr>
+                    <th style="text-align: left;">Item</th>
+                    <th style="text-align: right;">Qty</th>
+                    <th style="text-align: right;">Value</th>
+                  </tr>
+                  <sc-for list="{{negInvModalRows}}" as="row" hint-placeholder-count="6">
+                    <tr>
+                      <td>
+                        <div style="font-weight: 700;">{{row.itemNo}}</div>
+                        <div style="color: var(--color-neutral-700); font-size: 11.5px;">{{row.description2}}</div>
+                        <div style="color: var(--color-neutral-700); font-size: 11px;">{{row.location}}</div>
+                      </td>
+                      <td style="text-align: right; font-weight: 700; color: #8b1a1a;">{{row.qtyText}}</td>
+                      <td style="text-align: right; font-weight: 700; color: #8b1a1a;">{{row.valueText}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+
+            <sc-if value="{{negInvModalTruncated}}" hint-placeholder-val="{{false}}">
+              <span style="font-size: 11.5px; color: var(--color-neutral-700);">{{negInvModalTruncatedNote}}</span>
+            </sc-if>
+
+            <div class="dialog-actions" style="display: flex; flex-direction: column; gap: var(--space-2);">
+              <button class="btn btn-primary btn-block" onClick="{{onDownloadNegInvPdf}}" disabled="{{negInvPdfDownloading}}">{{negInvPdfLabel}}</button>
+              <button class="btn btn-secondary btn-block" onClick="{{onDownloadNegInvExcel}}">Download Excel</button>
+              <button class="btn btn-ghost btn-block" onClick="{{onCloseNegInvModal}}">Close</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- RESULTS SCREEN -->
+    <sc-if value="{{isResults}}" hint-placeholder-val="{{false}}">
+      <div class="results-wrap" style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <div class="no-print" style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackToSelect}}" style="flex: none;">← Back</button>
+          <button class="btn btn-primary" onClick="{{onDownloadPdf}}" style="flex: 1;">Download PDF</button>
+          <button class="btn btn-secondary" onClick="{{onDownloadExcel}}" style="flex: 1;">Download Excel</button>
+        </div>
+
+        <div id="printable-report" style="display: block;">
+          <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--space-3);">
+            <div style="font-family: var(--font-heading); font-size: 20px; color: var(--color-text);">{{resultStoreLabel}}</div>
+            <div style="font-size: 13px; color: var(--color-neutral-700);">Quantity = {{resultQty}} pc(s) · {{resultCount}} SKUs · {{today}}</div>
+          </div>
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+            <span class="tag tag-accent-2">{{continueCount}} continuing</span>
+            <span class="tag tag-outline">{{discontinuedCount}} discontinued</span>
+            <span class="tag tag-neutral">{{inOrderCount}} on order</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">
+            <div class="seg" role="radiogroup" aria-label="Status filter">
+              <label class="seg-opt">
+                <input type="radio" name="statusFilter" checked="{{statusAllChecked}}" onChange="{{onStatusAll}}">
+                All status
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="statusFilter" checked="{{statusContinueChecked}}" onChange="{{onStatusContinue}}">
+                Continue
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="statusFilter" checked="{{statusDiscontinuedChecked}}" onChange="{{onStatusDiscontinued}}">
+                Discontinued
+              </label>
+            </div>
+            <span style="font-size: 11px; font-weight: 600; color: var(--color-neutral-700); text-transform: uppercase; letter-spacing: 0.02em;">WH Avl</span>
+            <div class="seg" role="radiogroup" aria-label="Warehouse stock filter">
+              <label class="seg-opt">
+                <input type="radio" name="stockFilter" checked="{{stockAllChecked}}" onChange="{{onStockAll}}">
+                All stock
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="stockFilter" checked="{{stockInChecked}}" onChange="{{onStockIn}}">
+                In stock
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="stockFilter" checked="{{stockOutChecked}}" onChange="{{onStockOut}}">
+                Out of stock
+              </label>
+            </div>
+            <div class="seg" role="radiogroup" aria-label="Overall stock filter">
+              <label class="seg-opt">
+                <input type="radio" name="lowStockFilter" checked="{{lowStockAllChecked}}" onChange="{{onLowStockAll}}">
+                All
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="lowStockFilter" checked="{{lowStockOnChecked}}" onChange="{{onLowStockOn}}">
+                Overall stock &lt; 30
+              </label>
+            </div>
+          </div>
+
+          <sc-if value="{{hasResults}}" hint-placeholder-val="{{true}}">
+            <div class="report-table-wrap" style="overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--color-neutral-300); background: #fff;">
+              <table class="table" style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed;">
+                <thead>
+                  <tr>
+                    <th style="width: 12%;"></th>
+                    <th style="width: 9%;">SKU</th>
+                    <th style="width: 35%;">DESCRIPTION</th>
+                    <th style="width: 7%; text-align: center;">Qty</th>
+                    <th style="width: 10%; text-align: center">WH Stock</th>
+                    <th style="width: 14%;">STATUS</th>
+                    <th style="width: 13%;">In Order</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{results}}" as="row" hint-placeholder-count="6">
+                    <tr>
+                      <td style="padding: 6px; line-height: 1.1;">
+                        <sc-if value="{{row.image}}" hint-placeholder-val="{{false}}">
+                          <img src="{{row.image}}" loading="lazy" referrerpolicy="no-referrer" style="width: 46px; height: 46px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); display: block;">
+                        </sc-if>
+                      </td>
+                      <td style="font-weight: 600; white-space: nowrap; padding: 6px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis;">{{row.itemNo}}</td>
+                      <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px; line-height: 1.3;">{{row.description2}}</td>
+                      <td style="text-align: center; padding: 6px; line-height: 1.3;">{{row.quantity}}</td>
+                      <td style="text-align: center; padding: 6px; line-height: 1.3;">{{row.whStock}}</td>
+                      <td style="font-weight: 700; color: {{row.discontinuedColor}}; padding: 6px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{row.discontinuedLabel}}</td>
+                      <td style="font-weight: 700; color: {{row.inOrderColor}}; padding: 6px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{row.inOrderLabel}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </sc-if>
+          <sc-if value="{{hasNoResults}}" hint-placeholder-val="{{false}}">
+            <div class="card" style="padding: var(--space-4); text-align: center; color: var(--color-neutral-700);">No SKUs match this store and quantity.</div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- SKU LOOKUP SCREEN -->
+    <sc-if value="{{isSkuLookup}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromSku}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">SKU stock across stores</div>
+        </div>
+
+        <div class="field">
+          <label for="sku-search">SKU or description</label>
+          <input id="sku-search" class="input" type="text" placeholder="Type a SKU or description…" value="{{skuQuery}}" onChange="{{onSkuQueryChange}}">
+        </div>
+
+        <sc-if value="{{skuQueryTooShort}}" hint-placeholder-val="{{false}}">
+          <div style="font-size: 13px; color: var(--color-neutral-700);">Type at least 2 characters to search.</div>
+        </sc-if>
+
+        <sc-if value="{{skuNoMatches}}" hint-placeholder-val="{{false}}">
+          <div class="card" style="padding: var(--space-4); text-align: center; color: var(--color-neutral-700);">No SKUs match "{{skuQuery}}".</div>
+        </sc-if>
+
+        <sc-for list="{{skuMatches}}" as="item" hint-placeholder-count="0">
+          <div style="display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-lg); padding: var(--space-3); background: #fff;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <sc-if value="{{item.image}}" hint-placeholder-val="{{false}}">
+                <img src="{{item.image}}" referrerpolicy="no-referrer" style="width: 62px; height: 62px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); flex: none;">
+              </sc-if>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <div style="font-weight: 700; font-size: 13px; color: var(--color-text);">{{item.itemNo}}</div>
+                <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                  <sc-if value="{{item.rsp}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--color-accent-700);">RSP {{item.rsp}}</div>
+                  </sc-if>
+                  <sc-if value="{{item.now}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size: 12px; font-weight: 700; color: #8b1a1a;">Now {{item.now}}</div>
+                  </sc-if>
+                  <sc-if value="{{item.pct}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size: 11px; font-weight: 700; color: #fff; background: #8b1a1a; border-radius: 999px; padding: 1px 7px;">{{item.pct}}</div>
+                  </sc-if>
+                </div>
+                <div style="font-size: 12px; color: var(--color-neutral-700);">{{item.description2}}</div>
+              </div>
+            </div>
+            <sc-if value="{{item.showCostPanel}}" hint-placeholder-val="{{false}}">
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; background: var(--color-accent-2-100); border: 1px solid var(--color-accent-2-300); border-radius: var(--radius-md); padding: 8px 10px;">
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Cost incl. VAT</span>
+                  <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{item.costText}}</span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Markup vs RSP</span>
+                  <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{item.markupText}}</span>
+                </div>
+                <sc-if value="{{item.hasDiscMargin}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #8b1a1a;">Now price</span>
+                    <span style="font-size: 13px; font-weight: 700; color: #8b1a1a;">{{item.nowText}}</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #8b1a1a;">Margin after disc.</span>
+                    <span style="font-size: 13px; font-weight: 700; color: #8b1a1a;">{{item.discMarginText}}</span>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{item.expanded}}" hint-placeholder-val="{{false}}">
+              <div style="overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--color-neutral-200);">
+                <table class="table" style="width: 100%; border-collapse: collapse; font-size: 14.5px; font-weight: 700;">
+                  <thead>
+                    <tr><th>Store</th><th style="text-align: right;">الفرع</th><th style="text-align: center;">Qty available</th></tr>
+                  </thead>
+                  <tbody>
+                    <sc-for list="{{item.storeRows}}" as="sr" hint-placeholder-count="3">
+                      <tr>
+                        <td style="padding: 6px 6px; font-weight: 700;">{{sr.label}}</td>
+                        <td dir="rtl" style="padding: 6px 6px; text-align: right; font-weight: 700; color: var(--color-neutral-800);">{{sr.labelAr}}</td>
+                        <td style="padding: 6px 6px; text-align: center; font-weight: 800;">{{sr.qty}}</td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                  <tfoot>
+                    <tr style="border-top: 1px solid var(--color-neutral-300);">
+                      <td style="padding: 6px; font-weight: 700; color: var(--color-text);">Total</td>
+                      <td dir="rtl" style="padding: 6px; text-align: right; font-weight: 700; color: var(--color-text);">الإجمالي</td>
+                      <td style="padding: 6px; text-align: center; font-weight: 700; color: var(--color-text);">{{item.totalQty}}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <button class="btn btn-primary" onClick="{{item.onShare}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">Share as image</button>
+            </sc-if>
+            <sc-if value="{{item.collapsed}}" hint-placeholder-val="{{false}}">
+              <button class="btn btn-ghost" onClick="{{item.onToggle}}" style="align-self: flex-start; font-size: 12px; padding: 4px 12px;">Show store stock ({{item.totalQty}} total) →</button>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const STORE_STOCK_WH_LOCATIONS = ['Inspection & Review Warehouse', 'Damages & Shortages Warehouse - Riyadh', 'Sub Warehouse - Abha', 'Main Warehouse - Riyadh'];
+const STORE_STOCK_WH_LOCATIONS_LC = new Set(STORE_STOCK_WH_LOCATIONS.map(s => s.toLowerCase()));
+
+const ADDNL_1500_SET = new Set(["10-210","10-225","11-324","11-379","11-387","11-400","11-421","11-442","11-443","11-446","11-454","11-477","11-482","11-484","1-149","11-493","11-519","11-521","11-527","11-535","11-539","11-559","11-568","11-592","11-613","11-632","11-634","11-638","11-639","11-640","11-653","11-658","11-662","11-663","11-681","11-685","11-687","11-688","1-169","11-698","11-700","11-701","11-702","11-714","11-723","11-724","11-732","1-174","11-741","11-742","11-745","11-748","11-749","1-175","11-752","11-755","11-769","11-776","11-799","11-801","11-802","11-803","11-804","11-807","11-808","11-809","11-810","11-811","11-812","11-813","11-817","11-818","11-820","11-821","11-822","11-823","11-824","11-827","11-831","11-832","11-840","11-841","11-842","11-844","1-191","1-192","1-193","1-194","1-196","12-103","12-109","1-234","13-44","14-60","14-61","14-70","14-74","14-81","16-36","16-45","16-46","16-62","16-66","17-28","17-7","18-462","18-619","18-638","18-677","18-708","18-795","18-797","18-808","18-812","18-828","18-838","18-840","18-863","18-866","18-870","18-875","18-881","18-884","18-886","18-887","18-894","18-895","18-904","18-928","18-929","18-931","18-932","18-934","18-938","18-939","18-940","18-941","18-944","18-945","18-956","18-957","18-964","18-966","18-967","18-968","18-972","18-980","18-984","19-353","19-354","19-370","19-393","19-398","19-402","19-403","19-404","19-405","19-406","19-409","19-410","22-1018","22-1024","22-1027","22-1059","22-1069","22-1073","22-1102","22-1104","22-1114","22-1118","22-1121","22-1125","22-1126","22-1130","22-1175","22-1182","22-1192","22-1193","22-1211","22-1215","22-1308","22-1309","22-1312","22-1375","22-1383","22-1406","22-1435","22-1441","22-1444","22-1476","22-1485","22-1497","22-1500","22-1504","22-1513","22-1529","22-1557","22-1587","22-1592","22-1593","22-1611","22-1612","22-1613","22-1637","22-1643","22-1645","22-1666","22-1678","22-1696","22-1728","22-1743","22-1746","22-1762","22-1764","22-1781","22-1794","22-1800","22-1803","22-1805","22-1822","22-1846","22-1851","22-1878","22-1879","22-1883","22-1891","22-1894","22-1905","22-1955","22-1956","22-1967","22-1971","22-1973","22-1978","22-1993","22-2001","22-2017","22-2018","22-2035","22-2051","22-2075","22-2077","22-2079","22-208","22-2096","22-2109","22-2110","22-2111","22-2112","22-2114","22-2115","22-2116","22-2119","22-2122","22-2125","22-2128","22-2131","22-2138","22-2139","22-2140","22-2143","22-2162","22-2175","22-2177","22-2179","22-2211","22-2236","22-2238","22-2258","22-2261","22-2266","22-2271","22-2277","22-2279","22-2282","22-2294","22-2308","22-2323","22-2332","22-2334","22-2335","22-2339","22-2340","22-2342","22-2343","22-2353","22-2355","22-2368","22-2369","22-2370","22-2371","22-2384","22-2387","22-2396","22-2400","22-2401","22-2403","22-2419","22-2426","22-2429","22-2437","22-2452","22-2455","22-2460","22-2471","22-2476","22-2480","22-2481","22-2482","22-2485","22-2486","22-2487","22-2489","22-2495","22-2497","22-2519","22-2524","22-2525","22-2526","22-2527","22-2528","22-2529","22-2530","22-2531","22-2540","22-2545","22-2547","22-2548","22-2550","22-2552","22-2555","22-2559","22-2573","22-2576","22-2577","22-2579","22-2587","22-2597","22-2600","22-2601","22-2603","22-2604","22-2610","22-2612","22-2622","22-2623","22-2625","22-2627","22-2632","22-2659","22-2663","22-2664","22-2667","22-2669","22-2680","22-2687","22-2688","22-2692","22-2717","22-2718","22-2730","22-2742","22-2744","22-2753","22-2759","22-2763","22-2768","22-2771","22-2772","22-2773","22-2776","22-2788","22-2789","22-2790","22-2791","22-2793","22-2794","22-2798","22-2800","22-2802","22-2803","22-2804","22-2805","22-2811","22-2815","22-2822","22-2825","22-2829","22-2831","22-2836","22-2839","22-2851","22-2852","22-2853","22-2857","22-2858","22-2862","22-2864","22-2865","22-2869","22-2872","22-2877","22-2878","22-2879","22-2882","22-2887","22-2893","22-2901","22-2902","22-2903","22-2904","22-2905","22-2906","22-2908","22-2909","22-2912","22-2913","22-2917","22-2920","22-2932","22-2937","22-2959","22-2964","22-2966","22-2972","22-2974","22-2978","22-2979","22-2984","22-2987","22-2990","22-2992","22-2993","22-2994","22-2998","22-2999","22-3001","22-3003","22-3006","22-3008","22-3015","22-3019","22-3020","22-3022","22-3028","22-3032","22-3034","22-3035","22-3050","22-3052","22-3056","22-3057","22-3058","22-3061","22-3067","22-3068","22-3071","22-3072","22-3080","22-3081","22-3082","22-3092","22-3093","22-3105","22-3106","22-3108","22-3116","22-3117","22-3118","22-3124","22-3125","22-3127","22-3129","22-3130","22-3135","22-3138","22-3142","22-3145","22-3146","22-3153","22-3154","22-3158","22-3159","22-3160","22-3162","22-3164","22-3167","22-3168","22-3179","22-3194","22-3195","22-3201","22-3206","22-3207","22-3208","22-3217","22-3218","22-3221","22-3234","22-3268","22-3269","22-3270","22-3272","22-3273","22-3275","22-3290","22-3293","22-3301","22-3302","22-3303","22-3304","22-3306","22-3307","22-3308","22-3319","22-3334","22-3337","22-3338","22-3352","22-3362","22-3363","22-3365","22-3366","22-3367","22-3369","22-3377","22-3388","22-3389","22-3390","22-3403","22-3405","22-3423","22-3424","22-3426","22-3429","22-3431","22-3433","22-3437","22-3443","22-3445","22-3446","22-3447","22-3451","22-3459","22-3471","22-3475","22-3481","22-3482","22-3483","22-3486","22-3487","22-3489","22-3490","22-3491","22-3492","22-3507","22-3508","22-3523","22-3542","22-3546","22-3547","22-3558","22-3567","22-3568","22-3569","22-3570","22-3573","22-3574","22-3577","22-3583","22-3591","22-3592","22-3599","22-3600","22-3601","22-3605","22-3606","22-3607","22-3625","22-3639","22-3653","22-3659","22-3664","22-3666","22-3667","22-3690","22-3691","22-3692","22-3694","22-3695","22-3696","22-3705","22-3714","22-3722","22-3726","22-3737","22-374","22-3758","22-3759","22-3761","22-3764","22-3765","22-3769","22-3770","22-3771","22-3772","22-3788","22-3801","22-3804","22-3813","22-3820","22-3824","22-3825","22-3826","22-3827","22-3828","22-3829","22-3839","22-3841","22-3853","22-3855","22-3868","22-3874","22-3875","22-3880","22-3881","22-3886","22-3887","22-3894","22-3909","22-3913","22-3920","22-3921","22-3922","22-3923","22-3924","22-3925","22-3926","22-3927","22-3930","22-3931","22-3932","22-3937","22-3942","22-3946","22-3959","22-3960","22-3965","22-3975","22-3978","22-3993","22-4013","22-4035","22-4038","22-4039","22-4049","22-4050","22-4059","22-4063","22-4069","22-4085","22-4088","22-4089","22-4090","22-4113","22-4114","22-4118","22-4120","22-4122","22-4126","22-4127","22-4128","22-4129","22-4133","22-4144","22-4146","22-4147","22-4150","22-4151","22-4154","22-4155","22-4156","22-4157","22-4161","22-4176","22-4177","22-4181","22-4182","22-4183","22-4187","22-4188","22-4190","22-4195","22-4205","22-4207","22-4210","22-4216","22-4217","22-4218","22-4220","22-4221","22-4222","22-4225","22-4227","22-4232","22-4236","22-4237","22-424","22-4244","22-4245","22-4250","22-4251","22-4257","22-4260","22-4262","22-4265","22-4266","22-4267","22-4268","22-4273","22-4275","22-4276","22-4277","22-4279","22-4282","22-4284","22-4286","22-4295","22-4300","22-4301","22-4302","22-4303","22-4310","22-4314","22-4320","22-4323","22-4327","22-4328","22-4338","22-4339","22-4340","22-4341","22-4342","22-4343","22-4344","22-4345","22-4356","22-4359","22-4361","22-4362","22-4365","22-4370","22-4374","22-438","22-4380","22-4384","22-4387","22-4388","22-4410","22-4411","22-4413","22-4420","22-4425","22-4428","22-4432","22-4433","22-4434","22-4435","22-793","22-804","22-851","22-928","22-969","22-980","22-986","2-48","2-5","4-287","4-288","4-290","4-38","4-402","4-403","4-494","4-496","4-505","4-508","4-519","4-527","4-531","5-44","6-2","6-39","7-1010","7-1048","7-1050","7-1113","7-1127","7-1144","7-1146","7-1157","7-1161","7-1186","7-1196","7-1214","7-1240","7-1246","7-1249","7-1291","7-1292","7-1315","7-1322","7-1324","7-1325","7-1326","7-1327","7-1328","7-1336","7-1357","7-1359","7-1360","7-1361","7-1362","7-1364","7-1366","7-1389","7-1390","7-1392","7-1393","7-1395","7-1397","7-1398","7-1400","7-1419","7-1420","7-1421","7-1426","7-1435","7-1438","7-1453","7-1454","7-1466","7-1467","7-1476","7-1483","7-1486","7-1491","7-1498","7-1502","7-1520","7-1522","7-1531","7-1544","7-1551","7-1553","7-1554","7-1567","7-325","7-338","7-429","7-523","7-657","7-825","99-1001","99-1005","99-1008","99-1011","99-1012","99-1013","99-1016","99-1017","99-1035","99-285","99-307","99-347","99-348","99-355","99-356","99-376","99-391","99-392","99-393","99-394","99-442","99-443","99-444","99-474","99-514","99-518","99-519","99-539","99-548","99-558","99-566","99-611","99-614","99-622","99-623","99-647","99-649","99-658","99-781","99-793","99-797","99-807","99-839","99-847","99-853","99-857","99-880","99-883","99-897","99-921","99-946","99-949","99-950","99-951","99-952","99-953","99-979","AR-BAG13","AR-BAG23","AR-BAG24","AR-BAG25","AR-BAG26","AR-BAG27","AR-BAG36","AR-BAG37","AR-BAG41","AR-BAG42","AR-BAG44","AR-BAG45","AR-BAG46","AR-BAG55","AR-BOX21","AR-BOX22","AR-BSC10","AR-BSC11","AR-BSC12","AR-BSC13","AR-BSC14","AR-BSC15","AR-BSC16","AR-BSC17","AR-BSC18","AR-BSC19","AR-BSC24","AR-BSC25","AR-BSC26","AR-BSC27","AR-BSC28","AR-BSC33","AR-CAN11","AR-CAO11","AR-CAO14","AR-CAO17","AR-CAO18","AR-CMP20","AR-CMP30","AR-FIR12","AR-FIR13","AR-FIR15","AR-FUR10","AR-FUR11","AR-FUR12","AR-FUR13","AR-FUR14","AR-FUR15","AR-FUR16","AR-FUR17","AR-FUR18","AR-FUR19","AR-FUR24","AR-FUR35","AR-FUR36","AR-FUR48","AR-FUR53","AR-FUR57","AR-HAT12","AR-KNF17","AR-KNF19","AR-KNF20","AR-LIT17","AR-LIT27","AR-MAT10","AR-MAT11","AR-MAT12","AR-MAT13","AR-MAT14","AR-MAT15","AR-MAT16","AR-MAT19","AR-OCP25","AR-OCP34","AR-SLB19","AR-SLB20","AR-SLB21","AR-SPC10","AR-SPC11","AR-SPC12","AR-SPC13","AR-TNT10","AR-VAC16","AR-WST11","AR-WST12","AR-WST13","AR-WST14","AR-WST19","AR-WST21","BB8515","BB8516","BSS8376","ERS8539","HJS-2024","KOB8508","KOB8521","LCL-KIT01","LCL-WST26","NC-EC30","NC-EDC33","NC-LR70","NC-NU11","NC-P18","NC-SRT7I","NC-TIPSE","NC-TM06S","NC-TM12K","NT-NE0126","NT-NE20015","NT-NE20021","NT-NE20045","NT-NE20101","NT-NE20107","NT-NE20151","NT-NE20153","NT-NE20213","SLP1642","SLP1643","SLP1644","SLP1659","SLP1662","SLP1663","SLP1665","SLP1667","SPL0006","SPL0022","SPL0029","SPL0032","SPL0040","SPL0050","SPL0062","SPL0063","SPL0067","SPL0073","SPL0074","SPL0117","SPL0118","SPL0125","SPL0136","SPL0146","SPL0147","SPL0155","SPL0157","SPL0164","SPL0172","SPL0178","SPL0204","SPL0213","SPL0224","SPL0238","SPL0240","SPL0241","SPL0259","SPL0260","SPL0261","SPL0263","SPL0264","SPL0272","SPL0293","SPL0297","SPL0300","SPL0303","SPL0305","SPL0309","SPL0314","SPL0346","SPL0350","SPL0353","SPL0359","SPL0380","SPL0383","SPL0384","SPL0388","SPL0439","SPL0468","SPL0471","SPL0484","SPL0488","SPL0500","SPL0526","SPL0564","SPL0577","SPL0578","SPL0584","SPL0591","SPL0602","SPL0603","SPL0604","SPL0611","SPL0617","SPL0625","SPL0638","SPL0669","SPL0679","SPL0700","SPL0711","SPL0718","SPL0752","SPL0757","SPL0765","SPL0767","SPL0774","SPL0776","SPL0778","SPL0779","SPL0780","SPL0782","SPL0783","SPL0787","SPL0798","SPL0806","SPL0838","SPL0839","SPL0840","SPL0880","SPL0881","SPL0882","SPL0884","SPL0885","SPL0886","SPL0887","SPL0888","SPL0890","SPL0891","SPL0892","SPL0893","SPL0897","SPL0898","SPL0900","SPL0915","SPL0919","SPL0942","SPL0944","SPL0947","SPL0959","SPL0960","SPL0984","SPL1012","SPL1015","SPL1017","SPL1018","SPL1025","SPL1033","SPL1053","SPL1054","SPL1056","SPL1061","SPL1083","SPL1085","SPL1106","SPL1148","SPL1162","SPL1166","SPL1173","SPL1174","SPL1202","SPL1263","SPL1266","SPL1319","SPL1324","SPL1331","SPL1336","SPL1339","SPL1342","SPL1344","SPL1366","SPL1373","SPL1376","SPL1401","SPL1421","SPL1429","SPL1430","SPL1438","SPL1440","SPL1442","SPL1448","SPL1457","SPL1464","SPL1466","SPL1479","SPL1485","SPL1492","SPL1497","SPL1498","SPL1513","SPL1527","SPL1532","SPL1533","SPL1534","SPL1535","SPL1538","SPL1540","SPL1553","SPL1556","SPL1565","SPL1576","SPL1579","SPL1582","SPL1591","SPL1594","SPL1595","SPL1613","SPL1631","SPL1641","SPL1673","SPL1677","SPL1683","SPL1688","SPL1691","SPL1692","SPL1720","SPL1748","SPL1761","SPL1768","SPL1770","SPL1784","SPL1812","SPL1832","SPL1844","SPL1847","SPL1855","SPL1856","SPL1862","SPL1868","SPL1869","SPL1885","SPL1901","SPL1919","SPL1920","SPL1929","SPL1955","SPL1985","SPL1995","SPL2013","SPL2015","SPL2022","SPL2032","SPL2033","SPL2034","SPL2035","SPL2036","SPL2037","SPL2039","SPL2043","SPL2047","SPL2049","SPL2056","SPL2058","SPL2066","SPL2067","SPL2071","SPL2078","SPL2093","SPL2095","SPL2104","SPL2117","SPL2122","SPL2128","SPL2130","SPL2131","SPL2137","SPL2138","SPL2139","SPL2140","SPL2141","SPL2142","SPL2143","SPL2144","SPL2146","SPL2147","SPL2149","SPL2150","SPL2151","SPL2152","SPL2153","SPL2154","SPL2155","SPL2156","SPL2157","SPL2158","SPL2159","SPL2160","SPL2161","SPL2162","SPL2163","SPL2164","SPL2165","SPL2166","SPL2167","SPL2168","SPL2176","SPL2178","SPL2185","SPL2186","SPL2187","SPL2188","SPL2191","SPL2196","SPL2200","SPL2207","SPL2209","SPL2211","SPL2212","SPL2213","SPL2215","SPL2217","SPL2218","SPL2219","SPL2220","SPL2221","SPL2223","SPL2226","SPL2227","SPL2228","SPL2232","SPL2248","SPL2255","SPL2290","SPL2291","SPL2293","SPL2294","SPL2300","SPL2313","SPL2335","SPL2336","SPL2338","SPL2339","SPL2348","SPL2351","SPL2355","SPL2357","SPL2361","SPL2366","SPL2368","SPL2369","SPL2370","SPL2371","SPL2372","WD-BSC21","WD-BSC22","WD-FUR10","WD-FUR11","WD-FUR15","WD-FUR16","WD-FUR69","WD-HAT11GR","WD-HAT11LGR","WD-LIT10","WD-LIT20","WD-LIT22","WD-LIT24","WD-LIT36","WD-LIT38","WD-MAT13","WD-OTD11","WD-PWR10","WD-SLB10","WD-SLB11","WD-SLB12","WD-TNT11","WD-TVL15BK","WD-TVL15PI","WD-TVL16BK","WD-TVL16PI","WD-TVL16WH","WD-TVL17BU","WD-TVL18","WD-TVL19","WD-TVL21","30-1","30-2","30-3","30-4","30-5","30-6","30-7","30-8","30-9","30-10","30-11","30-12","30-13","30-14","30-15","30-16","30-17","30-19","30-30","30-33","30-34","30-35","30-36","30-38","30-39","30-43","30-44","30-45","30-46","30-47","30-48","30-49","30-50","30-51","30-53","30-54","30-57","30-58","30-59","30-62","30-63","30-64","30-65","30-66","30-67","30-68","30-69","30-70","30-72","30-74","30-78","30-79","30-80","30-81","30-82","30-84","30-85","30-86","30-87","30-88","30-89","30-92","30-93","30-94","30-98","30-99","30-101","30-102","30-103","30-104","30-107","30-108","30-109","30-110","30-111","30-112","30-116","30-117","30-118","30-119","30-120","30-121","30-122","30-123","30-124","30-125","30-126","30-128","30-130","30-131","30-132","30-133","30-134","30-135","30-136","30-137","30-138","30-139","30-140","30-141","30-142","30-143","30-144","30-145","30-146","30-147","30-148","30-149","30-150","30-151","30-152","30-153","30-155","30-156","30-157","30-158","30-159","30-161","30-162","30-163","30-164","30-165","30-166","30-167","30-168","30-169","30-170","30-171","30-172","30-173","30-174","30-175","30-176","30-178","30-180","30-181","30-183","30-185","30-186","30-187","30-188","30-189","30-190","30-191","30-192","30-193","30-194","30-195","30-196","30-197","30-198","30-199","30-200","30-201","30-202","30-203","30-204","30-205","30-206","30-207","30-208","30-209","30-210","30-211","30-212","30-213","30-214","30-215","30-216","30-217","30-218","30-219","30-220","30-221","30-222","30-223","30-224","30-225","30-226","30-227","30-228","30-229","30-230","30-231","30-232","30-233","30-234","30-235","30-236","30-237","30-238","30-239","30-240","30-241","30-242","30-243","30-244","30-245","30-246"]);
+
+const EXCLUDED_STORES = new Set([
+  'qaseem 4x', 'al ahsa 1', 'exit 15', 'al jouf', 'jeddah 1', 'al qods',
+  'shifa 4x', 'al ula', 'baljuraishi', 'damages & shortages ryd', 'exit 5 wh',
+  'exit 5 workshop', 'hafr al batin 1', 'hail 1', 'jeddah 4x', 'salbukh wh',
+  'damages & shortages abha', 'unaiza wh', 'tabuk 1',
+]);
+
+function naturalCompare(a, b) {
+  const ax = [], bx = [];
+  String(a).replace(/(\d+)|(\D+)/g, (_, d, s) => { ax.push([d ? parseInt(d, 10) : Infinity, s || '']); return ''; });
+  String(b).replace(/(\d+)|(\D+)/g, (_, d, s) => { bx.push([d ? parseInt(d, 10) : Infinity, s || '']); return ''; });
+  while (ax.length && bx.length) {
+    const an = ax.shift(), bn = bx.shift();
+    const cmp = (an[0] - bn[0]) || an[1].localeCompare(bn[1]);
+    if (cmp) return cmp;
+  }
+  return ax.length - bx.length;
+}
+
+// ---- Embedded xlsx writer (no external module; works offline / on static hosts) ----
+// Minimal real .xlsx writer (no deps). Builds a ZIP with STORED (uncompressed) entries,
+// so it needs no compression API and opens in Excel, Numbers, Google Sheets, WPS, mobile viewers.
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+const enc = new TextEncoder();
+
+function dosDateTime(d) {
+  const time = ((d.getHours() & 31) << 11) | ((d.getMinutes() & 63) << 5) | ((d.getSeconds() / 2) & 31);
+  const date = (((d.getFullYear() - 1980) & 127) << 9) | (((d.getMonth() + 1) & 15) << 5) | (d.getDate() & 31);
+  return { time, date };
+}
+
+function zipStored(files) {
+  const now = dosDateTime(new Date());
+  const chunks = [];
+  const central = [];
+  let offset = 0;
+  for (const f of files) {
+    const nameBytes = enc.encode(f.name);
+    const data = typeof f.data === 'string' ? enc.encode(f.data) : f.data;
+    const crc = crc32(data);
+    const local = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0, true);
+    lv.setUint16(8, 0, true); // stored
+    lv.setUint16(10, now.time, true);
+    lv.setUint16(12, now.date, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, data.length, true);
+    lv.setUint32(22, data.length, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    chunks.push(local, data);
+
+    const cd = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, now.time, true);
+    cv.setUint16(14, now.date, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true);
+    cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint32(42, offset, true);
+    cd.set(nameBytes, 46);
+    central.push(cd);
+    offset += local.length + data.length;
+  }
+  let cdSize = 0;
+  for (const c of central) cdSize += c.length;
+  const end = new Uint8Array(22);
+  const ev = new DataView(end.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, central.length, true);
+  ev.setUint16(10, central.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, offset, true);
+  return new Blob([...chunks, ...central, end], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+}
+
+const escXml = s => String(s ?? '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
+
+function colName(n) {
+  let s = '';
+  n += 1;
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+// Style indices available to callers:
+// 0 default · 1 bold · 2 bold red · 3 pink fill · 4 pink fill + bold red · 5 header (bold, bottom border)
+const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FF8B1A1A"/><sz val="11"/><name val="Calibri"/></font></fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFBE1DE"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top/><bottom style="medium"><color rgb="FF201E1D"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="6">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="0" fillId="2" borderId="0" xfId="0" applyFill="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFill="1"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyBorder="1"/>
+</cellXfs>
+</styleSheet>`;
+
+/**
+ * rows: array of arrays. A cell is either a primitive (string/number/null)
+ *       or { v: value, s: styleIndex, t: 'n'|'s' }.
+ * opts: { sheetName, cols: [{ width }] }
+ */
+function buildXlsx(rows, opts = {}) {
+  const sheetName = (opts.sheetName || 'Sheet1').replace(/[\\/*?:[\]]/g, '').slice(0, 31) || 'Sheet1';
+  const colsXml = opts.cols && opts.cols.length
+    ? '<cols>' + opts.cols.map((c, i) => `<col min="${i + 1}" max="${i + 1}" width="${c.width || 12}" customWidth="1"/>`).join('') + '</cols>'
+    : '';
+
+  let sheetRows = '';
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r] || [];
+    let cells = '';
+    for (let c = 0; c < row.length; c++) {
+      const raw = row[c];
+      if (raw === null || raw === undefined || raw === '') continue;
+      const cell = (typeof raw === 'object' && !(raw instanceof Date)) ? raw : { v: raw };
+      const ref = colName(c) + (r + 1);
+      const style = cell.s ? ` s="${cell.s}"` : '';
+      const isNum = cell.t === 'n' || (cell.t !== 's' && typeof cell.v === 'number' && isFinite(cell.v));
+      if (isNum) {
+        cells += `<c r="${ref}"${style}><v>${cell.v}</v></c>`;
+      } else {
+        cells += `<c r="${ref}"${style} t="inlineStr"><is><t xml:space="preserve">${escXml(cell.v)}</t></is></c>`;
+      }
+    }
+    sheetRows += `<row r="${r + 1}">${cells}</row>`;
+  }
+
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr/><dimension ref="A1"/><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/>${colsXml}<sheetData>${sheetRows}</sheetData></worksheet>`;
+
+  const files = [
+    { name: '[Content_Types].xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>` },
+    { name: '_rels/.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+    { name: 'xl/workbook.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${escXml(sheetName)}" sheetId="1" r:id="rId1"/></sheets></workbook>` },
+    { name: 'xl/_rels/workbook.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+    { name: 'xl/styles.xml', data: STYLES },
+    { name: 'xl/worksheets/sheet1.xml', data: sheet },
+  ];
+  return zipStored(files);
+}
+
+function downloadXlsx(rows, filename, opts) {
+  const blob = buildXlsx(rows, opts);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = /\.xlsx$/i.test(filename) ? filename : filename + '.xlsx';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+// ---- end xlsx writer ----
+
+class Component extends DCLogic {
+  state = {
+    loading: true,
+    loadError: '',
+    screen: 'loading',
+    parsed: null,
+    storeInfoMap: null,
+    storeOptions: [],
+    selectedStore: '',
+    selectedQty: 1,
+    results: null,
+    resultStore: '',
+    resultQty: 1,
+    statusFilter: 'all',
+    stockFilter: 'all',
+    lowStockFilter: 'all',
+    skuQuery: '',
+    skuExpanded: '',
+    storeStockShowDiscount: false,
+    storeStockAddnl1500: false,
+    storeStockPctRange: '',
+    storeStockBrand: '',
+    storeStockCategory: '',
+    storeStockSubCategory: '',
+    storeStockSelected: '__ALL__',
+    negInvLocation: '__ALL__',
+    negInvModalOpen: false,
+    negInvPdfDownloading: false,
+    costMap: null,
+    isAdmin: false,
+    adminPromptOpen: false,
+    adminPw: '',
+    adminError: '',
+  };
+
+  onAdminOpen() { this.setState({ adminPromptOpen: true, adminPw: '', adminError: '' }); }
+  onAdminPwChange(e) { this.setState({ adminPw: e.target.value, adminError: '' }); }
+  async loadCostMap() {
+    if (this._costLoading) return;
+    this._costLoading = true;
+    try {
+      const url = (window.__resources && window.__resources['cost-json']) || './cost-data.json';
+      const res = await fetch(url);
+      if (res.ok) this.setState({ costMap: await res.json() });
+    } catch (e) {}
+  }
+  costMetrics(itemNo, rsp, disc) {
+    const cm = this.state.isAdmin ? this.state.costMap : null;
+    const num = v => { const n = parseFloat(String(v ?? '').replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : 0; };
+    const cost = cm ? num(cm[itemNo]) : 0;
+    if (!cost) return { showCost: false };
+    const money = n => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const rspN = num(rsp);
+    const nowN = disc ? num(disc.now) : 0;
+    const line = (price) => money(price - cost) + '  (' + ((price - cost) / cost * 100).toFixed(1) + '%)';
+    return {
+      showCost: true,
+      costText: money(cost),
+      markupText: rspN ? line(rspN) : '—',
+      hasDiscMargin: !!(nowN && nowN !== rspN),
+      nowText: nowN ? money(nowN) : '',
+      discMarginText: nowN ? line(nowN) : '',
+    };
+  }
+  onAdminPwKeyDown(e) { if (e.key === 'Enter') this.onAdminSubmit(); }
+  onAdminSubmit() {
+    if (this.state.adminPw.trim() === '30558') {
+      this.setState({ isAdmin: true, adminPromptOpen: false, adminPw: '', adminError: '' });
+      this.loadCostMap();
+      try { localStorage.setItem('inv-admin', '1'); } catch (e) {}
+    } else {
+      this.setState({ adminError: 'Incorrect password.' });
+    }
+  }
+  onAdminSignOut() {
+    this.setState({ isAdmin: false, adminPromptOpen: false, adminPw: '', adminError: '' });
+    try { localStorage.removeItem('inv-admin'); } catch (e) {}
+  }
+
+  async componentDidMount() {
+    try {
+      const dataUrl = (window.__resources && window.__resources['data-json']) || './inventory-data.json';
+      const res = await fetch(dataUrl);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const snap = await res.json();
+      const retailMap = new Map(snap.retailMap);
+      const openOrders = new Set(snap.openOrders);
+      const discountMap = new Map(snap.discountMap || []);
+      const storeInfoMap = new Map(snap.storeInfoMap);
+      const storeOptions = (snap.storeOptions || []).filter(opt => {
+        const info = storeInfoMap.get(opt.name);
+        const displayName = (info && (info.shortName || opt.name) || opt.name).trim().toLowerCase();
+        return !EXCLUDED_STORES.has(displayName);
+      });
+      let wasAdmin = false;
+      try { wasAdmin = localStorage.getItem('inv-admin') === '1'; } catch (e) {}
+      if (wasAdmin) this.loadCostMap();
+      this.setState({
+        loading: false,
+        isAdmin: wasAdmin,
+        parsed: { matrix: snap.matrix, retailMap, openOrders, discountMap },
+        storeInfoMap,
+        storeOptions,
+        selectedStore: storeOptions[0] ? storeOptions[0].name : '',
+        screen: 'menu',
+      });
+    } catch (err) {
+      this.setState({ loading: false, loadError: 'Could not load store data: ' + err.message, screen: 'error' });
+    }
+  }
+
+  onStoreChange(e) { this.setState({ selectedStore: e.target.value }); }
+  onQty1() { this.setState({ selectedQty: 1 }); }
+  onQty2() { this.setState({ selectedQty: 2 }); }
+  onBackToSelect() { this.setState({ screen: 'select' }); }
+  onGoSelect() { this.setState({ screen: 'select' }); }
+  onBackFromSelect() { this.setState({ screen: 'menu' }); }
+  onGoSkuLookup() { this.setState({ screen: 'skulookup' }); }
+  onBackFromSku() { this.setState({ screen: 'menu' }); }
+  onGoStoreStock() { this.setState({ screen: 'storestock', storeStockSelected: this.state.isAdmin ? '__ALL__' : (this.state.storeOptions[0] ? this.state.storeOptions[0].name : '') }); }
+  onBackFromStoreStock() { this.setState({ screen: 'menu' }); }
+  onStoreStockChange(e) { this.setState({ storeStockSelected: e.target.value }); }
+  onDiscountOn() { this.setState({ storeStockShowDiscount: true, storeStockAddnl1500: false }); }
+  onDiscountOff() { this.setState({ storeStockShowDiscount: false, storeStockAddnl1500: false, storeStockPctRange: '' }); }
+  onAddnl1500On() { this.setState({ storeStockAddnl1500: true, storeStockShowDiscount: false, storeStockPctRange: '' }); }
+  onPctRangeChange(e) { this.setState({ storeStockPctRange: e.target.value }); }
+  onBrandChange(e) { this.setState({ storeStockBrand: e.target.value }); }
+  onCategoryChange(e) { this.setState({ storeStockCategory: e.target.value, storeStockSubCategory: '' }); }
+  onSubCategoryChange(e) { this.setState({ storeStockSubCategory: e.target.value }); }
+  getCategoryOptions() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix, retailMap } = st.parsed;
+    const set = new Set();
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo);
+      if (r && r.category && r.category.trim()) set.add(r.category.trim());
+    }
+    return Array.from(set).sort();
+  }
+  getSubCategoryOptions() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix, retailMap } = st.parsed;
+    const set = new Set();
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo);
+      if (!r || !r.subCategory || !r.subCategory.trim()) continue;
+      if (st.storeStockCategory && (r.category || '').trim() !== st.storeStockCategory) continue;
+      set.add(r.subCategory.trim());
+    }
+    return Array.from(set).sort();
+  }
+  getBrandOptions() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix, retailMap } = st.parsed;
+    const set = new Set();
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo);
+      if (r && r.brand) set.add(r.brand.trim());
+    }
+    return Array.from(set).sort();
+  }
+  onGoNegInv() { this.setState({ screen: 'neginv' }); }
+  onBackFromNegInv() { this.setState({ screen: 'menu', negInvModalOpen: false }); }
+  onOpenNegInvModal(name) { this.setState({ negInvLocation: name, negInvModalOpen: true }); }
+  onCloseNegInvModal() { this.setState({ negInvModalOpen: false }); }
+  onNegInvLocationChange(e) { this.setState({ negInvLocation: e.target.value }); }
+
+  getNegInvLocationOptions() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    if (!this._storeInfoCI && st.storeInfoMap) {
+      this._storeInfoCI = new Map();
+      for (const [k, v] of st.storeInfoMap) this._storeInfoCI.set(String(k).trim().toLowerCase(), v);
+    }
+    const ci = this._storeInfoCI;
+    return st.parsed.matrix.storeNames
+      .map(name => {
+        const info = (st.storeInfoMap && st.storeInfoMap.get(name))
+          || (ci && ci.get(String(name).trim().toLowerCase()))
+          || null;
+        if (info && info.storeType && info.storeType !== 'Store' && info.storeType !== 'Warehouse') return null;
+        const displayName = ((info && info.shortName) || name).trim();
+        if (EXCLUDED_STORES.has(displayName.toLowerCase())) return null;
+        if (EXCLUDED_STORES.has(String(name).trim().toLowerCase())) return null;
+        return { name, label: info && info.region ? displayName + ' — ' + info.region : displayName };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  getNegInvModalView() {
+    const st = this.state;
+    if (st.screen !== 'neginv' || !st.negInvModalOpen) return { title: '', meta: '', rows: [], truncated: false, truncatedNote: '' };
+    const money = v => Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const opts = this.getNegInvLocationOptions();
+    const title = st.negInvLocation === '__ALL__'
+      ? 'All locations'
+      : ((opts.find(o => o.name === st.negInvLocation) || {}).label || st.negInvLocation);
+    const all = this.getNegInvRows();
+    const LIMIT = 250;
+    const shown = all.slice(0, LIMIT);
+    const totalQty = all.reduce((sum, r) => sum + r.qty, 0);
+    const totalValue = all.reduce((sum, r) => sum + r.value, 0);
+    return {
+      title,
+      meta: all.length.toLocaleString() + ' lines · qty ' + totalQty.toLocaleString() + ' · value ' + money(totalValue),
+      rows: shown.map(r => ({
+        itemNo: r.itemNo,
+        description2: r.description2,
+        location: r.location,
+        qtyText: r.qty.toLocaleString(),
+        rspText: r.rsp ? money(r.rsp) : '',
+        valueText: money(r.value),
+      })),
+      truncated: all.length > LIMIT,
+      truncatedNote: 'Showing first ' + LIMIT + ' of ' + all.length.toLocaleString() + ' lines — the PDF and Excel contain all of them.',
+    };
+  }
+
+  getNegInvByStore() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix } = st.parsed;
+    const opts = this.getNegInvLocationOptions();
+    const totals = new Map(opts.map(o => [o.name, { name: o.name, label: o.label, qty: 0, value: 0, lines: 0 }]));
+    for (const it of matrix.items) {
+      const rsp = Number(it.rsp) || 0;
+      for (const o of opts) {
+        const raw = it.stores[o.name];
+        if (raw === undefined || raw === '') continue;
+        const qty = Number(raw);
+        if (!(qty < 0)) continue;
+        const t = totals.get(o.name);
+        t.qty += qty;
+        t.value += qty * rsp;
+        t.lines += 1;
+      }
+    }
+    const money = v => Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return Array.from(totals.values())
+      .filter(t => t.lines > 0)
+      .sort((a, b) => a.value - b.value)
+      .map(t => ({ name: t.name, label: t.label, lines: t.lines, qty: t.qty, value: t.value, qtyText: t.qty.toLocaleString(), valueText: money(t.value), onOpen: () => this.onOpenNegInvModal(t.name) }));
+  }
+
+  getNegInvRows() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix, retailMap } = st.parsed;
+    const opts = this.getNegInvLocationOptions();
+    const locations = st.negInvLocation === '__ALL__' ? opts : opts.filter(o => o.name === st.negInvLocation);
+    const rows = [];
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo) || {};
+      for (const loc of locations) {
+        const raw = it.stores[loc.name];
+        if (raw === undefined || raw === '') continue;
+        const qty = Number(raw);
+        if (!(qty < 0)) continue;
+        rows.push({
+          itemNo: it.itemNo,
+          description2: r.description2 || it.description2 || '',
+          location: loc.label,
+          qty,
+          rsp: Number(it.rsp) || 0,
+          value: qty * (Number(it.rsp) || 0),
+          image: r.image || '',
+        });
+      }
+    }
+    rows.sort((a, b) => a.location.localeCompare(b.location) || a.qty - b.qty);
+    return rows;
+  }
+
+  async onDownloadNegInvPdf() {
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const st = this.state;
+    const rows = this.getNegInvRows();
+    const scope = st.negInvLocation === '__ALL__' ? 'All locations' : (this.getNegInvLocationOptions().find(o => o.name === st.negInvLocation) || {}).label || st.negInvLocation;
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    this.setState({ negInvPdfDownloading: true });
+    const noImages = rows.length > 5000;
+    const imgRows = noImages ? rows : await this.scaleRowImages(rows);
+    const money = v => Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const totalQty = rows.reduce((sum, r) => sum + r.qty, 0);
+    const totalValue = rows.reduce((sum, r) => sum + r.value, 0);
+    const rowsHtml = imgRows.map(r => (
+      '<tr>'
+      + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" referrerpolicy="no-referrer" />' : '') + '</td>')
+      + '<td class="itemno">' + esc(r.itemNo) + '</td><td class="desc">' + esc(r.description2) + '</td>'
+      + '<td>' + esc(r.location) + '</td><td class="ctr neg">' + r.qty + '</td>'
+      + '<td class="ctr">' + (r.rsp ? money(r.rsp) : '') + '</td><td class="ctr neg">' + money(r.value) + '</td></tr>'
+    )).join('')
+    + '<tr class="totals">'
+    + (noImages ? '' : '<td></td>')
+    + '<td colspan="2">Total · ' + rows.length + ' lines</td><td></td>'
+    + '<td class="ctr neg">' + totalQty + '</td><td></td><td class="ctr neg">' + money(totalValue) + '</td></tr>';
+    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
+      + 'h1{font-size:20px;margin:0 0 4px;}'
+      + '.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
+      + 'table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;table-layout:fixed;}'
+      + 'tr{break-inside:avoid;}'
+      + 'col.c-img{width:12%}col.c-item{width:' + (noImages ? '15' : '13') + '%}col.c-desc{width:' + (noImages ? '33' : '25') + '%}col.c-loc{width:' + (noImages ? '20' : '18') + '%}col.c-qty{width:9%}col.c-rsp{width:11%}col.c-val{width:12%}'
+      + 'th{text-align:left;font-size:10.5px;text-transform:uppercase;color:#6b6360;padding:6px;border-bottom:2px solid #201e1d;}'
+      + 'td{padding:6px;border-bottom:1px solid #e6ddd2;overflow-wrap:break-word;word-break:break-word;}'
+      + 'td.ctr{text-align:center;white-space:nowrap;}td.neg{font-weight:700;color:#8b1a1a;}'
+      + 'td{vertical-align:middle;}td.img-cell{overflow:hidden;}td.img-cell img{width:100%;height:52px;object-fit:contain;display:block;}'
+      + 'tr.totals td{border-top:2px solid #201e1d;border-bottom:none;font-weight:700;padding-top:8px;}';
+    const bodyHtml = '<h1>Negative inventory</h1>'
+      + '<div class="meta">' + esc(scope) + ' · ' + rows.length + ' negative lines · ' + today + '</div>'
+      + '<table><colgroup>' + (noImages ? '' : '<col class="c-img">') + '<col class="c-item"><col class="c-desc"><col class="c-loc"><col class="c-qty"><col class="c-rsp"><col class="c-val"></colgroup>'
+      + '<tbody><tr>' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Location</th><th>Qty</th><th>RSP</th><th>Value</th></tr>'
+      + rowsHtml + '</tbody></table>';
+    const fileTitle = ('Negative-Inventory-' + scope + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    this.printHtmlInPage(styleCss, bodyHtml, fileTitle, () => this.setState({ negInvPdfDownloading: false }));
+  }
+
+  onDownloadNegInvExcel() {
+    const st = this.state;
+    const rows = this.getNegInvRows();
+    const scope = st.negInvLocation === '__ALL__' ? 'All locations' : (this.getNegInvLocationOptions().find(o => o.name === st.negInvLocation) || {}).label || st.negInvLocation;
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const aoa = [
+      [{ v: 'Negative inventory', s: 1 }],
+      [scope + ' · ' + rows.length + ' negative lines · ' + today],
+      [],
+      ['Item No.', 'Description 2', 'Location', 'Qty', 'RSP', 'Value'].map(h => ({ v: h, s: 5 })),
+    ];
+    for (const r of rows) {
+      aoa.push([
+        { v: r.itemNo, t: 's' },
+        { v: r.description2, t: 's' },
+        { v: r.location, t: 's' },
+        { v: r.qty, s: 2 },
+        { v: r.rsp || '', s: 0 },
+        { v: Number(r.value.toFixed(2)), s: 2 },
+      ]);
+    }
+    aoa.push([]);
+    aoa.push([
+      { v: 'Total · ' + rows.length + ' lines', s: 1 },
+      '',
+      '',
+      { v: rows.reduce((sum, r) => sum + r.qty, 0), s: 2 },
+      '',
+      { v: Number(rows.reduce((sum, r) => sum + r.value, 0).toFixed(2)), s: 2 },
+    ]);
+    const fileTitle = ('Negative-Inventory-' + scope + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    downloadXlsx(aoa, fileTitle, {
+      sheetName: 'Negative Inv',
+      cols: [{ width: 16 }, { width: 44 }, { width: 26 }, { width: 9 }, { width: 11 }, { width: 14 }],
+    });
+  }
+
+  getStoreStockRows() {
+    const st = this.state;
+    const store = st.storeStockSelected;
+    const { matrix, retailMap, discountMap } = st.parsed;
+    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500;
+    const allStores = store === '__ALL__';
+    const storeList = allStores
+      ? matrix.storeNames.filter(name => {
+          if (STORE_STOCK_WH_LOCATIONS_LC.has(name.trim().toLowerCase())) return false;
+          const info = st.storeInfoMap && st.storeInfoMap.get(name);
+          if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return false;
+          const displayName = (info.shortName || name).trim().toLowerCase();
+          if (STORE_STOCK_WH_LOCATIONS_LC.has(displayName)) return false;
+          return !EXCLUDED_STORES.has(displayName);
+        })
+      : [store];
+    const rows = [];
+    const addnl1500 = st.storeStockAddnl1500;
+    for (const it of matrix.items) {
+      if (addnl1500 && !ADDNL_1500_SET.has(it.itemNo)) continue;
+      let qty = 0;
+      for (const s of storeList) {
+        const raw = it.stores[s];
+        if (raw !== undefined && raw !== '') qty += Number(raw) || 0;
+      }
+      if (qty === 0) continue;
+      const r = retailMap.get(it.itemNo) || {};
+      const whStock = STORE_STOCK_WH_LOCATIONS.reduce((sum, loc) => sum + (Number(it.stores[loc] || 0) || 0), 0);
+      const disc = showDiscount && discountMap ? discountMap.get(it.itemNo) : null;
+      if (showDiscount && !disc) continue;
+      const pctNum = disc && /%$/.test(disc.pct) ? parseFloat(disc.pct) : null;
+      if (showDiscount && st.storeStockPctRange) {
+        const [lo, hi] = st.storeStockPctRange.split('-').map(Number);
+        if (pctNum === null || pctNum < lo || pctNum > hi) continue;
+      }
+      const brand = (r.brand || '').trim();
+      if (st.storeStockBrand && brand !== st.storeStockBrand) continue;
+      if (st.storeStockCategory && (r.category || '').trim() !== st.storeStockCategory) continue;
+      if (st.storeStockSubCategory && (r.subCategory || '').trim() !== st.storeStockSubCategory) continue;
+      rows.push({
+        itemNo: it.itemNo,
+        description2: r.description2 || it.description2,
+        qty,
+        whStock,
+        rsp: it.rsp || '',
+        image: r.image && r.image !== '(blank)' ? r.image : '',
+        was: disc ? (disc.was || it.rsp || '') : '',
+        now: disc ? disc.now : '',
+        pct: disc ? disc.pct : '',
+        highlight: pctNum !== null && pctNum >= 50 && pctNum <= 70,
+        brand,
+      });
+    }
+    rows.sort((a, b) => naturalCompare(a.itemNo, b.itemNo));
+    return rows;
+  }
+
+  scaleImage(url) {
+    this._imgCache = this._imgCache || new Map();
+    if (this._imgCache.has(url)) return this._imgCache.get(url);
+    const p = new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const size = 130;
+          const scale = Math.min(1, size / Math.max(img.naturalWidth || size, img.naturalHeight || size));
+          const w = Math.max(1, Math.round((img.naturalWidth || size) * scale));
+          const h = Math.max(1, Math.round((img.naturalHeight || size) * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.55));
+        } catch (e) { resolve(url); }
+      };
+      img.onerror = () => resolve(url);
+      setTimeout(() => resolve(url), 6000);
+      img.src = url;
+    });
+    this._imgCache.set(url, p);
+    return p;
+  }
+
+  async scaleRowImages(rows) {
+    const urls = Array.from(new Set(rows.map(r => r.image).filter(Boolean)));
+    const scaled = await Promise.all(urls.map(u => this.scaleImage(u)));
+    const map = new Map(urls.map((u, i) => [u, scaled[i]]));
+    return rows.map(r => (r.image ? Object.assign({}, r, { image: map.get(r.image) || '' }) : r));
+  }
+
+  printHtmlInPage(styleCss, bodyHtml, fileTitle, onDone) {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) return this.printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone);
+    let frame = document.getElementById('pdf-print-frame');
+    if (!frame) {
+      frame = document.createElement('iframe');
+      frame.id = 'pdf-print-frame';
+      frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+      document.body.appendChild(frame);
+    }
+    const doc = frame.contentDocument;
+    doc.open();
+    doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + fileTitle + '</title><style>@page{margin:0}body{margin:0.5in}' + styleCss + '</style></head><body>' + bodyHtml + '</body></html>');
+    doc.close();
+    const win = frame.contentWindow;
+    const doPrint = () => {
+      try {
+        win.focus();
+        win.print();
+      } catch (e) {
+        this.setState({ loadError: 'Could not generate the PDF: ' + e.message });
+      }
+    };
+    const imgs = Array.from(doc.querySelectorAll('img'));
+    const pending = imgs.filter(img => !img.complete);
+    let printed = false;
+    const printOnce = () => { if (printed) return; printed = true; doPrint(); if (onDone) onDone(); };
+    if (!pending.length) { printOnce(); return; }
+    let settled = 0;
+    const done = () => { settled++; if (settled >= pending.length) printOnce(); };
+    pending.forEach(img => {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    });
+    setTimeout(() => {
+      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
+      printOnce();
+    }, 9000);
+  }
+
+  printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone) {
+    let overlay = document.getElementById('pdf-print-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'pdf-print-overlay';
+      document.body.appendChild(overlay);
+    }
+    let styleEl = document.getElementById('pdf-print-overlay-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'pdf-print-overlay-style';
+      document.head.appendChild(styleEl);
+    }
+    const scoped = styleCss.replace(/(^|\})\s*([^{}]+)\{/g, (m, brace, sel) =>
+      brace + sel.split(',').map(s => '#pdf-print-overlay ' + s.trim()).join(',') + '{');
+    styleEl.textContent = '#pdf-print-overlay{display:none;}'
+      + '@media print{@page{margin:0}body>*:not(#pdf-print-overlay){display:none!important;}#pdf-print-overlay{display:block!important;padding:0.5in;}}'
+      + scoped;
+    overlay.innerHTML = bodyHtml;
+    const prevTitle = document.title;
+    document.title = fileTitle;
+    const cleanup = () => {
+      overlay.innerHTML = '';
+      document.title = prevTitle;
+      window.removeEventListener('afterprint', cleanup);
+      if (onDone) onDone();
+    };
+    window.addEventListener('afterprint', cleanup);
+    const doPrint = () => {
+      try { window.print(); } catch (e) {
+        this.setState({ loadError: 'Could not generate the PDF: ' + e.message });
+        cleanup();
+      }
+    };
+    const imgs = Array.from(overlay.querySelectorAll('img'));
+    const pending = imgs.filter(img => !img.complete);
+    let printed = false;
+    const printOnce = () => { if (printed) return; printed = true; doPrint(); };
+    if (!pending.length) { printOnce(); return; }
+    let settled = 0;
+    const done = () => { settled++; if (settled >= pending.length) printOnce(); };
+    pending.forEach(img => {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    });
+    setTimeout(() => {
+      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
+      printOnce();
+    }, 9000);
+  }
+
+  async onDownloadStoreStockPdf() {
+    this.setState({ storeStockPdfDownloading: true });
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const fmtNum = v => {
+      if (v === '' || v === null || v === undefined || isNaN(Number(v))) return esc(v);
+      return Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    };
+    const st = this.state;
+    const store = st.storeStockSelected;
+    const info = st.storeInfoMap && st.storeInfoMap.get(store);
+    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
+    const allRows = this.getStoreStockRows();
+    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500;
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const MAX_PDF_ROWS = 6000;
+    const noImages = allRows.length > 5000;
+    const truncated = allRows.length > MAX_PDF_ROWS;
+    const rows = truncated ? allRows.slice(0, MAX_PDF_ROWS) : allRows;
+
+    const rowsHtml = (noImages ? rows : await this.scaleRowImages(rows)).map(r => (
+      '<tr' + (r.highlight ? ' style="background:#fbe1de;"' : '') + '>'
+      + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" referrerpolicy="no-referrer" />' : '') + '</td>')
+      + '<td class="itemno">' + esc(r.itemNo) + '</td>'
+      + '<td class="desc">' + esc(r.description2) + '</td>'
+      + '<td class="ctr">' + fmtNum(r.qty) + '</td>'
+      + '<td class="ctr">' + fmtNum(r.whStock) + '</td>'
+      + (showDiscount ? '<td class="ctr" style="' + (r.pct === 'Was/Now Just' ? 'font-weight:700;color:#8b1a1a;' : '') + '">' + fmtNum(r.was) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + fmtNum(r.now) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + esc(r.pct) + '</td>' : '')
+      + '</tr>'
+    )).join('');
+
+    const fileTitle = (storeLabel + '-Promo-Stocks-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const extraCols = showDiscount ? '<col class="c-rsp"><col class="c-rsp"><col class="c-rsp">' : '';
+    const extraHead = showDiscount ? '<th>Was</th><th>Now</th><th>%</th>' : '';
+    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
+      + 'h1{font-size:20px;margin:0 0 4px;}'
+      + '.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
+      + 'table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;table-layout:fixed;}'
+      + 'tr{break-inside:avoid;}'
+      + 'tr.hdr th{border-bottom:2px solid #201e1d;}'
+      + 'col.c-img{width:14%}col.c-item{width:' + (noImages ? '18' : '16') + '%}col.c-desc{width:' + (showDiscount ? (noImages ? '38' : '32') : (noImages ? '58' : '52')) + '%}col.c-qty{width:10%}col.c-wh{width:10%}col.c-rsp{width:10%}'
+      + 'th{text-align:center;font-size:11px;text-transform:uppercase;color:#6b6360;padding:6px;border-bottom:2px solid #201e1d;}'
+      + 'th:first-child,th:nth-child(2){text-align:left;}'
+      + 'td{padding:6px;border-bottom:1px solid #e6ddd2;white-space:normal;overflow-wrap:break-word;word-break:break-word;text-wrap:pretty;vertical-align:middle;}'
+      + 'td.ctr{white-space:nowrap;}'
+      + 'td.ctr{text-align:center}'
+      + 'td.img-cell{overflow:hidden;}'
+      + 'td.img-cell img{width:100%;height:56px;object-fit:contain;display:block;}';
+    const bodyHtml = '<h1>' + esc(storeLabel) + '</h1>'
+      + '<div class="meta">Promo stocks · ' + rows.length + (truncated ? ' of ' + allRows.length : '') + ' SKUs' + (truncated ? ' (showing first ' + MAX_PDF_ROWS + ' — use Excel for the full list)' : '') + ' · ' + today + '</div>'
+      + '<table><colgroup>' + (noImages ? '' : '<col class="c-img">') + '<col class="c-item"><col class="c-desc"><col class="c-qty"><col class="c-wh">' + extraCols + '</colgroup>'
+      + '<tbody><tr class="hdr">' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th>' + extraHead + '</tr>'
+      + rowsHtml + '</tbody></table>';
+
+    this.printHtmlInPage(styleCss, bodyHtml, fileTitle, () => this.setState({ storeStockPdfDownloading: false }));
+  }
+
+  async onDownloadStoreStockExcel() {
+    const st = this.state;
+    const store = st.storeStockSelected;
+    const info = st.storeInfoMap && st.storeInfoMap.get(store);
+    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const rows = this.getStoreStockRows();
+    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500;
+    const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
+
+    const header = ['Item No.', 'Description 2', 'Qty', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
+    const aoa = [
+      [{ v: storeLabel, s: 1 }],
+      ['Promo stocks · ' + rows.length + ' SKUs · ' + today],
+      [],
+      header.map(h => ({ v: h, s: 5 })),
+    ];
+    for (const r of rows) {
+      const promo = r.pct === 'Was/Now Just';
+      const base = r.highlight ? 3 : 0;
+      const strong = promo ? (r.highlight ? 4 : 2) : base;
+      const line = [
+        { v: r.itemNo, t: 's', s: base },
+        { v: r.description2, t: 's', s: base },
+        { v: num(r.qty), s: base },
+        { v: num(r.whStock), s: base },
+      ];
+      if (showDiscount) line.push({ v: num(r.was), s: strong }, { v: num(r.now), s: strong }, { v: r.pct, t: 's', s: strong });
+      line.push({ v: r.image || '', t: 's', s: base });
+      aoa.push(line);
+    }
+    const cols = [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 11 }]
+      .concat(showDiscount ? [{ width: 10 }, { width: 10 }, { width: 14 }] : [])
+      .concat([{ width: 42 }]);
+    const fileTitle = (storeLabel + '-Promo-Stocks-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    downloadXlsx(aoa, fileTitle, { sheetName: 'Stock', cols });
+  }
+
+  onSkuQueryChange(e) { this.setState({ skuQuery: e.target.value, skuExpanded: '' }); }
+
+  async shareSkuImage(item) {
+    const S = 2, W = 1080, PAD = 40;
+    const BG = '#ffffff', INK = '#201e1d', MUTED = '#645c50', ACCENT = '#c67139', RED = '#8b1a1a', SAGE = '#eef3e6', LINE = '#e2dbcd', ROWTINT = '#faf6ee';
+    const loadImg = (src, anon) => new Promise(res => {
+      if (!src) return res(null);
+      const im = new Image();
+      if (anon) im.crossOrigin = 'anonymous';
+      im.onload = () => res(im);
+      im.onerror = () => res(null);
+      im.src = src;
+    });
+    // Cross-origin product photos taint the canvas, which blocks PNG export.
+    // Try the URL directly (works if the host sends CORS headers), then via a
+    // CORS-enabling image proxy, then as a fetched data URL.
+    let img = null;
+    if (item.image) {
+      const proxied = 'https://images.weserv.nl/?url=' + encodeURIComponent(item.image.replace(/^https?:\/\//, '')) + '&w=600&output=png';
+      img = await loadImg(item.image, true);
+      if (!img) img = await loadImg(proxied, true);
+      if (!img) {
+        try {
+          const res = await fetch(proxied, { mode: 'cors' });
+          const b = await res.blob();
+          const dataUrl = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.onerror = () => r(''); fr.readAsDataURL(b); });
+          if (dataUrl) img = await loadImg(dataUrl, false);
+        } catch (e) { /* offline or blocked — fall through imageless */ }
+      }
+    }
+
+    const measure = document.createElement('canvas').getContext('2d');
+    const font = (w, s) => `${w} ${s}px Figtree, "Noto Sans Arabic", system-ui, sans-serif`;
+    const wrap = (text, fontStr, maxW) => {
+      measure.font = fontStr;
+      const words = String(text || '').split(/\s+/).filter(Boolean);
+      const lines = [];
+      let line = '';
+      for (const w of words) {
+        const test = line ? line + ' ' + w : w;
+        if (measure.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+        else line = test;
+      }
+      if (line) lines.push(line);
+      return lines.slice(0, 3);
+    };
+
+    const imgBox = img ? 225 : 0;
+    const textX = PAD + (img ? imgBox + 22 : 0);
+    const textW = W - textX - PAD;
+    const descLines = wrap(item.description2, font(600, 30), textW);
+    const rows = item.storeRows || [];
+    const rowH = 62;
+    const headerH = Math.max(img ? imgBox : 0, 68 + 44 + descLines.length * 40);
+    const tableTop = PAD + headerH + 30;
+    const H = tableTop + 42 + rows.length * rowH + 76 + 56;
+
+    const c = document.createElement('canvas');
+    c.width = W * S; c.height = H * S;
+    const g = c.getContext('2d');
+    g.scale(S, S);
+    g.fillStyle = BG; g.fillRect(0, 0, W, H);
+
+    if (img) {
+      g.fillStyle = '#fff';
+      g.beginPath(); g.roundRect(PAD, PAD, imgBox, imgBox, 16); g.fill();
+      g.strokeStyle = LINE; g.lineWidth = 1; g.stroke();
+      const ratio = Math.min((imgBox - 16) / img.width, (imgBox - 16) / img.height);
+      const iw = img.width * ratio, ih = img.height * ratio;
+      g.drawImage(img, PAD + (imgBox - iw) / 2, PAD + (imgBox - ih) / 2, iw, ih);
+    }
+
+    let y = PAD + 52;
+    g.fillStyle = INK; g.font = font(800, 53); g.textBaseline = 'alphabetic';
+    g.fillText(item.itemNo, textX, y);
+    y += 44;
+    let px = textX;
+    if (item.rsp) { g.font = font(800, 30); g.fillStyle = item.now ? MUTED : ACCENT; g.fillText('RSP ' + item.rsp, px, y); px += g.measureText('RSP ' + item.rsp).width + 14; }
+    if (item.now) { g.font = font(800, 32); g.fillStyle = RED; g.fillText('Now ' + item.now, px, y); px += g.measureText('Now ' + item.now).width + 14; }
+    if (item.pct) {
+      g.font = font(800, 24);
+      const t = String(item.pct), tw = g.measureText(t).width;
+      g.fillStyle = RED; g.beginPath(); g.roundRect(px, y - 24, tw + 26, 34, 999); g.fill();
+      g.fillStyle = '#fff'; g.fillText(t, px + 13, y);
+    }
+    y += 42;
+    g.font = font(600, 30); g.fillStyle = MUTED;
+    for (const l of descLines) { g.fillText(l, textX, y); y += 40; }
+
+    g.fillStyle = INK; g.font = font(800, 26);
+    g.fillText('STOCK BY STORE', PAD, tableTop);
+    g.strokeStyle = LINE; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(PAD, tableTop + 18); g.lineTo(W - PAD, tableTop + 18); g.stroke();
+
+    let ry = tableTop + 18;
+    rows.forEach((sr, i) => {
+      if (i % 2 === 0) { g.fillStyle = ROWTINT; g.fillRect(PAD, ry, W - PAD * 2, rowH); }
+      g.fillStyle = INK; g.font = font(700, 31); g.textBaseline = 'middle';
+      g.fillText(sr.label, PAD + 12, ry + rowH / 2);
+      if (sr.labelAr) {
+        g.textAlign = 'right'; g.fillStyle = MUTED; g.font = font(700, 31);
+        g.fillText(sr.labelAr, W - PAD - 170, ry + rowH / 2);
+      }
+      g.fillStyle = INK; g.font = font(800, 31); g.textAlign = 'right';
+      g.fillText(String(sr.qty), W - PAD - 12, ry + rowH / 2);
+      g.textAlign = 'left';
+      ry += rowH;
+    });
+    if (!rows.length) {
+      g.fillStyle = MUTED; g.font = font(700, 31); g.textBaseline = 'middle';
+      g.fillText('No stock available', PAD + 12, ry + rowH / 2);
+      ry += rowH;
+    }
+    g.fillStyle = SAGE; g.beginPath(); g.roundRect(PAD, ry + 8, W - PAD * 2, 64, 16); g.fill();
+    g.fillStyle = INK; g.font = font(800, 32); g.textBaseline = 'middle';
+    g.fillText('Total', PAD + 12, ry + 40);
+    g.textAlign = 'right';
+    g.font = font(800, 30); g.fillText('الإجمالي', W - PAD - 170, ry + 40);
+    g.font = font(800, 32); g.fillText(String(item.totalQty || 0), W - PAD - 12, ry + 40);
+    g.textAlign = 'left';
+
+    g.fillStyle = MUTED; g.font = font(600, 24);
+    g.fillText(new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }), PAD, H - PAD + 6);
+
+    let blob;
+    try {
+      blob = await new Promise((res, rej) => { try { c.toBlob(res, 'image/png'); } catch (e) { rej(e); } });
+    } catch (e) {
+      if (item.image) return this.shareSkuImage({ ...item, image: '' });
+      throw e;
+    }
+    if (!blob && item.image) return this.shareSkuImage({ ...item, image: '' });
+    const name = String(item.itemNo).replace(/[^\w.-]+/g, '-') + '-stock.png';
+    try {
+      const file = new File([blob], name, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: item.itemNo });
+        return;
+      }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+  getSkuMatches(query) {
+    const s = this.state;
+    if (!s.parsed || !query || query.trim().length < 2) return [];
+    const q = query.trim().toLowerCase();
+    const { matrix, retailMap, discountMap } = s.parsed;
+    const storeCols = matrix.storeNames.filter(name => {
+      const info = s.storeInfoMap && s.storeInfoMap.get(name);
+      if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return false;
+      const displayName = (info.shortName || name).trim().toLowerCase();
+      return !EXCLUDED_STORES.has(displayName);
+    });
+    const terms = q.split(/\s+/).filter(Boolean);
+    const scored = [];
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo) || {};
+      const sku = it.itemNo.toLowerCase();
+      const desc = (r.description2 || it.description2 || '').toLowerCase();
+      let rank = null;
+      if (sku === q) rank = 0;
+      else if (sku.startsWith(q)) rank = 1;
+      else if (sku.includes(q)) rank = 2;
+      else if (terms.every(t => desc.includes(t))) rank = desc.startsWith(q) ? 3 : 4;
+      if (rank !== null) scored.push({ it, rank, desc });
+    }
+    const matches = scored
+      .sort((a, b) => a.rank - b.rank || naturalCompare(a.it.itemNo, b.it.itemNo))
+      .slice(0, 25)
+      .map(x => x.it);
+    const expandAll = matches.length === 1;
+    return matches.map(it => {
+      const r = retailMap.get(it.itemNo) || {};
+      const storeRows = storeCols
+        .map(name => {
+          const qty = Number(it.stores[name] || 0) || 0;
+          const info = s.storeInfoMap.get(name);
+          return { label: info.shortName || name, labelAr: info.nameAr || '', qty };
+        })
+        .filter(sr => sr.qty > 0)
+        .sort((a, b) => b.qty - a.qty);
+      const totalQty = storeRows.reduce((sum, sr) => sum + sr.qty, 0);
+      const disc = discountMap ? discountMap.get(it.itemNo) : null;
+      const exp = expandAll || s.skuExpanded === it.itemNo;
+      const metrics = this.costMetrics(it.itemNo, it.rsp, disc);
+      return {
+        itemNo: it.itemNo,
+        description2: r.description2 || it.description2,
+        rsp: it.rsp || '',
+        now: disc ? disc.now : '',
+        pct: disc ? disc.pct : '',
+        image: r.image && r.image !== '(blank)' ? r.image : '',
+        storeRows,
+        totalQty,
+        expanded: exp,
+        collapsed: !exp,
+        onToggle: () => this.setState(st => ({ skuExpanded: st.skuExpanded === it.itemNo ? '' : it.itemNo })),
+        onShare: () => this.shareSkuImage({
+          itemNo: it.itemNo,
+          description2: r.description2 || it.description2,
+          rsp: it.rsp || '',
+          now: disc ? disc.now : '',
+          pct: disc ? disc.pct : '',
+          image: r.image && r.image !== '(blank)' ? r.image : '',
+          storeRows, totalQty,
+        }),
+
+        ...metrics,
+        showCostPanel: exp && metrics.showCost,
+      };
+    });
+  }
+
+  onStatusFilter(val) { this.setState({ statusFilter: val }); }
+  onStockFilter(val) { this.setState({ stockFilter: val }); }
+  onLowStockFilter(val) { this.setState({ lowStockFilter: val }); }
+  filterResults(results, statusFilter, stockFilter, lowStockFilter) {
+    return (results || []).filter(r => {
+      if (statusFilter === 'continue' && r.discontinued) return false;
+      if (statusFilter === 'discontinued' && !r.discontinued) return false;
+      if (stockFilter === 'in' && r.whStock <= 0) return false;
+      if (stockFilter === 'out' && r.whStock > 0) return false;
+      if (lowStockFilter === 'low' && !(r.totalStock < 30)) return false;
+      return true;
+    });
+  }
+
+  async onDownloadPdf() {
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const st = this.state;
+    const info = st.storeInfoMap && st.storeInfoMap.get(st.resultStore);
+    const storeLabel = info ? (info.shortName || st.resultStore) + ' — ' + info.region : st.resultStore;
+    const results = this.filterResults(st.results, st.statusFilter, st.stockFilter, st.lowStockFilter);
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const continueCount = results.filter(r => !r.discontinued).length;
+    const discontinuedCount = results.filter(r => r.discontinued).length;
+    const inOrderCount = results.filter(r => r.inOrder).length;
+
+    const MAROON = '#643312', GREEN = '#3d472b', GREY = '#645c50';
+    const rowsHtml = (await this.scaleRowImages(results)).map(r => (
+      '<tr>'
+      + '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" />' : '') + '</td>'
+      + '<td class="itemno">' + esc(r.itemNo) + '</td>'
+      + '<td class="desc">' + esc(r.description2) + '</td>'
+      + '<td class="ctr">' + r.quantity + '</td>'
+      + '<td class="ctr">' + r.whStock + '</td>'
+      + '<td style="color:' + (r.discontinued ? MAROON : GREEN) + ';font-weight:700;">' + r.discontinuedLabel + '</td>'
+      + '<td style="color:' + (r.inOrder ? GREEN : GREY) + ';font-weight:700;">' + r.inOrderLabel + '</td>'
+      + '</tr>'
+    )).join('');
+
+    const fileTitle = (storeLabel + '-Inventory-Report-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
+      + 'h1{font-size:20px;margin:0 0 4px;}'
+      + '.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
+      + '.tags span{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;margin-right:8px;}'
+      + 'table{width:100%;border-collapse:separate;border-spacing:0;font-size:10.5px;table-layout:fixed;}'
+      + 'tr{break-inside:avoid;}'
+      + 'tr.hdr th{border-bottom:2px solid #201e1d;}'
+      + 'col.c-img{width:9%}col.c-item{width:11%}col.c-desc{width:37%}col.c-qty{width:7%}col.c-wh{width:10%}col.c-disc{width:14%}col.c-order{width:12%}'
+      + 'th{text-align:left;font-size:9.5px;text-transform:uppercase;color:#6b6360;padding:5px;border-bottom:2px solid #201e1d;}'
+      + 'td{padding:5px 6px;border-bottom:1px solid #e6ddd2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+      + 'td.ctr{text-align:center}'
+      + 'td.img-cell img{width:30px;height:30px;object-fit:contain;display:block;}';
+    const bodyHtml = '<h1>' + esc(storeLabel) + '</h1>'
+      + '<div class="meta">Quantity = ' + st.resultQty + ' pc(s) · ' + results.length + ' SKUs · ' + today + '</div>'
+      + '<div class="tags">'
+      + '<span style="background:#eef3e6;color:#4b6136;">' + continueCount + ' continuing</span>'
+      + '<span style="border:1px solid #c67139;color:#c67139;">' + discontinuedCount + ' discontinued</span>'
+      + '<span style="background:#f1efec;color:#55504c;">' + inOrderCount + ' on order</span>'
+      + '</div>'
+      + '<table><colgroup><col class="c-img"><col class="c-item"><col class="c-desc"><col class="c-qty"><col class="c-wh"><col class="c-disc"><col class="c-order"></colgroup>'
+      + '<tbody><tr class="hdr"><th></th><th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th><th>Discontinued</th><th>In Order</th></tr>'
+      + rowsHtml + '</tbody></table>';
+
+    this.printHtmlInPage(styleCss, bodyHtml, fileTitle);
+  }
+
+  async onDownloadExcel() {
+    const st = this.state;
+    const info = st.storeInfoMap && st.storeInfoMap.get(st.resultStore);
+    const storeLabel = info ? (info.shortName || st.resultStore) + ' — ' + info.region : st.resultStore;
+    const results = this.filterResults(st.results, st.statusFilter, st.stockFilter, st.lowStockFilter);
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
+
+    const aoa = [
+      [{ v: storeLabel, s: 1 }],
+      ['Quantity = ' + st.resultQty + ' pc(s) · ' + results.length + ' SKUs · ' + today],
+      [],
+      ['Item No.', 'Description 2', 'Qty', 'WH Stock', 'Discontinued', 'In Order'].map(h => ({ v: h, s: 5 })),
+    ];
+    for (const r of results) {
+      aoa.push([
+        { v: r.itemNo, t: 's' },
+        { v: r.description2, t: 's' },
+        { v: num(r.quantity) },
+        { v: num(r.whStock) },
+        { v: r.discontinuedLabel, t: 's' },
+        { v: r.inOrderLabel, t: 's' },
+      ]);
+    }
+    const fileTitle = (storeLabel + '-Inventory-Report-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    downloadXlsx(aoa, fileTitle, {
+      sheetName: 'Report',
+      cols: [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 11 }, { width: 14 }, { width: 12 }],
+    });
+  }
+
+  onGenerate() {
+    const { matrix, retailMap, openOrders } = this.state.parsed;
+    const store = this.state.selectedStore;
+    const qty = this.state.selectedQty;
+    const { storeStockBrand: brand, storeStockCategory: category, storeStockSubCategory: subCategory } = this.state;
+    const results = [];
+    for (const it of matrix.items) {
+      const raw = it.stores[store];
+      if (raw === undefined || raw === '') continue;
+      const q = Number(raw);
+      if (q !== qty) continue;
+      const r = retailMap.get(it.itemNo) || {};
+      if (brand && (r.brand || '').trim() !== brand) continue;
+      if (category && (r.category || '').trim() !== category) continue;
+      if (subCategory && (r.subCategory || '').trim() !== subCategory) continue;
+      const abha = Number(it.stores['Sub Warehouse - Abha'] || 0) || 0;
+      const riyadh = Number(it.stores['Main Warehouse - Riyadh'] || 0) || 0;
+      const totalStock = Object.values(it.stores).reduce((sum, v) => sum + (Number(v) || 0), 0);
+      const discontinued = !!r.discontinued;
+      const inOrder = openOrders.has(it.itemNo);
+      results.push({
+        itemNo: it.itemNo,
+        description2: r.description2 || it.description2,
+        image: r.image && r.image !== '(blank)' ? r.image : '',
+        quantity: q,
+        whStock: abha + riyadh,
+        totalStock,
+        discontinued,
+        discontinuedLabel: discontinued ? 'Discontinued' : 'Continue',
+        discontinuedColor: discontinued ? 'var(--color-accent-800)' : 'var(--color-accent-2-800)',
+        inOrder,
+        inOrderLabel: inOrder ? 'Yes' : 'No',
+        inOrderColor: inOrder ? 'var(--color-accent-2-800)' : 'var(--color-neutral-700)',
+      });
+    }
+    results.sort((a, b) => naturalCompare(a.itemNo, b.itemNo));
+    this.setState({ screen: 'results', results, resultStore: store, resultQty: qty, statusFilter: 'all', stockFilter: 'all', lowStockFilter: 'all' });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const info = s.storeInfoMap && s.storeInfoMap.get(s.resultStore);
+    const filteredResults = this.filterResults(s.results, s.statusFilter, s.stockFilter, s.lowStockFilter);
+    const subCategoryOptions = (s.screen === 'storestock' || s.screen === 'select') ? this.getSubCategoryOptions() : [];
+    const skuMatches = this.getSkuMatches(s.skuQuery);
+    const negInvByStore = s.screen === 'neginv' ? this.getNegInvByStore() : [];
+    const negInvModal = this.getNegInvModalView();
+    const negInvGrandQty = negInvByStore.reduce((sum, r) => sum + r.qty, 0).toLocaleString();
+    const negInvGrandValue = negInvByStore.reduce((sum, r) => sum + r.value, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return {
+      isLoading: s.screen === 'loading',
+      loadError: s.loadError,
+      isMenu: s.screen === 'menu',
+      isNegInv: s.screen === 'neginv',
+      negInvByStore: negInvByStore,
+      hasNegInvStores: negInvByStore.length > 0,
+      negInvGrandQty: negInvGrandQty,
+      negInvGrandValue: negInvGrandValue,
+      negInvLocation: s.negInvLocation,
+      negInvLocationOptions: s.screen === 'neginv' ? this.getNegInvLocationOptions() : [],
+      negInvSummary: s.screen === 'neginv' ? (this.getNegInvRows().length + ' negative stock lines found') : '',
+      negInvPdfDownloading: s.negInvPdfDownloading,
+      negInvPdfLabel: s.negInvPdfDownloading ? 'Downloading…' : 'Download PDF',
+      negInvModalOpen: s.negInvModalOpen,
+      negInvModalTitle: negInvModal.title,
+      negInvModalMeta: negInvModal.meta,
+      negInvModalRows: negInvModal.rows,
+      negInvModalTruncated: negInvModal.truncated,
+      negInvModalTruncatedNote: negInvModal.truncatedNote,
+      onOpenNegInvAll: () => this.onOpenNegInvModal('__ALL__'),
+      onCloseNegInvModal: () => this.onCloseNegInvModal(),
+      onGoNegInv: () => this.onGoNegInv(),
+      onBackFromNegInv: () => this.onBackFromNegInv(),
+      onNegInvLocationChange: e => this.onNegInvLocationChange(e),
+      onDownloadNegInvPdf: () => this.onDownloadNegInvPdf(),
+      onDownloadNegInvExcel: () => this.onDownloadNegInvExcel(),
+
+      isAdmin: s.isAdmin,
+      adminSignedOut: !s.isAdmin,
+      adminPromptOpen: s.adminPromptOpen,
+      adminPromptClosed: !s.adminPromptOpen,
+      adminPw: s.adminPw,
+      adminError: s.adminError,
+      onAdminOpen: () => this.onAdminOpen(),
+      onAdminPwChange: e => this.onAdminPwChange(e),
+      onAdminPwKeyDown: e => this.onAdminPwKeyDown(e),
+      onAdminSubmit: () => this.onAdminSubmit(),
+      onAdminSignOut: () => this.onAdminSignOut(),
+      isSelect: s.screen === 'select',
+      isResults: s.screen === 'results',
+      isSkuLookup: s.screen === 'skulookup',
+      isStoreStock: s.screen === 'storestock',
+      storeStockSelected: s.storeStockSelected,
+      hasDiscountFile: !!(s.parsed && s.parsed.discountMap && s.parsed.discountMap.size),
+      discountOnChecked: s.storeStockShowDiscount,
+      discountOffChecked: !s.storeStockShowDiscount && !s.storeStockAddnl1500,
+      addnl1500Checked: s.storeStockAddnl1500,
+      showDiscountRange: s.storeStockShowDiscount || s.storeStockAddnl1500,
+      storeStockPctRange: s.storeStockPctRange,
+      storeStockBrand: s.storeStockBrand,
+      brandOptions: (s.screen === 'storestock' || s.screen === 'select') ? this.getBrandOptions() : [],
+      storeStockCategory: s.storeStockCategory,
+      storeStockSubCategory: s.storeStockSubCategory,
+      categoryOptions: (s.screen === 'storestock' || s.screen === 'select') ? this.getCategoryOptions() : [],
+      subCategoryOptions: subCategoryOptions,
+      hasSubCategoryOptions: subCategoryOptions.length > 0,
+      onGoSelect: () => this.onGoSelect(),
+      onBackFromSelect: () => this.onBackFromSelect(),
+      onGoStoreStock: () => this.onGoStoreStock(),
+      onBackFromStoreStock: () => this.onBackFromStoreStock(),
+      onStoreStockChange: e => this.onStoreStockChange(e),
+      onDiscountOn: () => this.onDiscountOn(),
+      onDiscountOff: () => this.onDiscountOff(),
+      onAddnl1500On: () => this.onAddnl1500On(),
+      onPctRangeChange: e => this.onPctRangeChange(e),
+      onBrandChange: e => this.onBrandChange(e),
+      onCategoryChange: e => this.onCategoryChange(e),
+      onSubCategoryChange: e => this.onSubCategoryChange(e),
+      storeStockPdfDownloadLabel: s.storeStockPdfDownloading ? 'Downloading…' : 'Download PDF',
+      onDownloadStoreStockPdf: () => this.onDownloadStoreStockPdf(),
+      onDownloadStoreStockExcel: () => this.onDownloadStoreStockExcel(),
+      storeOptions: s.storeOptions,
+      selectedStore: s.selectedStore,
+      qty1Checked: s.selectedQty === 1,
+      qty2Checked: s.selectedQty === 2,
+      onStoreChange: e => this.onStoreChange(e),
+      onQty1: () => this.onQty1(),
+      onQty2: () => this.onQty2(),
+      onGenerate: () => this.onGenerate(),
+      onBackToSelect: () => this.onBackToSelect(),
+      onGoSkuLookup: () => this.onGoSkuLookup(),
+      onBackFromSku: () => this.onBackFromSku(),
+      onSkuQueryChange: e => this.onSkuQueryChange(e),
+      skuQuery: s.skuQuery,
+      skuQueryTooShort: s.screen === 'skulookup' && s.skuQuery.trim().length > 0 && s.skuQuery.trim().length < 2,
+      skuMatches: skuMatches,
+      skuNoMatches: s.screen === 'skulookup' && s.skuQuery.trim().length >= 2 && skuMatches.length === 0,
+      onDownloadPdf: () => this.onDownloadPdf(),
+      onDownloadExcel: () => this.onDownloadExcel(),
+      onStatusAll: () => this.onStatusFilter('all'),
+      onStatusContinue: () => this.onStatusFilter('continue'),
+      onStatusDiscontinued: () => this.onStatusFilter('discontinued'),
+      onStockAll: () => this.onStockFilter('all'),
+      onStockIn: () => this.onStockFilter('in'),
+      onStockOut: () => this.onStockFilter('out'),
+      onLowStockAll: () => this.onLowStockFilter('all'),
+      onLowStockOn: () => this.onLowStockFilter('low'),
+      statusAllChecked: s.statusFilter === 'all',
+      statusContinueChecked: s.statusFilter === 'continue',
+      statusDiscontinuedChecked: s.statusFilter === 'discontinued',
+      stockAllChecked: s.stockFilter === 'all',
+      stockInChecked: s.stockFilter === 'in',
+      stockOutChecked: s.stockFilter === 'out',
+      lowStockAllChecked: s.lowStockFilter === 'all',
+      lowStockOnChecked: s.lowStockFilter === 'low',
+      results: filteredResults,
+      hasResults: !!(filteredResults && filteredResults.length),
+      hasNoResults: !!(s.results && filteredResults.length === 0),
+      resultCount: filteredResults.length,
+      resultQty: s.resultQty,
+      resultStoreLabel: info ? (info.shortName || s.resultStore) + ' — ' + info.region : s.resultStore,
+      discontinuedCount: filteredResults.filter(r => r.discontinued).length,
+      continueCount: filteredResults.filter(r => !r.discontinued).length,
+      inOrderCount: filteredResults.filter(r => r.inOrder).length,
+      today: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
