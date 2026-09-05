@@ -439,7 +439,7 @@
           <div style="display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-lg); padding: var(--space-3); background: #fff;">
             <div style="display: flex; gap: 10px; align-items: center;">
               <sc-if value="{{item.image}}" hint-placeholder-val="{{false}}">
-                <img src="{{item.image}}" referrerpolicy="no-referrer" style="width: 41px; height: 41px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); flex: none;">
+                <img src="{{item.image}}" referrerpolicy="no-referrer" style="width: 62px; height: 62px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); flex: none;">
               </sc-if>
               <div style="display: flex; flex-direction: column; gap: 2px;">
                 <div style="font-weight: 700; font-size: 13px; color: var(--color-text);">{{item.itemNo}}</div>
@@ -483,12 +483,13 @@
               <div style="overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--color-neutral-200);">
                 <table class="table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
                   <thead>
-                    <tr><th>Store</th><th style="text-align: center;">Qty available</th></tr>
+                    <tr><th>Store</th><th style="text-align: right;">الفرع</th><th style="text-align: center;">Qty available</th></tr>
                   </thead>
                   <tbody>
                     <sc-for list="{{item.storeRows}}" as="sr" hint-placeholder-count="3">
                       <tr>
                         <td style="padding: 5px 6px;">{{sr.label}}</td>
+                        <td dir="rtl" style="padding: 5px 6px; text-align: right; color: var(--color-neutral-800);">{{sr.labelAr}}</td>
                         <td style="padding: 5px 6px; text-align: center; font-weight: 600;">{{sr.qty}}</td>
                       </tr>
                     </sc-for>
@@ -496,11 +497,13 @@
                   <tfoot>
                     <tr style="border-top: 1px solid var(--color-neutral-300);">
                       <td style="padding: 6px; font-weight: 700; color: var(--color-text);">Total</td>
+                      <td dir="rtl" style="padding: 6px; text-align: right; font-weight: 700; color: var(--color-text);">الإجمالي</td>
                       <td style="padding: 6px; text-align: center; font-weight: 700; color: var(--color-text);">{{item.totalQty}}</td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
+              <button class="btn btn-primary" onClick="{{item.onShare}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">Share as image</button>
             </sc-if>
             <sc-if value="{{item.collapsed}}" hint-placeholder-val="{{false}}">
               <button class="btn btn-ghost" onClick="{{item.onToggle}}" style="align-self: flex-start; font-size: 12px; padding: 4px 12px;">Show store stock ({{item.totalQty}} total) →</button>
@@ -1351,6 +1354,149 @@ class Component extends DCLogic {
 
   onSkuQueryChange(e) { this.setState({ skuQuery: e.target.value, skuExpanded: '' }); }
 
+  async shareSkuImage(item) {
+    const S = 2, W = 1000, PAD = 40;
+    const BG = '#ffffff', INK = '#201e1d', MUTED = '#645c50', ACCENT = '#c67139', RED = '#8b1a1a', SAGE = '#eef3e6', LINE = '#e2dbcd', ROWTINT = '#faf6ee';
+    const loadImg = (src, anon) => new Promise(res => {
+      if (!src) return res(null);
+      const im = new Image();
+      if (anon) im.crossOrigin = 'anonymous';
+      im.onload = () => res(im);
+      im.onerror = () => res(null);
+      im.src = src;
+    });
+    // Cross-origin product photos taint the canvas, which blocks PNG export.
+    // Try the URL directly (works if the host sends CORS headers), then via a
+    // CORS-enabling image proxy, then as a fetched data URL.
+    let img = null;
+    if (item.image) {
+      const proxied = 'https://images.weserv.nl/?url=' + encodeURIComponent(item.image.replace(/^https?:\/\//, '')) + '&w=600&output=png';
+      img = await loadImg(item.image, true);
+      if (!img) img = await loadImg(proxied, true);
+      if (!img) {
+        try {
+          const res = await fetch(proxied, { mode: 'cors' });
+          const b = await res.blob();
+          const dataUrl = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.onerror = () => r(''); fr.readAsDataURL(b); });
+          if (dataUrl) img = await loadImg(dataUrl, false);
+        } catch (e) { /* offline or blocked — fall through imageless */ }
+      }
+    }
+
+    const measure = document.createElement('canvas').getContext('2d');
+    const font = (w, s) => `${w} ${s}px Figtree, "Noto Sans Arabic", system-ui, sans-serif`;
+    const wrap = (text, fontStr, maxW) => {
+      measure.font = fontStr;
+      const words = String(text || '').split(/\s+/).filter(Boolean);
+      const lines = [];
+      let line = '';
+      for (const w of words) {
+        const test = line ? line + ' ' + w : w;
+        if (measure.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+        else line = test;
+      }
+      if (line) lines.push(line);
+      return lines.slice(0, 3);
+    };
+
+    const imgBox = img ? 225 : 0;
+    const textX = PAD + (img ? imgBox + 22 : 0);
+    const textW = W - textX - PAD;
+    const descLines = wrap(item.description2, font(400, 25), textW);
+    const rows = item.storeRows || [];
+    const rowH = 52;
+    const headerH = Math.max(img ? imgBox : 0, 58 + 38 + descLines.length * 34);
+    const tableTop = PAD + headerH + 30;
+    const H = tableTop + 38 + rows.length * rowH + 64 + 52;
+
+    const c = document.createElement('canvas');
+    c.width = W * S; c.height = H * S;
+    const g = c.getContext('2d');
+    g.scale(S, S);
+    g.fillStyle = BG; g.fillRect(0, 0, W, H);
+
+    if (img) {
+      g.fillStyle = '#fff';
+      g.beginPath(); g.roundRect(PAD, PAD, imgBox, imgBox, 16); g.fill();
+      g.strokeStyle = LINE; g.lineWidth = 1; g.stroke();
+      const ratio = Math.min((imgBox - 16) / img.width, (imgBox - 16) / img.height);
+      const iw = img.width * ratio, ih = img.height * ratio;
+      g.drawImage(img, PAD + (imgBox - iw) / 2, PAD + (imgBox - ih) / 2, iw, ih);
+    }
+
+    let y = PAD + 44;
+    g.fillStyle = INK; g.font = font(800, 44); g.textBaseline = 'alphabetic';
+    g.fillText(item.itemNo, textX, y);
+    y += 38;
+    let px = textX;
+    if (item.rsp) { g.font = font(700, 25); g.fillStyle = item.now ? MUTED : ACCENT; g.fillText('RSP ' + item.rsp, px, y); px += g.measureText('RSP ' + item.rsp).width + 14; }
+    if (item.now) { g.font = font(800, 27); g.fillStyle = RED; g.fillText('Now ' + item.now, px, y); px += g.measureText('Now ' + item.now).width + 14; }
+    if (item.pct) {
+      g.font = font(800, 20);
+      const t = String(item.pct), tw = g.measureText(t).width;
+      g.fillStyle = RED; g.beginPath(); g.roundRect(px, y - 20, tw + 22, 29, 999); g.fill();
+      g.fillStyle = '#fff'; g.fillText(t, px + 11, y);
+    }
+    y += 36;
+    g.font = font(400, 25); g.fillStyle = MUTED;
+    for (const l of descLines) { g.fillText(l, textX, y); y += 34; }
+
+    g.fillStyle = INK; g.font = font(800, 22);
+    g.fillText('STOCK BY STORE', PAD, tableTop);
+    g.strokeStyle = LINE; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(PAD, tableTop + 18); g.lineTo(W - PAD, tableTop + 18); g.stroke();
+
+    let ry = tableTop + 18;
+    rows.forEach((sr, i) => {
+      if (i % 2 === 0) { g.fillStyle = ROWTINT; g.fillRect(PAD, ry, W - PAD * 2, rowH); }
+      g.fillStyle = INK; g.font = font(500, 26); g.textBaseline = 'middle';
+      g.fillText(sr.label, PAD + 12, ry + rowH / 2);
+      if (sr.labelAr) {
+        g.textAlign = 'right'; g.fillStyle = MUTED; g.font = font(500, 26);
+        g.fillText(sr.labelAr, W - PAD - 150, ry + rowH / 2);
+      }
+      g.fillStyle = INK; g.font = font(800, 26); g.textAlign = 'right';
+      g.fillText(String(sr.qty), W - PAD - 12, ry + rowH / 2);
+      g.textAlign = 'left';
+      ry += rowH;
+    });
+    if (!rows.length) {
+      g.fillStyle = MUTED; g.font = font(500, 26); g.textBaseline = 'middle';
+      g.fillText('No stock available', PAD + 12, ry + rowH / 2);
+      ry += rowH;
+    }
+    g.fillStyle = SAGE; g.beginPath(); g.roundRect(PAD, ry + 8, W - PAD * 2, 54, 14); g.fill();
+    g.fillStyle = INK; g.font = font(800, 27); g.textBaseline = 'middle';
+    g.fillText('Total', PAD + 12, ry + 35);
+    g.textAlign = 'right';
+    g.font = font(700, 25); g.fillText('الإجمالي', W - PAD - 150, ry + 35);
+    g.font = font(800, 27); g.fillText(String(item.totalQty || 0), W - PAD - 12, ry + 35);
+    g.textAlign = 'left';
+
+    g.fillStyle = MUTED; g.font = font(500, 20);
+    g.fillText(new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }), PAD, H - PAD + 6);
+
+    let blob;
+    try {
+      blob = await new Promise((res, rej) => { try { c.toBlob(res, 'image/png'); } catch (e) { rej(e); } });
+    } catch (e) {
+      if (item.image) return this.shareSkuImage({ ...item, image: '' });
+      throw e;
+    }
+    if (!blob && item.image) return this.shareSkuImage({ ...item, image: '' });
+    const name = String(item.itemNo).replace(/[^\w.-]+/g, '-') + '-stock.png';
+    try {
+      const file = new File([blob], name, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: item.itemNo });
+        return;
+      }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
   getSkuMatches(query) {
     const s = this.state;
     if (!s.parsed || !query || query.trim().length < 2) return [];
@@ -1386,7 +1532,7 @@ class Component extends DCLogic {
         .map(name => {
           const qty = Number(it.stores[name] || 0) || 0;
           const info = s.storeInfoMap.get(name);
-          return { label: info.shortName || name, qty };
+          return { label: info.shortName || name, labelAr: info.nameAr || '', qty };
         })
         .filter(sr => sr.qty > 0)
         .sort((a, b) => b.qty - a.qty);
@@ -1406,6 +1552,16 @@ class Component extends DCLogic {
         expanded: exp,
         collapsed: !exp,
         onToggle: () => this.setState(st => ({ skuExpanded: st.skuExpanded === it.itemNo ? '' : it.itemNo })),
+        onShare: () => this.shareSkuImage({
+          itemNo: it.itemNo,
+          description2: r.description2 || it.description2,
+          rsp: it.rsp || '',
+          now: disc ? disc.now : '',
+          pct: disc ? disc.pct : '',
+          image: r.image && r.image !== '(blank)' ? r.image : '',
+          storeRows, totalQty,
+        }),
+
         ...metrics,
         showCostPanel: exp && metrics.showCost,
       };
