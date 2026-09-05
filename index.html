@@ -40,6 +40,7 @@
         <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Item Lookup in All Stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoDistribution}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Distribution</button>
 
         <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2);">
           <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
@@ -304,6 +305,219 @@
               <button class="btn btn-primary btn-block" onClick="{{onDownloadNegInvPdf}}" disabled="{{negInvPdfDownloading}}">{{negInvPdfLabel}}</button>
               <button class="btn btn-secondary btn-block" onClick="{{onDownloadNegInvExcel}}">Download Excel</button>
               <button class="btn btn-ghost btn-block" onClick="{{onCloseNegInvModal}}">Close</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- DISTRIBUTION SCREEN -->
+    <sc-if value="{{isDistribution}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromDistribution}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">Distribution</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button class="btn btn-block" onClick="{{onDistCoverage}}" style="justify-content: flex-start; text-align: left; font-size: 14px; background: var(--color-accent-100); color: var(--color-accent-700); border: 1px solid var(--color-accent-300);" style-hover="background: var(--color-accent-200);">Coverage gap</button>
+          <button class="btn btn-block" onClick="{{onDistBreadth}}" style="justify-content: flex-start; text-align: left; font-size: 14px; background: var(--color-accent-100); color: var(--color-accent-700); border: 1px solid var(--color-accent-300);" style-hover="background: var(--color-accent-200);">Store assortment breadth</button>
+          <button class="btn btn-block" onClick="{{onDistPenetration}}" style="justify-content: flex-start; text-align: left; font-size: 14px; background: var(--color-accent-100); color: var(--color-accent-700); border: 1px solid var(--color-accent-300);" style-hover="background: var(--color-accent-200);">Brand / category penetration</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3);">
+          <div style="font-family: var(--font-heading); font-size: 17px; color: var(--color-text);">{{distTitle}}</div>
+          <div style="font-size: 12px; color: var(--color-neutral-700);">{{distBlurb}}</div>
+        </div>
+
+        <div class="field">
+          <label for="dist-region-select">Region</label>
+          <select id="dist-region-select" class="input" value="{{distRegion}}" onChange="{{onDistRegionChange}}">
+            <option value="">All regions</option>
+            <sc-for list="{{distRegionOptions}}" as="rg" hint-placeholder-count="3">
+              <option value="{{rg}}">{{rg}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="dist-brand-select">Brand</label>
+          <select id="dist-brand-select" class="input" value="{{distBrand}}" onChange="{{onDistBrandChange}}">
+            <option value="">All brands</option>
+            <sc-for list="{{brandOptions}}" as="b" hint-placeholder-count="3">
+              <option value="{{b}}">{{b}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="dist-category-select">Category</label>
+          <select id="dist-category-select" class="input" value="{{distCategory}}" onChange="{{onDistCategoryChange}}">
+            <option value="">All categories</option>
+            <sc-for list="{{categoryOptions}}" as="c" hint-placeholder-count="3">
+              <option value="{{c}}">{{c}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <sc-if value="{{distIsPenetration}}" hint-placeholder-val="{{false}}">
+          <div class="seg" role="radiogroup" aria-label="Penetration dimension">
+            <label class="seg-opt">
+              <input type="radio" name="distDim" checked="{{distDimBrandChecked}}" onChange="{{onDistDimBrand}}">
+              By brand
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="distDim" checked="{{distDimCategoryChecked}}" onChange="{{onDistDimCategory}}">
+              By category
+            </label>
+          </div>
+        </sc-if>
+
+        <!-- COVERAGE GAP -->
+        <sc-if value="{{distIsCoverage}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="font-size: 12.5px; font-weight: 700; color: var(--color-text);">{{coverage.summary}}</div>
+            <div style="overflow-x: auto;">
+              <table class="table" style="width: 100%; font-size: 12.5px;">
+                <tbody>
+                  <tr>
+                    <th style="text-align: left;">SKU</th>
+                    <th style="text-align: right;">Coverage</th>
+                  </tr>
+                  <sc-for list="{{coverage.rows}}" as="row" hint-placeholder-count="6">
+                    <tr onClick="{{row.onOpen}}" style="cursor: pointer;" style-hover="background: var(--color-accent-100);">
+                      <td>
+                        <div style="display: flex; gap: 10px; align-items: flex-start;">
+                          <sc-if value="{{row.image}}" hint-placeholder-val="{{false}}">
+                            <img src="{{row.image}}" loading="lazy" style="width: 46px; height: 46px; object-fit: contain; border-radius: 6px; background: var(--color-neutral-100); flex: none;">
+                          </sc-if>
+                          <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                            <div style="font-weight: 700; color: var(--color-accent-700);">{{row.itemNo}}</div>
+                            <div style="color: var(--color-neutral-700); font-size: 11.5px;">{{row.description2}}</div>
+                            <div style="color: {{row.transferColor}}; font-size: 11.5px; font-weight: 600;">{{row.transferText}}</div>
+                            <div style="color: {{row.whColor}}; font-size: 11px;">WH: {{row.whText}}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style="text-align: right; white-space: nowrap;">
+                        <div style="font-weight: 700;">{{row.coverText}}</div>
+                        <div style="color: #8b1a1a; font-size: 11.5px; font-weight: 600;">{{row.missingText}}</div>
+                        <div style="color: var(--color-neutral-700); font-size: 11px;">{{row.region}}</div>
+                      </td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <sc-if value="{{coverage.truncated}}" hint-placeholder-val="{{false}}">
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-size: 11.5px; color: var(--color-neutral-700);">{{coverage.truncatedNote}}</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <button class="btn btn-secondary" onClick="{{onDistPrevPage}}" disabled="{{coverage.prevDisabled}}" style="flex: 1;">← Prev</button>
+                  <span style="font-size: 12px; font-weight: 700; color: var(--color-text); white-space: nowrap;">{{coverage.pageLabel}}</span>
+                  <button class="btn btn-secondary" onClick="{{onDistNextPage}}" disabled="{{coverage.nextDisabled}}" style="flex: 1;">Next →</button>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ASSORTMENT BREADTH -->
+        <sc-if value="{{distIsBreadth}}" hint-placeholder-val="{{false}}">
+          <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; font-size: 12.5px;">
+              <tbody>
+                <tr>
+                  <th style="text-align: left;">Store</th>
+                  <th style="text-align: right;">SKUs</th>
+                </tr>
+                <sc-for list="{{breadthRows}}" as="row" hint-placeholder-count="6">
+                  <tr>
+                    <td>
+                      <div style="font-weight: 700;">{{row.display}}</div>
+                      <div style="color: var(--color-neutral-700); font-size: 11.5px;">{{row.region}} · {{row.mixText}}</div>
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                      <div style="font-weight: 700;">{{row.skusText}}</div>
+                      <div style="color: {{row.peerColor}}; font-size: 11.5px; font-weight: 600;">{{row.peerText}}</div>
+                      <div style="color: var(--color-neutral-700); font-size: 11px;">{{row.qtyText}} pcs</div>
+                    </td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
+
+        <!-- PENETRATION -->
+        <sc-if value="{{distIsPenetration}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <sc-for list="{{penetrationRows}}" as="row" hint-placeholder-count="6">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px;">
+                  <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{row.name}}</span>
+                  <span style="font-size: 13px; font-weight: 700; color: var(--color-accent-700); white-space: nowrap;">{{row.pctText}}</span>
+                </div>
+                <div style="height: 8px; border-radius: 999px; background: var(--color-neutral-200); overflow: hidden;">
+                  <div style="height: 100%; width: {{row.barWidth}}; border-radius: 999px; background: var(--color-accent-2-500);"></div>
+                </div>
+                <div style="font-size: 11.5px; color: var(--color-neutral-700);">{{row.storesText}} stores · {{row.skusText}}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <button class="btn btn-primary btn-block" onClick="{{onDownloadDistExcel}}">Download Excel</button>
+        <span style="font-size: 11.5px; color: var(--color-neutral-700);">Scope: {{distScope}} · warehouses excluded, stores only.</span>
+      </div>
+
+      <sc-if value="{{distModal.open}}" hint-placeholder-val="{{false}}">
+        <div class="dialog-backdrop" style="position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: var(--space-3); z-index: 60;">
+          <div class="dialog" style="width: 100%; max-width: 460px; max-height: 88vh; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4);">
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <sc-if value="{{distModal.image}}" hint-placeholder-val="{{false}}">
+                <img src="{{distModal.image}}" style="width: 76px; height: 76px; object-fit: contain; border-radius: 8px; background: var(--color-neutral-100); flex: none;">
+              </sc-if>
+              <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+                <div class="dialog-title" style="font-size: 17px;">{{distModal.title}}</div>
+                <div style="font-size: 12.5px; color: var(--color-neutral-700);">{{distModal.subtitle}}</div>
+              </div>
+            </div>
+            <div style="font-size: 12.5px; color: var(--color-text); font-weight: 600;">{{distModal.meta}}</div>
+            <div style="font-size: 12.5px; color: var(--color-accent-2-700); font-weight: 700;">{{distModal.transfer}}</div>
+
+            <div style="overflow: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-300); padding: var(--space-2) 0; display: flex; flex-direction: column; gap: var(--space-3);">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Carrying</div>
+                <sc-for list="{{distModal.holders}}" as="h" hint-placeholder-count="3">
+                  <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px;">
+                    <span>{{h.display}}</span>
+                    <span style="font-weight: 700;">{{h.qtyText}} pcs</span>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{distModal.hasWarehouses}}" hint-placeholder-val="{{false}}">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <div style="font-size: 12px; font-weight: 700; color: var(--color-accent-700);">Warehouses (fulfilment)</div>
+                  <sc-for list="{{distModal.warehouses}}" as="w" hint-placeholder-count="2">
+                    <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px;">
+                      <span>{{w.display}}</span>
+                      <span style="font-weight: 700;">{{w.qtyText}} pcs</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div style="font-size: 12px; font-weight: 700; color: #8b1a1a;">Missing</div>
+                <sc-for list="{{distModal.missing}}" as="m" hint-placeholder-count="3">
+                  <div style="font-size: 12.5px; color: var(--color-neutral-800);">{{m.display}}</div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div class="dialog-actions" style="display: flex; flex-direction: column; gap: var(--space-2);">
+              <button class="btn btn-secondary btn-block" onClick="{{onDownloadDistExcel}}">Download Excel</button>
+              <button class="btn btn-ghost btn-block" onClick="{{onCloseDistModal}}">Close</button>
             </div>
           </div>
         </div>
@@ -739,6 +953,13 @@ class Component extends DCLogic {
     lowStockFilter: 'all',
     skuQuery: '',
     skuExpanded: '',
+    distReport: 'coverage',
+    distRegion: '',
+    distBrand: '',
+    distCategory: '',
+    distDim: 'brand',
+    distModalKey: '',
+    distPage: 1,
     storeStockShowDiscount: false,
     storeStockAddnl1500: false,
     storeStockPctRange: '',
@@ -885,6 +1106,334 @@ class Component extends DCLogic {
     }
     return Array.from(set).sort();
   }
+  onGoDistribution() { this.setState({ screen: 'distribution', distModalKey: '' }); }
+  onBackFromDistribution() { this.setState({ screen: 'menu', distModalKey: '' }); }
+  onDistCoverage() { this.setState({ distReport: 'coverage', distModalKey: '', distPage: 1 }); }
+  onDistBreadth() { this.setState({ distReport: 'breadth', distModalKey: '' }); }
+  onDistPenetration() { this.setState({ distReport: 'penetration', distModalKey: '' }); }
+  onDistRegionChange(e) { this.setState({ distRegion: e.target.value, distPage: 1 }); }
+  onDistBrandChange(e) { this.setState({ distBrand: e.target.value, distPage: 1 }); }
+  onDistCategoryChange(e) { this.setState({ distCategory: e.target.value, distPage: 1 }); }
+  onDistDimBrand() { this.setState({ distDim: 'brand' }); }
+  onDistDimCategory() { this.setState({ distDim: 'category' }); }
+  onOpenDistModal(key) { this.setState({ distModalKey: key }); }
+  onCloseDistModal() { this.setState({ distModalKey: '' }); }
+
+  distMemo(kind, fn) {
+    const s = this.state;
+    const key = [s.distRegion, s.distBrand, s.distCategory, s.distDim].join('|');
+    if (!this._distMemo || this._distMemo.key !== key) this._distMemo = { key: key };
+    if (!(kind in this._distMemo)) this._distMemo[kind] = fn();
+    return this._distMemo[kind];
+  }
+  getDistStores() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const opts = this.getNegInvLocationOptions();
+    const ci = this._storeInfoCI;
+    return opts.map(o => {
+      const info = (st.storeInfoMap && st.storeInfoMap.get(o.name)) || (ci && ci.get(String(o.name).trim().toLowerCase())) || null;
+      if (info && info.storeType === 'Warehouse') return null;
+      return {
+        name: o.name,
+        display: ((info && info.shortName) || o.name).trim(),
+        region: (info && info.region ? String(info.region).trim() : '') || 'Unassigned',
+      };
+    }).filter(Boolean).sort((a, b) => a.region.localeCompare(b.region) || a.display.localeCompare(b.display));
+  }
+  getDistWarehouses() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const opts = this.getNegInvLocationOptions();
+    const ci = this._storeInfoCI;
+    return opts.map(o => {
+      const info = (st.storeInfoMap && st.storeInfoMap.get(o.name)) || (ci && ci.get(String(o.name).trim().toLowerCase())) || null;
+      const display = ((info && info.shortName) || o.name).trim();
+      const isWh = (info && info.storeType === 'Warehouse') || /\bwh\b|warehouse/i.test(display);
+      if (!isWh) return null;
+      if (/check\s*&?\s*review/i.test(display) || /check\s*&?\s*review/i.test(String(o.name))) return null;
+      return { name: o.name, display: display };
+    }).filter(Boolean).sort((a, b) => a.display.localeCompare(b.display));
+  }
+  getDistRegionOptions() {
+    return Array.from(new Set(this.getDistStores().map(s => s.region))).sort();
+  }
+  getDistItems() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix, retailMap } = st.parsed;
+    const out = [];
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo) || {};
+      if (st.distBrand && (r.brand || '').trim() !== st.distBrand) continue;
+      if (st.distCategory && (r.category || '').trim() !== st.distCategory) continue;
+      out.push({ it: it, r: r });
+    }
+    return out;
+  }
+  getCoverageRows() {
+    return this.distMemo('coverage', () => {
+      const st = this.state;
+      const stores = this.getDistStores();
+      const byRegion = new Map();
+      for (const s of stores) {
+        if (!byRegion.has(s.region)) byRegion.set(s.region, []);
+        byRegion.get(s.region).push(s);
+      }
+      const items = this.getDistItems();
+      const whs = this.getDistWarehouses();
+      const rows = [];
+      for (const [rg, list] of byRegion) {
+        if (st.distRegion && rg !== st.distRegion) continue;
+        if (list.length < 2) continue;
+        for (const { it, r } of items) {
+          const holders = [], missing = [];
+          for (const s of list) {
+            const q = Number(it.stores[s.name]);
+            if (isFinite(q) && q > 0) holders.push({ display: s.display, qty: q });
+            else missing.push(s.display);
+          }
+          if (!holders.length || !missing.length) continue;
+          holders.sort((a, b) => b.qty - a.qty);
+          const donor = holders.find(h => h.qty >= 2) || null;
+          const whStock = whs.map(w => {
+            const q = Number(it.stores[w.name]);
+            return { display: w.display, qty: isFinite(q) ? q : 0 };
+          }).filter(w => w.qty > 0).sort((a, b) => b.qty - a.qty);
+          const whTotal = whStock.reduce((n, w) => n + w.qty, 0);
+          rows.push({
+            whStock: whStock,
+            whTotal: whTotal,
+            whText: whStock.length ? whStock.map(w => w.display + ' ' + w.qty.toLocaleString()).join(' · ') : 'No warehouse stock',
+            key: rg + '|' + it.itemNo,
+            itemNo: it.itemNo,
+            description2: r.description2 || it.description2 || '',
+            brand: (r.brand || '').trim(),
+            image: r.image || '',
+            region: rg,
+            holders: holders,
+            missing: missing,
+            holdersCount: holders.length,
+            missingCount: missing.length,
+            storesInRegion: list.length,
+            totalQty: holders.reduce((n, h) => n + h.qty, 0),
+            donor: donor,
+          });
+        }
+      }
+      rows.sort((a, b) => b.holdersCount - a.holdersCount || b.totalQty - a.totalQty || naturalCompare(a.itemNo, b.itemNo));
+      return rows;
+    });
+  }
+  getCoverageView() {
+    const all = this.getCoverageRows();
+    const PAGE = 20;
+    const pages = Math.max(1, Math.ceil(all.length / PAGE));
+    const page = Math.min(Math.max(1, this.state.distPage || 1), pages);
+    const start = (page - 1) * PAGE;
+    const rows = all.slice(start, start + PAGE).map(r => ({
+      key: r.key,
+      itemNo: r.itemNo,
+      description2: r.description2,
+      image: r.image,
+      region: r.region,
+      coverText: r.holdersCount + ' of ' + r.storesInRegion + ' stores',
+      missingText: r.missingCount + ' missing',
+      transferText: r.whStock.length
+        ? 'Ship from ' + r.whStock[0].display + ' (' + r.whStock[0].qty.toLocaleString() + ' pcs)'
+        : (r.donor ? 'Move 1 from ' + r.donor.display + ' (' + r.donor.qty.toLocaleString() + ' pcs)' : 'No warehouse or store stock — reorder'),
+      transferColor: (r.whStock.length || r.donor) ? 'var(--color-accent-2-700)' : 'var(--color-neutral-700)',
+      whText: r.whText,
+      whColor: r.whTotal > 0 ? 'var(--color-text)' : 'var(--color-neutral-700)',
+      onOpen: () => this.onOpenDistModal(r.key),
+    }));
+    return {
+      rows: rows,
+      has: all.length > 0,
+      summary: all.length.toLocaleString() + ' SKU/region gaps · ' + all.filter(r => r.donor).length.toLocaleString() + ' with spare stock to transfer',
+      truncated: all.length > PAGE,
+      truncatedNote: 'Showing ' + (all.length ? (start + 1) : 0).toLocaleString() + '–' + Math.min(start + PAGE, all.length).toLocaleString() + ' of ' + all.length.toLocaleString() + ' — the Excel export contains all of them.',
+      pageLabel: 'Page ' + page + ' of ' + pages,
+      prevDisabled: page <= 1,
+      nextDisabled: page >= pages,
+    };
+  }
+  onDistPrevPage() { this.setState(s => ({ distPage: Math.max(1, (s.distPage || 1) - 1) })); }
+  onDistNextPage() { this.setState(s => ({ distPage: (s.distPage || 1) + 1 })); }
+  getBreadthRows() {
+    return this.distMemo('breadth', () => {
+      const stores = this.getDistStores();
+      const items = this.getDistItems();
+      const stats = stores.map(s => ({ name: s.name, display: s.display, region: s.region, skus: 0, qty: 0, brands: new Set(), cats: new Set() }));
+      for (const { it, r } of items) {
+        for (const t of stats) {
+          const q = Number(it.stores[t.name]);
+          if (!(isFinite(q) && q > 0)) continue;
+          t.skus += 1;
+          t.qty += q;
+          if (r.brand) t.brands.add(r.brand.trim());
+          if (r.category) t.cats.add(r.category.trim());
+        }
+      }
+      const agg = new Map();
+      for (const t of stats) {
+        const a = agg.get(t.region) || { sum: 0, n: 0 };
+        a.sum += t.skus; a.n += 1;
+        agg.set(t.region, a);
+      }
+      return stats.map(t => {
+        const a = agg.get(t.region);
+        const avg = a && a.n ? a.sum / a.n : 0;
+        const diff = avg ? (t.skus - avg) / avg * 100 : 0;
+        return {
+          display: t.display,
+          region: t.region,
+          skus: t.skus,
+          qty: t.qty,
+          brands: t.brands.size,
+          cats: t.cats.size,
+          peerAvg: Math.round(avg),
+          diff: diff,
+          skusText: t.skus.toLocaleString(),
+          qtyText: t.qty.toLocaleString(),
+          mixText: t.brands.size + ' brands · ' + t.cats.size + ' categories',
+          peerText: (diff >= 0 ? '+' : '') + diff.toFixed(0) + '% vs region avg (' + Math.round(avg).toLocaleString() + ')',
+          peerColor: diff >= 0 ? 'var(--color-accent-2-700)' : '#8b1a1a',
+        };
+      }).sort((a, b) => b.skus - a.skus);
+    });
+  }
+  getPenetrationRows() {
+    return this.distMemo('penetration', () => {
+      const st = this.state;
+      const dim = st.distDim;
+      const stores = this.getDistStores().filter(s => !st.distRegion || s.region === st.distRegion);
+      const groups = new Map();
+      for (const { it, r } of this.getDistItems()) {
+        const name = (((dim === 'brand' ? r.brand : r.category) || '').trim()) || 'Unspecified';
+        let g = groups.get(name);
+        if (!g) { g = { name: name, carrying: new Set(), skus: new Set(), qty: 0 }; groups.set(name, g); }
+        for (const s of stores) {
+          const q = Number(it.stores[s.name]);
+          if (!(isFinite(q) && q > 0)) continue;
+          g.carrying.add(s.name);
+          g.skus.add(it.itemNo);
+          g.qty += q;
+        }
+      }
+      const total = stores.length || 1;
+      return Array.from(groups.values()).map(g => {
+        const pct = g.carrying.size / total * 100;
+        return {
+          name: g.name,
+          stores: g.carrying.size,
+          totalStores: stores.length,
+          skus: g.skus.size,
+          qty: g.qty,
+          pct: pct,
+          pctText: pct.toFixed(0) + '%',
+          storesText: g.carrying.size + ' of ' + stores.length,
+          skusText: g.skus.size.toLocaleString() + ' SKUs · ' + g.qty.toLocaleString() + ' pcs',
+          barWidth: Math.max(2, Math.round(pct)) + '%',
+        };
+      }).sort((a, b) => b.pct - a.pct || b.qty - a.qty);
+    });
+  }
+  getDistModalView() {
+    const st = this.state;
+    const empty = { open: false, title: '', subtitle: '', meta: '', holders: [], missing: [], warehouses: [], hasWarehouses: false, transfer: '' };
+    if (st.screen !== 'distribution' || !st.distModalKey) return empty;
+    const row = this.getCoverageRows().find(r => r.key === st.distModalKey);
+    if (!row) return empty;
+    return {
+      open: true,
+      title: row.itemNo,
+      subtitle: row.description2,
+      image: row.image,
+      meta: row.region + ' · ' + row.holdersCount + ' of ' + row.storesInRegion + ' stores carry it · ' + row.totalQty + ' pcs in region · ' + row.whTotal.toLocaleString() + ' pcs in warehouses',
+      holders: row.holders.map(h => ({ display: h.display, qtyText: h.qty.toLocaleString() })),
+      missing: row.missing.map(m => ({ display: m })),
+      warehouses: row.whStock.map(w => ({ display: w.display, qtyText: w.qty.toLocaleString() })),
+      hasWarehouses: row.whStock.length > 0,
+      transfer: row.whStock.length
+        ? 'Suggested fulfilment: ' + row.whStock[0].display + ' → ' + row.missing[0]
+        : (row.donor ? 'Suggested transfer: ' + row.donor.display + ' → ' + row.missing[0] : 'No warehouse or store spare stock — reorder instead.'),
+    };
+  }
+  distScopeLabel() {
+    const st = this.state;
+    const bits = [st.distRegion || 'All regions'];
+    if (st.distBrand) bits.push(st.distBrand);
+    if (st.distCategory) bits.push(st.distCategory);
+    return bits.join(' · ');
+  }
+  onDownloadDistExcel() {
+    const st = this.state;
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const scope = this.distScopeLabel();
+    let title, aoa, cols, sheet;
+    if (st.distReport === 'coverage') {
+      const rows = this.getCoverageRows();
+      title = 'Coverage gap';
+      sheet = 'Coverage gap';
+      aoa = [
+        [{ v: title, s: 1 }],
+        [scope + ' · ' + rows.length + ' gaps · ' + today],
+        [],
+        ['Item No.', 'Description 2', 'Brand', 'Region', 'Stores carrying', 'Stores in region', 'Stores missing', 'Region qty', 'Warehouse qty', 'Warehouse stock', 'Transfer from', 'Missing stores'].map(h => ({ v: h, s: 5 })),
+      ];
+      for (const r of rows) {
+        aoa.push([
+          { v: r.itemNo, t: 's' }, { v: r.description2, t: 's' }, { v: r.brand, t: 's' }, { v: r.region, t: 's' },
+          { v: r.holdersCount, s: 2 }, { v: r.storesInRegion, s: 2 }, { v: r.missingCount, s: 2 }, { v: r.totalQty, s: 2 },
+          { v: r.whTotal, s: 2 },
+          { v: r.whStock.map(w => w.display + ' ' + w.qty).join(', '), t: 's' },
+          { v: r.whStock.length ? r.whStock[0].display + ' (' + r.whStock[0].qty + ')' : (r.donor ? r.donor.display + ' (' + r.donor.qty + ')' : ''), t: 's' },
+          { v: r.missing.join(', '), t: 's' },
+        ]);
+      }
+      cols = [{ width: 16 }, { width: 40 }, { width: 18 }, { width: 18 }, { width: 15 }, { width: 15 }, { width: 14 }, { width: 11 }, { width: 14 }, { width: 30 }, { width: 24 }, { width: 60 }];
+    } else if (st.distReport === 'breadth') {
+      const rows = this.getBreadthRows();
+      title = 'Store assortment breadth';
+      sheet = 'Assortment breadth';
+      aoa = [
+        [{ v: title, s: 1 }],
+        [scope + ' · ' + rows.length + ' stores · ' + today],
+        [],
+        ['Store', 'Region', 'SKUs carried', 'Brands', 'Categories', 'Units on hand', 'Region avg SKUs', 'vs region %'].map(h => ({ v: h, s: 5 })),
+      ];
+      for (const r of rows) {
+        aoa.push([
+          { v: r.display, t: 's' }, { v: r.region, t: 's' },
+          { v: r.skus, s: 2 }, { v: r.brands, s: 2 }, { v: r.cats, s: 2 }, { v: r.qty, s: 2 },
+          { v: r.peerAvg, s: 2 }, { v: Number(r.diff.toFixed(1)), s: 0 },
+        ]);
+      }
+      cols = [{ width: 28 }, { width: 18 }, { width: 13 }, { width: 10 }, { width: 12 }, { width: 14 }, { width: 16 }, { width: 12 }];
+    } else {
+      const rows = this.getPenetrationRows();
+      const dimLabel = st.distDim === 'brand' ? 'Brand' : 'Category';
+      title = dimLabel + ' penetration';
+      sheet = dimLabel + ' penetration';
+      aoa = [
+        [{ v: title, s: 1 }],
+        [scope + ' · ' + rows.length + ' ' + dimLabel.toLowerCase() + 's · ' + today],
+        [],
+        [dimLabel, 'Stores carrying', 'Stores in scope', 'Penetration %', 'SKUs stocked', 'Units on hand'].map(h => ({ v: h, s: 5 })),
+      ];
+      for (const r of rows) {
+        aoa.push([
+          { v: r.name, t: 's' }, { v: r.stores, s: 2 }, { v: r.totalStores, s: 2 },
+          { v: Number(r.pct.toFixed(1)), s: 0 }, { v: r.skus, s: 2 }, { v: r.qty, s: 2 },
+        ]);
+      }
+      cols = [{ width: 30 }, { width: 15 }, { width: 15 }, { width: 14 }, { width: 13 }, { width: 14 }];
+    }
+    const fileTitle = (title + '-' + scope + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    downloadXlsx(aoa, fileTitle, { sheetName: sheet, cols: cols });
+  }
+
   onGoNegInv() { this.setState({ screen: 'neginv' }); }
   onBackFromNegInv() { this.setState({ screen: 'menu', negInvModalOpen: false }); }
   onOpenNegInvModal(name) { this.setState({ negInvLocation: name, negInvModalOpen: true }); }
@@ -1752,6 +2301,42 @@ class Component extends DCLogic {
       onAdminPwKeyDown: e => this.onAdminPwKeyDown(e),
       onAdminSubmit: () => this.onAdminSubmit(),
       onAdminSignOut: () => this.onAdminSignOut(),
+      isDistribution: s.screen === 'distribution',
+      onGoDistribution: () => this.onGoDistribution(),
+      onBackFromDistribution: () => this.onBackFromDistribution(),
+      distIsCoverage: s.screen === 'distribution' && s.distReport === 'coverage',
+      distIsBreadth: s.screen === 'distribution' && s.distReport === 'breadth',
+      distIsPenetration: s.screen === 'distribution' && s.distReport === 'penetration',
+      onDistCoverage: () => this.onDistCoverage(),
+      onDistBreadth: () => this.onDistBreadth(),
+      onDistPenetration: () => this.onDistPenetration(),
+      distTitle: s.distReport === 'breadth' ? 'Store assortment breadth' : (s.distReport === 'penetration' ? (s.distDim === 'brand' ? 'Brand penetration by region' : 'Category penetration by region') : 'Coverage gap'),
+      distBlurb: s.distReport === 'breadth'
+        ? 'How many SKUs, brands and categories each store carries, against the average of its own region.'
+        : (s.distReport === 'penetration'
+          ? 'Share of stores in scope that carry each brand or category.'
+          : 'SKUs stocked by some stores in a region but missing from others. Tap a row for the transfer suggestion.'),
+      distRegion: s.distRegion,
+      distRegionOptions: s.screen === 'distribution' ? this.getDistRegionOptions() : [],
+      distBrand: s.distBrand,
+      distCategory: s.distCategory,
+      onDistRegionChange: e => this.onDistRegionChange(e),
+      onDistBrandChange: e => this.onDistBrandChange(e),
+      onDistCategoryChange: e => this.onDistCategoryChange(e),
+      distDimBrandChecked: s.distDim === 'brand',
+      distDimCategoryChecked: s.distDim === 'category',
+      onDistDimBrand: () => this.onDistDimBrand(),
+      onDistDimCategory: () => this.onDistDimCategory(),
+      distScope: s.screen === 'distribution' ? this.distScopeLabel() : '',
+      coverage: s.screen === 'distribution' && s.distReport === 'coverage' ? this.getCoverageView() : { rows: [], has: false, summary: '', truncated: false, truncatedNote: '', pageLabel: '', prevDisabled: true, nextDisabled: true },
+      onDistPrevPage: () => this.onDistPrevPage(),
+      onDistNextPage: () => this.onDistNextPage(),
+      breadthRows: s.screen === 'distribution' && s.distReport === 'breadth' ? this.getBreadthRows() : [],
+      penetrationRows: s.screen === 'distribution' && s.distReport === 'penetration' ? this.getPenetrationRows() : [],
+      distModal: this.getDistModalView(),
+      onCloseDistModal: () => this.onCloseDistModal(),
+      onDownloadDistExcel: () => this.onDownloadDistExcel(),
+
       isSelect: s.screen === 'select',
       isResults: s.screen === 'results',
       isSkuLookup: s.screen === 'skulookup',
@@ -1764,10 +2349,10 @@ class Component extends DCLogic {
       showDiscountRange: s.storeStockShowDiscount || s.storeStockAddnl1500,
       storeStockPctRange: s.storeStockPctRange,
       storeStockBrand: s.storeStockBrand,
-      brandOptions: (s.screen === 'storestock' || s.screen === 'select') ? this.getBrandOptions() : [],
+      brandOptions: (s.screen === 'storestock' || s.screen === 'select' || s.screen === 'distribution') ? this.getBrandOptions() : [],
       storeStockCategory: s.storeStockCategory,
       storeStockSubCategory: s.storeStockSubCategory,
-      categoryOptions: (s.screen === 'storestock' || s.screen === 'select') ? this.getCategoryOptions() : [],
+      categoryOptions: (s.screen === 'storestock' || s.screen === 'select' || s.screen === 'distribution') ? this.getCategoryOptions() : [],
       subCategoryOptions: subCategoryOptions,
       hasSubCategoryOptions: subCategoryOptions.length > 0,
       onGoSelect: () => this.onGoSelect(),
