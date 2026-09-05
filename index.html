@@ -1355,7 +1355,7 @@ class Component extends DCLogic {
   onSkuQueryChange(e) { this.setState({ skuQuery: e.target.value, skuExpanded: '' }); }
 
   async shareSkuImage(item) {
-    const S = 2, W = 1000, PAD = 40;
+    const S = 2, W = 1080, PAD = 40;
     const BG = '#ffffff', INK = '#201e1d', MUTED = '#645c50', ACCENT = '#c67139', RED = '#8b1a1a', SAGE = '#eef3e6', LINE = '#e2dbcd', ROWTINT = '#faf6ee';
     const loadImg = (src, anon) => new Promise(res => {
       if (!src) return res(null);
@@ -1402,12 +1402,12 @@ class Component extends DCLogic {
     const imgBox = img ? 225 : 0;
     const textX = PAD + (img ? imgBox + 22 : 0);
     const textW = W - textX - PAD;
-    const descLines = wrap(item.description2, font(400, 25), textW);
+    const descLines = wrap(item.description2, font(600, 30), textW);
     const rows = item.storeRows || [];
-    const rowH = 52;
-    const headerH = Math.max(img ? imgBox : 0, 58 + 38 + descLines.length * 34);
+    const rowH = 62;
+    const headerH = Math.max(img ? imgBox : 0, 68 + 44 + descLines.length * 40);
     const tableTop = PAD + headerH + 30;
-    const H = tableTop + 38 + rows.length * rowH + 64 + 52;
+    const H = tableTop + 42 + rows.length * rowH + 76 + 56;
 
     const c = document.createElement('canvas');
     c.width = W * S; c.height = H * S;
@@ -1424,24 +1424,24 @@ class Component extends DCLogic {
       g.drawImage(img, PAD + (imgBox - iw) / 2, PAD + (imgBox - ih) / 2, iw, ih);
     }
 
-    let y = PAD + 44;
-    g.fillStyle = INK; g.font = font(800, 44); g.textBaseline = 'alphabetic';
+    let y = PAD + 52;
+    g.fillStyle = INK; g.font = font(800, 53); g.textBaseline = 'alphabetic';
     g.fillText(item.itemNo, textX, y);
-    y += 38;
+    y += 44;
     let px = textX;
-    if (item.rsp) { g.font = font(700, 25); g.fillStyle = item.now ? MUTED : ACCENT; g.fillText('RSP ' + item.rsp, px, y); px += g.measureText('RSP ' + item.rsp).width + 14; }
-    if (item.now) { g.font = font(800, 27); g.fillStyle = RED; g.fillText('Now ' + item.now, px, y); px += g.measureText('Now ' + item.now).width + 14; }
+    if (item.rsp) { g.font = font(800, 30); g.fillStyle = item.now ? MUTED : ACCENT; g.fillText('RSP ' + item.rsp, px, y); px += g.measureText('RSP ' + item.rsp).width + 14; }
+    if (item.now) { g.font = font(800, 32); g.fillStyle = RED; g.fillText('Now ' + item.now, px, y); px += g.measureText('Now ' + item.now).width + 14; }
     if (item.pct) {
-      g.font = font(800, 20);
+      g.font = font(800, 24);
       const t = String(item.pct), tw = g.measureText(t).width;
-      g.fillStyle = RED; g.beginPath(); g.roundRect(px, y - 20, tw + 22, 29, 999); g.fill();
-      g.fillStyle = '#fff'; g.fillText(t, px + 11, y);
+      g.fillStyle = RED; g.beginPath(); g.roundRect(px, y - 24, tw + 26, 34, 999); g.fill();
+      g.fillStyle = '#fff'; g.fillText(t, px + 13, y);
     }
-    y += 36;
-    g.font = font(400, 25); g.fillStyle = MUTED;
-    for (const l of descLines) { g.fillText(l, textX, y); y += 34; }
+    y += 42;
+    g.font = font(600, 30); g.fillStyle = MUTED;
+    for (const l of descLines) { g.fillText(l, textX, y); y += 40; }
 
-    g.fillStyle = INK; g.font = font(800, 22);
+    g.fillStyle = INK; g.font = font(800, 26);
     g.fillText('STOCK BY STORE', PAD, tableTop);
     g.strokeStyle = LINE; g.lineWidth = 1;
     g.beginPath(); g.moveTo(PAD, tableTop + 18); g.lineTo(W - PAD, tableTop + 18); g.stroke();
@@ -1449,31 +1449,31 @@ class Component extends DCLogic {
     let ry = tableTop + 18;
     rows.forEach((sr, i) => {
       if (i % 2 === 0) { g.fillStyle = ROWTINT; g.fillRect(PAD, ry, W - PAD * 2, rowH); }
-      g.fillStyle = INK; g.font = font(500, 26); g.textBaseline = 'middle';
+      g.fillStyle = INK; g.font = font(700, 31); g.textBaseline = 'middle';
       g.fillText(sr.label, PAD + 12, ry + rowH / 2);
       if (sr.labelAr) {
-        g.textAlign = 'right'; g.fillStyle = MUTED; g.font = font(500, 26);
-        g.fillText(sr.labelAr, W - PAD - 150, ry + rowH / 2);
+        g.textAlign = 'right'; g.fillStyle = MUTED; g.font = font(700, 31);
+        g.fillText(sr.labelAr, W - PAD - 170, ry + rowH / 2);
       }
-      g.fillStyle = INK; g.font = font(800, 26); g.textAlign = 'right';
+      g.fillStyle = INK; g.font = font(800, 31); g.textAlign = 'right';
       g.fillText(String(sr.qty), W - PAD - 12, ry + rowH / 2);
       g.textAlign = 'left';
       ry += rowH;
     });
     if (!rows.length) {
-      g.fillStyle = MUTED; g.font = font(500, 26); g.textBaseline = 'middle';
+      g.fillStyle = MUTED; g.font = font(700, 31); g.textBaseline = 'middle';
       g.fillText('No stock available', PAD + 12, ry + rowH / 2);
       ry += rowH;
     }
-    g.fillStyle = SAGE; g.beginPath(); g.roundRect(PAD, ry + 8, W - PAD * 2, 54, 14); g.fill();
-    g.fillStyle = INK; g.font = font(800, 27); g.textBaseline = 'middle';
-    g.fillText('Total', PAD + 12, ry + 35);
+    g.fillStyle = SAGE; g.beginPath(); g.roundRect(PAD, ry + 8, W - PAD * 2, 64, 16); g.fill();
+    g.fillStyle = INK; g.font = font(800, 32); g.textBaseline = 'middle';
+    g.fillText('Total', PAD + 12, ry + 40);
     g.textAlign = 'right';
-    g.font = font(700, 25); g.fillText('الإجمالي', W - PAD - 150, ry + 35);
-    g.font = font(800, 27); g.fillText(String(item.totalQty || 0), W - PAD - 12, ry + 35);
+    g.font = font(800, 30); g.fillText('الإجمالي', W - PAD - 170, ry + 40);
+    g.font = font(800, 32); g.fillText(String(item.totalQty || 0), W - PAD - 12, ry + 40);
     g.textAlign = 'left';
 
-    g.fillStyle = MUTED; g.font = font(500, 20);
+    g.fillStyle = MUTED; g.font = font(600, 24);
     g.fillText(new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }), PAD, H - PAD + 6);
 
     let blob;
