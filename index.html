@@ -484,18 +484,24 @@
               </div>
             </div>
             <div style="font-size: 12.5px; color: var(--color-text); font-weight: 600;">{{distModal.meta}}</div>
+            <div style="font-size: 12.5px; color: var(--color-neutral-700); font-weight: 600;">{{distModal.nationalMeta}}</div>
             <div style="font-size: 12.5px; color: var(--color-accent-2-700); font-weight: 700;">{{distModal.transfer}}</div>
 
             <div style="overflow: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-300); padding: var(--space-2) 0; display: flex; flex-direction: column; gap: var(--space-3);">
-              <div style="display: flex; flex-direction: column; gap: 4px;">
-                <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Carrying</div>
-                <sc-for list="{{distModal.holders}}" as="h" hint-placeholder-count="3">
-                  <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px;">
-                    <span>{{h.display}}</span>
-                    <span style="font-weight: 700;">{{h.qtyText}} pcs</span>
-                  </div>
-                </sc-for>
-              </div>
+              <sc-for list="{{distModal.groups}}" as="g" hint-placeholder-count="3">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <div style="font-size: 12px; font-weight: 700; color: {{g.headColor}};">{{g.headText}}</div>
+                  <sc-for list="{{g.holders}}" as="h" hint-placeholder-count="3">
+                    <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px;">
+                      <span>{{h.display}}</span>
+                      <span style="font-weight: 700;">{{h.qtyText}} pcs</span>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{g.hasMissing}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size: 12px; color: #8b1a1a;">Missing: {{g.missingText}}</div>
+                  </sc-if>
+                </div>
+              </sc-for>
               <sc-if value="{{distModal.hasWarehouses}}" hint-placeholder-val="{{false}}">
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                   <div style="font-size: 12px; font-weight: 700; color: var(--color-accent-700);">Warehouses (fulfilment)</div>
@@ -507,12 +513,6 @@
                   </sc-for>
                 </div>
               </sc-if>
-              <div style="display: flex; flex-direction: column; gap: 4px;">
-                <div style="font-size: 12px; font-weight: 700; color: #8b1a1a;">Missing</div>
-                <sc-for list="{{distModal.missing}}" as="m" hint-placeholder-count="3">
-                  <div style="font-size: 12.5px; color: var(--color-neutral-800);">{{m.display}}</div>
-                </sc-for>
-              </div>
             </div>
 
             <div class="dialog-actions" style="display: flex; flex-direction: column; gap: var(--space-2);">
@@ -1121,10 +1121,20 @@ class Component extends DCLogic {
 
   distMemo(kind, fn) {
     const s = this.state;
-    const key = [s.distRegion, s.distBrand, s.distCategory, s.distDim].join('|');
+    const key = ['v2', s.distRegion, s.distBrand, s.distCategory, s.distDim].join('|');
     if (!this._distMemo || this._distMemo.key !== key) this._distMemo = { key: key };
     if (!(kind in this._distMemo)) this._distMemo[kind] = fn();
     return this._distMemo[kind];
+  }
+  distExcluded(name) {
+    const norm = String(name || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]+/g, '');
+    if (!norm) return true;
+    if (norm.includes('salesman')) return true;
+    const list = [
+      'closedstores', 'customeropening', 'purchaseopening', 'unpostedinventory',
+      'refrigerationworkshop', 'checkreview', 'مكتبالمروج',
+    ];
+    return list.some(x => norm.includes(x));
   }
   getDistStores() {
     const st = this.state;
@@ -1134,6 +1144,7 @@ class Component extends DCLogic {
     return opts.map(o => {
       const info = (st.storeInfoMap && st.storeInfoMap.get(o.name)) || (ci && ci.get(String(o.name).trim().toLowerCase())) || null;
       if (info && info.storeType === 'Warehouse') return null;
+      if (this.distExcluded(o.name) || this.distExcluded((info && info.shortName) || '')) return null;
       return {
         name: o.name,
         display: ((info && info.shortName) || o.name).trim(),
@@ -1151,7 +1162,7 @@ class Component extends DCLogic {
       const display = ((info && info.shortName) || o.name).trim();
       const isWh = (info && info.storeType === 'Warehouse') || /\bwh\b|warehouse/i.test(display);
       if (!isWh) return null;
-      if (/check\s*&?\s*review/i.test(display) || /check\s*&?\s*review/i.test(String(o.name))) return null;
+      if (this.distExcluded(display) || this.distExcluded(o.name)) return null;
       return { name: o.name, display: display };
     }).filter(Boolean).sort((a, b) => a.display.localeCompare(b.display));
   }
@@ -1222,7 +1233,20 @@ class Component extends DCLogic {
         }
       }
       rows.sort((a, b) => b.holdersCount - a.holdersCount || b.totalQty - a.totalQty || naturalCompare(a.itemNo, b.itemNo));
-      return rows;
+      if (st.distRegion) return rows;
+      // All regions: interleave region-by-region so every region shows, not just the largest one
+      const buckets = new Map();
+      for (const r of rows) {
+        if (!buckets.has(r.region)) buckets.set(r.region, []);
+        buckets.get(r.region).push(r);
+      }
+      const lists = Array.from(buckets.values());
+      const mixed = [];
+      const maxLen = lists.reduce((n, l) => Math.max(n, l.length), 0);
+      for (let i = 0; i < maxLen; i++) {
+        for (const l of lists) if (i < l.length) mixed.push(l[i]);
+      }
+      return mixed;
     });
   }
   getCoverageView() {
@@ -1341,16 +1365,45 @@ class Component extends DCLogic {
   }
   getDistModalView() {
     const st = this.state;
-    const empty = { open: false, title: '', subtitle: '', meta: '', holders: [], missing: [], warehouses: [], hasWarehouses: false, transfer: '' };
+    const empty = { open: false, title: '', subtitle: '', meta: '', nationalMeta: '', groups: [], holders: [], missing: [], warehouses: [], hasWarehouses: false, transfer: '' };
     if (st.screen !== 'distribution' || !st.distModalKey) return empty;
     const row = this.getCoverageRows().find(r => r.key === st.distModalKey);
     if (!row) return empty;
+    const item = (st.parsed.matrix.items || []).find(i => i.itemNo === row.itemNo);
+    const allStores = this.getDistStores();
+    const regionMap = new Map();
+    for (const s of allStores) {
+      if (!regionMap.has(s.region)) regionMap.set(s.region, { region: s.region, holders: [], missing: [] });
+      const q = item ? Number(item.stores[s.name]) : NaN;
+      if (isFinite(q) && q > 0) regionMap.get(s.region).holders.push({ display: s.display, qtyText: q.toLocaleString(), qty: q });
+      else regionMap.get(s.region).missing.push({ display: s.display });
+    }
+    const groups = Array.from(regionMap.values())
+      .map(g => {
+        g.holders.sort((a, b) => b.qty - a.qty);
+        const total = g.holders.length + g.missing.length;
+        return {
+          region: g.region,
+          isFocus: g.region === row.region,
+          headText: g.region + ' — ' + g.holders.length + ' of ' + total + ' carrying',
+          headColor: g.region === row.region ? 'var(--color-accent-700)' : 'var(--color-text)',
+          holders: g.holders,
+          missing: g.missing,
+          hasMissing: g.missing.length > 0,
+          missingText: g.missing.map(m => m.display).join(', '),
+          qtySum: g.holders.reduce((n, h) => n + h.qty, 0),
+        };
+      })
+      .sort((a, b) => (b.isFocus ? 1 : 0) - (a.isFocus ? 1 : 0) || a.region.localeCompare(b.region));
+    const natHolders = groups.reduce((n, g) => n + g.holders.length, 0);
     return {
       open: true,
       title: row.itemNo,
       subtitle: row.description2,
       image: row.image,
       meta: row.region + ' · ' + row.holdersCount + ' of ' + row.storesInRegion + ' stores carry it · ' + row.totalQty + ' pcs in region · ' + row.whTotal.toLocaleString() + ' pcs in warehouses',
+      nationalMeta: 'Country-wide: ' + natHolders + ' of ' + allStores.length + ' stores carry it · ' + groups.reduce((n, g) => n + g.qtySum, 0).toLocaleString() + ' pcs',
+      groups: groups,
       holders: row.holders.map(h => ({ display: h.display, qtyText: h.qty.toLocaleString() })),
       missing: row.missing.map(m => ({ display: m })),
       warehouses: row.whStock.map(w => ({ display: w.display, qtyText: w.qty.toLocaleString() })),
