@@ -41,6 +41,7 @@
         <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoDistribution}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Distribution</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoWhStores}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">WH vs Stores</button>
 
         <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2);">
           <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
@@ -311,6 +312,113 @@
       </sc-if>
     </sc-if>
 
+    <!-- WH VS STORES SCREEN -->
+    <sc-if value="{{isWhStores}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromWhStores}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">WH vs Stores</div>
+        </div>
+        <div style="font-size: 12px; color: var(--color-neutral-700);">SKUs held in the warehouses, with the store stock beside them. SKUs with no warehouse stock are hidden.</div>
+
+        <div class="field">
+          <label for="wh-store-select">Store</label>
+          <select id="wh-store-select" class="input" value="{{whStore}}" onChange="{{onWhStoreChange}}">
+            <option value="">All stores (combined)</option>
+            <sc-for list="{{whStoreOptions}}" as="s" hint-placeholder-count="5">
+              <option value="{{s.name}}">{{s.display}}</option>
+            </sc-for>
+          </select>
+        </div>
+        <div class="field">
+          <label for="wh-brand-select">Brand</label>
+          <select id="wh-brand-select" class="input" value="{{whBrand}}" onChange="{{onWhBrandChange}}">
+            <option value="">All brands</option>
+            <sc-for list="{{whBrandOptions}}" as="b" hint-placeholder-count="4">
+              <option value="{{b}}">{{b}}</option>
+            </sc-for>
+          </select>
+        </div>
+        <div class="field">
+          <label for="wh-category-select">Category</label>
+          <select id="wh-category-select" class="input" value="{{whCategory}}" onChange="{{onWhCategoryChange}}">
+            <option value="">All categories</option>
+            <sc-for list="{{whCategoryOptions}}" as="c" hint-placeholder-count="4">
+              <option value="{{c}}">{{c}}</option>
+            </sc-for>
+          </select>
+        </div>
+        <div class="field">
+          <label for="wh-subcategory-select">Sub-category</label>
+          <select id="wh-subcategory-select" class="input" value="{{whSubCategory}}" onChange="{{onWhSubCategoryChange}}">
+            <option value="">All sub-categories</option>
+            <sc-for list="{{whSubCategoryOptions}}" as="sc" hint-placeholder-count="4">
+              <option value="{{sc}}">{{sc}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <div style="font-size: 12.5px; font-weight: 700; color: var(--color-text);">{{wh.summary}}</div>
+
+        <sc-if value="{{wh.empty}}" hint-placeholder-val="{{false}}">
+          <div class="card" style="padding: var(--space-4); text-align: center; color: var(--color-neutral-700);">No warehouse stock matches these filters.</div>
+        </sc-if>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{wh.rows}}" as="row" hint-placeholder-count="6">
+            <div style="display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-lg); padding: var(--space-3); background: #fff;">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <sc-if value="{{row.image}}" hint-placeholder-val="{{false}}">
+                  <img src="{{row.image}}" style="width: 62px; height: 62px; object-fit: contain; border-radius: 6px; background: var(--color-neutral-100); flex: none;">
+                </sc-if>
+                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                  <div style="font-weight: 700; font-size: 13px; color: var(--color-text);">{{row.itemNo}}</div>
+                  <div style="font-size: 12px; color: var(--color-neutral-700);">{{row.description2}}</div>
+                  <div style="font-size: 11px; color: var(--color-neutral-700);">{{row.brandLine}}</div>
+                  <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 12px; font-weight: 600; color: var(--color-accent-700);">Was {{row.wasText}}</span>
+                    <sc-if value="{{row.hasNow}}" hint-placeholder-val="{{false}}">
+                      <span style="font-size: 12px; font-weight: 700; color: #8b1a1a;">Now {{row.nowText}}</span>
+                    </sc-if>
+                    <sc-if value="{{row.hasPct}}" hint-placeholder-val="{{false}}">
+                      <span style="font-size: 11px; font-weight: 700; color: #fff; background: #8b1a1a; border-radius: 999px; padding: 1px 7px;">{{row.pctText}}</span>
+                    </sc-if>
+                  </div>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; background: var(--color-accent-2-100); border: 1px solid var(--color-accent-2-300); border-radius: var(--radius-md); padding: 8px 10px;">
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Store stock</span>
+                  <span style="font-size: 15px; font-weight: 800; color: {{row.storeQtyColor}};">{{row.storeQtyText}}</span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Riyadh WH</span>
+                  <span style="font-size: 15px; font-weight: 800; color: var(--color-text);">{{row.riyadhText}}</span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Abha WH</span>
+                  <span style="font-size: 15px; font-weight: 800; color: var(--color-text);">{{row.abhaText}}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{wh.showPager}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button class="btn btn-secondary" onClick="{{onWhPrevPage}}" disabled="{{wh.prevDisabled}}" style="flex: 1;">← Prev</button>
+            <span style="font-size: 12px; font-weight: 700; color: var(--color-neutral-700); white-space: nowrap;">{{wh.pageLabel}}</span>
+            <button class="btn btn-secondary" onClick="{{onWhNextPage}}" disabled="{{wh.nextDisabled}}" style="flex: 1;">Next →</button>
+          </div>
+        </sc-if>
+
+        <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+          <button class="btn btn-primary btn-block" onClick="{{onDownloadWhPdf}}" disabled="{{whPdfDownloading}}">{{whPdfLabel}}</button>
+          <button class="btn btn-secondary btn-block" onClick="{{onDownloadWhExcel}}">Download Excel</button>
+        </div>
+      </div>
+    </sc-if>
+
     <!-- DISTRIBUTION SCREEN -->
     <sc-if value="{{isDistribution}}" hint-placeholder-val="{{false}}">
       <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
@@ -453,7 +561,7 @@
         <sc-if value="{{distIsPenetration}}" hint-placeholder-val="{{false}}">
           <div style="display: flex; flex-direction: column; gap: 10px;">
             <sc-for list="{{penetrationRows}}" as="row" hint-placeholder-count="6">
-              <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div onClick="{{row.onOpen}}" role="button" tabindex="0" style="display: flex; flex-direction: column; gap: 4px; cursor: pointer; padding: 8px 10px; margin: 0 -10px; border-radius: var(--radius-md); background: transparent; min-height: 44px; justify-content: center;" style-hover="background: var(--color-accent-100);" style-active="background: var(--color-accent-200);">
                 <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px;">
                   <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{row.name}}</span>
                   <span style="font-size: 13px; font-weight: 700; color: var(--color-accent-700); white-space: nowrap;">{{row.pctText}}</span>
@@ -461,7 +569,10 @@
                 <div style="height: 8px; border-radius: 999px; background: var(--color-neutral-200); overflow: hidden;">
                   <div style="height: 100%; width: {{row.barWidth}}; border-radius: 999px; background: var(--color-accent-2-500);"></div>
                 </div>
-                <div style="font-size: 11.5px; color: var(--color-neutral-700);">{{row.storesText}} stores · {{row.skusText}}</div>
+                <div style="display: flex; justify-content: space-between; gap: 10px; align-items: baseline;">
+                  <span style="font-size: 11.5px; color: var(--color-neutral-700);">{{row.storesText}} stores · {{row.skusText}}</span>
+                  <span style="font-size: 11px; font-weight: 700; color: var(--color-accent-700); white-space: nowrap;">{{row.missingHint}} ›</span>
+                </div>
               </div>
             </sc-for>
           </div>
@@ -470,6 +581,48 @@
         <button class="btn btn-primary btn-block" onClick="{{onDownloadDistExcel}}">Download Excel</button>
         <span style="font-size: 11.5px; color: var(--color-neutral-700);">Scope: {{distScope}} · warehouses excluded, stores only.</span>
       </div>
+
+      <sc-if value="{{penModal.open}}" hint-placeholder-val="{{false}}">
+        <div class="dialog-backdrop" style="position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: var(--space-3); z-index: 60;">
+          <div class="dialog" style="width: 100%; max-width: 460px; max-height: 88vh; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4);">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div class="dialog-title" style="font-size: 17px;">{{penModal.title}}</div>
+              <div style="font-size: 12.5px; color: var(--color-neutral-700);">{{penModal.subtitle}}</div>
+            </div>
+            <div style="font-size: 12.5px; font-weight: 700; color: var(--color-text);">{{penModal.meta}}</div>
+
+            <div style="overflow: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-300); padding: var(--space-2) 0; display: flex; flex-direction: column; gap: var(--space-3);">
+              <sc-if value="{{penModal.allCovered}}" hint-placeholder-val="{{false}}">
+                <div style="font-size: 12.5px; color: var(--color-accent-2-700); font-weight: 700;">Available in every store in scope.</div>
+              </sc-if>
+              <sc-for list="{{penModal.groups}}" as="g" hint-placeholder-count="3">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <div style="font-size: 12px; font-weight: 700; color: #8b1a1a;">{{g.headText}}</div>
+                  <sc-for list="{{g.missing}}" as="m" hint-placeholder-count="3">
+                    <div style="font-size: 12.5px; color: var(--color-text);">{{m.display}}</div>
+                  </sc-for>
+                </div>
+              </sc-for>
+              <sc-if value="{{penModal.hasWarehouses}}" hint-placeholder-val="{{false}}">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <div style="font-size: 12px; font-weight: 700; color: var(--color-accent-700);">Warehouses</div>
+                  <sc-for list="{{penModal.warehouses}}" as="w" hint-placeholder-count="2">
+                    <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px;">
+                      <span>{{w.display}}</span>
+                      <span style="font-weight: 700; color: {{w.statusColor}};">{{w.statusText}}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+
+            <div class="dialog-actions" style="display: flex; flex-direction: column; gap: var(--space-2);">
+              <button class="btn btn-secondary btn-block" onClick="{{onDownloadDistExcel}}">Download Excel</button>
+              <button class="btn btn-ghost btn-block" onClick="{{onClosePenModal}}">Close</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
 
       <sc-if value="{{distModal.open}}" hint-placeholder-val="{{false}}">
         <div class="dialog-backdrop" style="position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: var(--space-3); z-index: 60;">
@@ -960,6 +1113,11 @@ class Component extends DCLogic {
     distDim: 'brand',
     distModalKey: '',
     distPage: 1,
+    whBrand: '',
+    whCategory: '',
+    whSubCategory: '',
+    whStore: '',
+    whPage: 1,
     storeStockShowDiscount: false,
     storeStockAddnl1500: false,
     storeStockPctRange: '',
@@ -1106,16 +1264,185 @@ class Component extends DCLogic {
     }
     return Array.from(set).sort();
   }
+  onGoWhStores() { this.setState({ screen: 'whstores', whPage: 1 }); }
+  onBackFromWhStores() { this.setState({ screen: 'menu' }); }
+  onWhBrandChange(e) { this.setState({ whBrand: e.target.value, whPage: 1 }); }
+  onWhCategoryChange(e) { this.setState({ whCategory: e.target.value, whSubCategory: '', whPage: 1 }); }
+  onWhSubCategoryChange(e) { this.setState({ whSubCategory: e.target.value, whPage: 1 }); }
+  onWhStoreChange(e) { this.setState({ whStore: e.target.value, whPage: 1 }); }
+  onWhPrevPage() { this.setState(s => ({ whPage: Math.max(1, s.whPage - 1) })); }
+  onWhNextPage() { this.setState(s => ({ whPage: s.whPage + 1 })); }
+  getWhSubCategoryOptions() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix, retailMap } = st.parsed;
+    const set = new Set();
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo);
+      if (!r || !r.subCategory || !r.subCategory.trim()) continue;
+      if (st.whCategory && (r.category || '').trim() !== st.whCategory) continue;
+      set.add(r.subCategory.trim());
+    }
+    return Array.from(set).sort();
+  }
+  getWhRows() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const key = ['wh', st.whBrand, st.whCategory, st.whSubCategory, st.whStore].join('|');
+    if (this._whMemo && this._whMemo.key === key) return this._whMemo.rows;
+    const { matrix, retailMap, discountMap } = st.parsed;
+    const stores = this.getDistStores();
+    const scope = st.whStore ? stores.filter(s => s.name === st.whStore) : stores;
+    const RIYADH = 'Main Warehouse - Riyadh', ABHA = 'Sub Warehouse - Abha';
+    const num = v => Number(v) || 0;
+    const rows = [];
+    for (const it of matrix.items) {
+      const riyadh = num(it.stores[RIYADH]);
+      const abha = num(it.stores[ABHA]);
+      if (riyadh + abha <= 0) continue;
+      const r = retailMap.get(it.itemNo) || {};
+      if (st.whBrand && (r.brand || '').trim() !== st.whBrand) continue;
+      if (st.whCategory && (r.category || '').trim() !== st.whCategory) continue;
+      if (st.whSubCategory && (r.subCategory || '').trim() !== st.whSubCategory) continue;
+      let storeQty = 0;
+      for (const s of scope) storeQty += num(it.stores[s.name]);
+      const disc = discountMap ? discountMap.get(it.itemNo) : null;
+      const was = disc ? (disc.was || it.rsp || '') : (it.rsp || '');
+      const money = v => {
+        const n = parseFloat(String(v ?? '').replace(/[^0-9.\-]/g, ''));
+        if (!isFinite(n)) return String(v ?? '');
+        return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      };
+      rows.push({
+        itemNo: it.itemNo,
+        description2: r.description2 || it.description2 || '',
+        image: r.image && r.image !== '(blank)' ? r.image : '',
+        brandLine: [(r.brand || '').trim(), (r.category || '').trim(), (r.subCategory || '').trim()].filter(Boolean).join(' · '),
+        storeQty: storeQty,
+        riyadh: riyadh,
+        abha: abha,
+        whTotal: riyadh + abha,
+        storeQtyText: storeQty.toLocaleString(),
+        riyadhText: riyadh.toLocaleString(),
+        abhaText: abha.toLocaleString(),
+        storeQtyColor: storeQty > 0 ? 'var(--color-text)' : '#8b1a1a',
+        wasText: was ? money(was) : '—',
+        nowText: disc && disc.now ? money(disc.now) : '',
+        hasNow: !!(disc && disc.now),
+        pctText: disc && disc.pct ? (/^-?[\d.]+%?$/.test(String(disc.pct).trim()) ? money(disc.pct) + '%' : String(disc.pct)) : '',
+        hasPct: !!(disc && disc.pct),
+      });
+    }
+    rows.sort((a, b) => b.whTotal - a.whTotal || naturalCompare(a.itemNo, b.itemNo));
+    this._whMemo = { key: key, rows: rows };
+    return rows;
+  }
+  getWhView() {
+    const st = this.state;
+    const rows = this.getWhRows();
+    const per = 20;
+    const pages = Math.max(1, Math.ceil(rows.length / per));
+    const page = Math.min(Math.max(1, st.whPage), pages);
+    const slice = rows.slice((page - 1) * per, page * per);
+    const scopeName = st.whStore
+      ? ((this.getDistStores().find(s => s.name === st.whStore) || {}).display || st.whStore)
+      : 'All stores (combined)';
+    return {
+      rows: slice,
+      has: rows.length > 0,
+      empty: rows.length === 0,
+      scopeName: scopeName,
+      summary: rows.length.toLocaleString() + ' SKUs with warehouse stock · ' + scopeName,
+      pageLabel: 'Page ' + page + ' of ' + pages,
+      showPager: pages > 1,
+      prevDisabled: page <= 1,
+      nextDisabled: page >= pages,
+    };
+  }
+  onDownloadWhExcel() {
+    const st = this.state;
+    const rows = this.getWhRows();
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const scope = [st.whStore ? ((this.getDistStores().find(s => s.name === st.whStore) || {}).display || st.whStore) : 'All stores', st.whBrand, st.whCategory, st.whSubCategory].filter(Boolean).join(' · ');
+    const aoa = [
+      [{ v: 'WH vs Stores', s: 1 }],
+      [scope + ' · ' + rows.length + ' SKUs · ' + today],
+      [],
+      ['Item No.', 'Description 2', 'Brand / category', 'Store stock', 'Riyadh WH', 'Abha WH', 'Was', 'Now', '%', 'Image Link'].map(h => ({ v: h, s: 5 })),
+    ];
+    for (const r of rows) {
+      aoa.push([
+        { v: r.itemNo, t: 's' }, { v: r.description2, t: 's' }, { v: r.brandLine, t: 's' },
+        { v: r.storeQty }, { v: r.riyadh }, { v: r.abha },
+        { v: r.wasText === '—' ? '' : r.wasText, t: 's' }, { v: r.nowText, t: 's' }, { v: r.pctText, t: 's' },
+        { v: r.image || '', t: 's' },
+      ]);
+    }
+    const cols = [{ width: 16 }, { width: 34 }, { width: 26 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 10 }, { width: 10 }, { width: 8 }, { width: 30 }];
+    const fileTitle = ('WH-vs-Stores-' + scope + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    downloadXlsx(aoa, fileTitle, { sheetName: 'WH vs Stores', cols: cols });
+  }
+  async onDownloadWhPdf() {
+    this.setState({ whPdfDownloading: true });
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const st = this.state;
+    const view = this.getWhView();
+    const allRows = this.getWhRows();
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const MAX_PDF_ROWS = 4000;
+    const noImages = allRows.length > 3000;
+    const truncated = allRows.length > MAX_PDF_ROWS;
+    const rows = truncated ? allRows.slice(0, MAX_PDF_ROWS) : allRows;
+    const scaledRows = noImages ? rows : await this.scaleRowImages(rows);
+    const filters = [st.whBrand, st.whCategory, st.whSubCategory].filter(Boolean).join(' · ');
+
+    const rowsHtml = scaledRows.map(r => (
+      '<tr>'
+      + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" />' : '') + '</td>')
+      + '<td class="itemno">' + esc(r.itemNo) + '</td>'
+      + '<td class="desc">' + esc(r.description2) + '<div class="sub">' + esc(r.brandLine) + '</div></td>'
+      + '<td class="ctr"' + (r.storeQty > 0 ? '' : ' style="color:#8b1a1a;font-weight:700;"') + '>' + r.storeQtyText + '</td>'
+      + '<td class="ctr">' + r.riyadhText + '</td>'
+      + '<td class="ctr">' + r.abhaText + '</td>'
+      + '<td class="ctr">' + esc(r.wasText) + '</td>'
+      + '<td class="ctr" style="font-weight:700;' + (r.hasNow ? 'color:#8b1a1a;' : '') + '">' + esc(r.nowText) + '</td>'
+      + '<td class="ctr" style="font-weight:700;' + (r.hasPct ? 'color:#8b1a1a;' : '') + '">' + esc(r.pctText) + '</td>'
+      + '</tr>'
+    )).join('');
+
+    const fileTitle = ('WH-vs-Stores-' + view.scopeName + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
+      + 'h1{font-size:20px;margin:0 0 4px;}'
+      + '.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
+      + 'table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;table-layout:fixed;}'
+      + 'tr{break-inside:avoid;}'
+      + 'tr.hdr th{border-bottom:2px solid #201e1d;}'
+      + 'col.c-img{width:11%}col.c-item{width:' + (noImages ? '16' : '14') + '%}col.c-desc{width:' + (noImages ? '35' : '27') + '%}col.c-num{width:8%}col.c-price{width:8%}'
+      + 'th{text-align:center;font-size:11px;text-transform:uppercase;color:#6b6360;padding:6px;border-bottom:2px solid #201e1d;}'
+      + 'th:first-child,th:nth-child(2){text-align:left;}'
+      + 'td{padding:6px;border-bottom:1px solid #e6ddd2;white-space:normal;overflow-wrap:break-word;word-break:break-word;text-wrap:pretty;vertical-align:middle;}'
+      + 'td.ctr{text-align:center;white-space:nowrap;}'
+      + 'td .sub{font-size:10.5px;color:#6b6360;}'
+      + 'td.img-cell{overflow:hidden;}'
+      + 'td.img-cell img{width:100%;height:56px;object-fit:contain;display:block;}';
+    const bodyHtml = '<h1>WH vs Stores</h1>'
+      + '<div class="meta">' + esc(view.scopeName) + (filters ? ' · ' + esc(filters) : '') + ' · ' + rows.length + (truncated ? ' of ' + allRows.length : '') + ' SKUs with warehouse stock' + (truncated ? ' (showing first ' + MAX_PDF_ROWS + ' — use Excel for the full list)' : '') + ' · ' + today + '</div>'
+      + '<table><colgroup>' + (noImages ? '' : '<col class="c-img">') + '<col class="c-item"><col class="c-desc"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-price"><col class="c-price"><col class="c-price"></colgroup>'
+      + '<tbody><tr class="hdr">' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Store stock</th><th>Riyadh WH</th><th>Abha WH</th><th>Was</th><th>Now</th><th>%</th></tr>'
+      + rowsHtml + '</tbody></table>';
+
+    this.printHtmlInPage(styleCss, bodyHtml, fileTitle, () => this.setState({ whPdfDownloading: false }));
+  }
   onGoDistribution() { this.setState({ screen: 'distribution', distModalKey: '' }); }
-  onBackFromDistribution() { this.setState({ screen: 'menu', distModalKey: '' }); }
-  onDistCoverage() { this.setState({ distReport: 'coverage', distModalKey: '', distPage: 1 }); }
-  onDistBreadth() { this.setState({ distReport: 'breadth', distModalKey: '' }); }
-  onDistPenetration() { this.setState({ distReport: 'penetration', distModalKey: '' }); }
-  onDistRegionChange(e) { this.setState({ distRegion: e.target.value, distPage: 1 }); }
-  onDistBrandChange(e) { this.setState({ distBrand: e.target.value, distPage: 1 }); }
-  onDistCategoryChange(e) { this.setState({ distCategory: e.target.value, distPage: 1 }); }
-  onDistDimBrand() { this.setState({ distDim: 'brand' }); }
-  onDistDimCategory() { this.setState({ distDim: 'category' }); }
+  onBackFromDistribution() { this.setState({ screen: 'menu', distModalKey: '', distPenKey: '' }); }
+  onDistCoverage() { this.setState({ distReport: 'coverage', distModalKey: '', distPenKey: '', distPage: 1 }); }
+  onDistBreadth() { this.setState({ distReport: 'breadth', distModalKey: '', distPenKey: '' }); }
+  onDistPenetration() { this.setState({ distReport: 'penetration', distModalKey: '', distPenKey: '' }); }
+  onDistRegionChange(e) { this.setState({ distRegion: e.target.value, distPenKey: '', distPage: 1 }); }
+  onDistBrandChange(e) { this.setState({ distBrand: e.target.value, distPenKey: '', distPage: 1 }); }
+  onDistCategoryChange(e) { this.setState({ distCategory: e.target.value, distPenKey: '', distPage: 1 }); }
+  onDistDimBrand() { this.setState({ distDim: 'brand', distPenKey: '' }); }
+  onDistDimCategory() { this.setState({ distDim: 'category', distPenKey: '' }); }
   onOpenDistModal(key) { this.setState({ distModalKey: key }); }
   onCloseDistModal() { this.setState({ distModalKey: '' }); }
 
@@ -1359,9 +1686,67 @@ class Component extends DCLogic {
           storesText: g.carrying.size + ' of ' + stores.length,
           skusText: g.skus.size.toLocaleString() + ' SKUs · ' + g.qty.toLocaleString() + ' pcs',
           barWidth: Math.max(2, Math.round(pct)) + '%',
+          missingCount: stores.length - g.carrying.size,
+          missingHint: (stores.length - g.carrying.size) > 0
+            ? 'Tap for the ' + (stores.length - g.carrying.size) + ' not carrying it'
+            : 'In every store in scope',
+          onOpen: () => this.setState({ distPenKey: g.name }),
         };
       }).sort((a, b) => b.pct - a.pct || b.qty - a.qty);
     });
+  }
+  getPenModalView() {
+    const st = this.state;
+    const empty = { open: false, title: '', subtitle: '', meta: '', groups: [], warehouses: [], hasWarehouses: false, allCovered: false };
+    if (st.screen !== 'distribution' || st.distReport !== 'penetration' || !st.distPenKey) return empty;
+    const dim = st.distDim;
+    const name = st.distPenKey;
+    const stores = this.getDistStores().filter(s => !st.distRegion || s.region === st.distRegion);
+    const whs = this.getDistWarehouses();
+    const items = this.getDistItems().filter(({ r }) => ((((dim === 'brand' ? r.brand : r.category) || '').trim()) || 'Unspecified') === name);
+    const statFor = (loc) => {
+      let skus = 0, qty = 0;
+      for (const { it } of items) {
+        const q = Number(it.stores[loc]);
+        if (isFinite(q) && q > 0) { skus++; qty += q; }
+      }
+      return { skus: skus, qty: qty };
+    };
+    const regionMap = new Map();
+    for (const s of stores) {
+      if (!regionMap.has(s.region)) regionMap.set(s.region, { region: s.region, missing: [], carrying: 0 });
+      const g = regionMap.get(s.region);
+      if (statFor(s.name).skus > 0) g.carrying++; else g.missing.push({ display: s.display });
+    }
+    const all = Array.from(regionMap.values());
+    const groups = all.filter(g => g.missing.length > 0)
+      .map(g => ({
+        region: g.region,
+        headText: g.region + ' — ' + g.missing.length + ' of ' + (g.missing.length + g.carrying) + ' not carrying',
+        missing: g.missing,
+      }))
+      .sort((a, b) => b.missing.length - a.missing.length || a.region.localeCompare(b.region));
+    const missingTotal = all.reduce((n, g) => n + g.missing.length, 0);
+    const warehouses = whs.map(w => {
+      const s = statFor(w.name);
+      return {
+        display: w.display,
+        statusText: s.skus > 0 ? s.skus.toLocaleString() + ' SKUs · ' + s.qty.toLocaleString() + ' pcs' : 'Not available',
+        statusColor: s.skus > 0 ? 'var(--color-accent-2-700)' : '#8b1a1a',
+      };
+    });
+    return {
+      open: true,
+      title: name,
+      subtitle: (dim === 'brand' ? 'Brand' : 'Category') + ' · ' + (st.distRegion || 'All regions'),
+      meta: missingTotal > 0
+        ? 'Missing from ' + missingTotal + ' of ' + stores.length + ' stores in scope'
+        : 'Carried by all ' + stores.length + ' stores in scope',
+      groups: groups,
+      allCovered: missingTotal === 0,
+      warehouses: warehouses,
+      hasWarehouses: warehouses.length > 0,
+    };
   }
   getDistModalView() {
     const st = this.state;
@@ -2319,6 +2704,29 @@ class Component extends DCLogic {
       isLoading: s.screen === 'loading',
       loadError: s.loadError,
       isMenu: s.screen === 'menu',
+      isWhStores: s.screen === 'whstores',
+      onGoWhStores: () => this.onGoWhStores(),
+      onBackFromWhStores: () => this.onBackFromWhStores(),
+      whBrand: s.whBrand,
+      whCategory: s.whCategory,
+      whSubCategory: s.whSubCategory,
+      whStore: s.whStore,
+      whBrandOptions: s.screen === 'whstores' ? this.getBrandOptions() : [],
+      whCategoryOptions: s.screen === 'whstores' ? this.getCategoryOptions() : [],
+      whSubCategoryOptions: s.screen === 'whstores' ? this.getWhSubCategoryOptions() : [],
+      whStoreOptions: s.screen === 'whstores' ? this.getDistStores() : [],
+      onWhBrandChange: e => this.onWhBrandChange(e),
+      onWhCategoryChange: e => this.onWhCategoryChange(e),
+      onWhSubCategoryChange: e => this.onWhSubCategoryChange(e),
+      onWhStoreChange: e => this.onWhStoreChange(e),
+      onWhPrevPage: () => this.onWhPrevPage(),
+      onWhNextPage: () => this.onWhNextPage(),
+      onDownloadWhExcel: () => this.onDownloadWhExcel(),
+      onDownloadWhPdf: () => this.onDownloadWhPdf(),
+      whPdfDownloading: !!s.whPdfDownloading,
+      whPdfLabel: s.whPdfDownloading ? 'Downloading…' : 'Download PDF',
+      wh: s.screen === 'whstores' ? this.getWhView() : { rows: [], has: false, empty: false, summary: '', scopeName: '', pageLabel: '', showPager: false, prevDisabled: true, nextDisabled: true },
+
       isNegInv: s.screen === 'neginv',
       negInvByStore: negInvByStore,
       hasNegInvStores: negInvByStore.length > 0,
@@ -2387,6 +2795,8 @@ class Component extends DCLogic {
       breadthRows: s.screen === 'distribution' && s.distReport === 'breadth' ? this.getBreadthRows() : [],
       penetrationRows: s.screen === 'distribution' && s.distReport === 'penetration' ? this.getPenetrationRows() : [],
       distModal: this.getDistModalView(),
+      penModal: this.getPenModalView(),
+      onClosePenModal: () => this.setState({ distPenKey: '' }),
       onCloseDistModal: () => this.onCloseDistModal(),
       onDownloadDistExcel: () => this.onDownloadDistExcel(),
 
