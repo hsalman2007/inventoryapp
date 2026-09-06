@@ -15,14 +15,33 @@
   <style>
     #pdf-print-frame { position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; visibility: hidden; }
   </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+  <style>
+    .lang-ar, .lang-ar *:not(script):not(style) { font-family: 'IBM Plex Sans Arabic', var(--font-body) !important; }
+    .app-shell.lang-ar h1, .app-shell.lang-ar h2, .app-shell.lang-ar h3, .app-shell.lang-ar .card-title, .app-shell.lang-ar .card-kicker { font-family: 'Cairo', var(--font-heading) !important; font-weight: 700; }
+  </style>
 </helmet>
 
 <div class="page-shell" style="min-height: 100vh; background: var(--color-bg); display: flex; justify-content: center;">
   <div class="app-shell" style="width: 100%; max-width: 480px; min-height: 100vh; background: var(--color-bg); display: flex; flex-direction: column; padding: var(--space-4) var(--space-4) var(--space-8); gap: var(--space-4); box-sizing: border-box;">
 
-    <div class="no-print" style="display: flex; flex-direction: column; gap: var(--space-1);">
-      <h1 style="font-family: var(--font-heading); font-size: 26px; margin: 0; color: var(--color-text);">Stock Lookup</h1>
-      <p style="font-family: var(--font-body); font-size: 14px; margin: 0; color: var(--color-neutral-700);">Pick a store, and pull stock details.</p>
+    <div class="no-print" style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3);">
+      <div style="display: flex; flex-direction: column; gap: var(--space-1);">
+        <h1 style="font-family: var(--font-heading); font-size: 26px; margin: 0; color: var(--color-text);">Stock Lookup</h1>
+        <p style="font-family: var(--font-body); font-size: 14px; margin: 0; color: var(--color-neutral-700);">Pick a store, and pull stock details.</p>
+      </div>
+      <div data-nolang="1" style="display: flex; flex: none; gap: 2px; padding: 3px; border-radius: 999px; background: var(--color-neutral-200); border: 1px solid var(--color-neutral-300);">
+        <sc-if value="{{langIsEn}}" hint-placeholder-val="{{true}}">
+          <button type="button" onClick="{{onLangEn}}" style="border: 0; cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; padding: 5px 13px; border-radius: 999px; line-height: 1.25; background: var(--color-accent); color: #fff;">EN</button>
+          <button type="button" onClick="{{onLangAr}}" style="border: 0; cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; padding: 5px 13px; border-radius: 999px; line-height: 1.25; background: transparent; color: var(--color-neutral-700);">عربي</button>
+        </sc-if>
+        <sc-if value="{{langIsAr}}" hint-placeholder-val="{{false}}">
+          <button type="button" onClick="{{onLangEn}}" style="border: 0; cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; padding: 5px 13px; border-radius: 999px; line-height: 1.25; background: transparent; color: var(--color-neutral-700);">EN</button>
+          <button type="button" onClick="{{onLangAr}}" style="border: 0; cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; padding: 5px 13px; border-radius: 999px; line-height: 1.25; background: var(--color-accent); color: #fff;">عربي</button>
+        </sc-if>
+      </div>
     </div>
 
     <sc-if value="{{isLoading}}" hint-placeholder-val="{{true}}">
@@ -1089,7 +1108,594 @@ function downloadXlsx(rows, filename, opts) {
 // ---- end xlsx writer ----
 
 class Component extends DCLogic {
+
+  static AR = {
+    "Stock Lookup": "استعلام المخزون",
+    "Pick a store, and pull stock details.": "اختر فرعاً واستعرض تفاصيل المخزون.",
+    "Upload your reports, pick a store, and pull a low-stock list in seconds.": "ارفع تقاريرك، اختر فرعاً، واحصل على قائمة المخزون المنخفض في ثوانٍ.",
+    "Loading store data…": "جارٍ تحميل بيانات الفروع…",
+    "Downloading…": "جارٍ التحميل…",
+    "Last Pcs Report": "تقرير آخر القطع",
+    "Item Lookup in All Stores": "البحث عن صنف في جميع الفروع",
+    "Regular & Promo Stocks": "المخزون العادي والعروض",
+    "Negative Inv": "المخزون السالب",
+    "Distribution": "التوزيع",
+    "WH vs Stores": "المستودعات مقابل الفروع",
+    "Admin mode on": "وضع الإدارة مُفعّل",
+    "Sign out": "تسجيل الخروج",
+    "Admin password": "كلمة مرور الإدارة",
+    "Unlock": "فتح",
+    "Admin sign in": "دخول الإدارة",
+    "Incorrect password.": "كلمة المرور غير صحيحة.",
+    "← Back": "← رجوع",
+    "Choose store & quantity": "اختر الفرع والكمية",
+    "Store": "الفرع",
+    "Quantity on hand at store": "الكمية المتوفرة في الفرع",
+    "1 pc": "قطعة واحدة",
+    "2 pcs": "قطعتان",
+    "Brand": "الماركة",
+    "All brands": "جميع الماركات",
+    "Category": "الفئة",
+    "All categories": "جميع الفئات",
+    "Sub-category": "الفئة الفرعية",
+    "All sub-categories": "جميع الفئات الفرعية",
+    "Generate report": "إنشاء التقرير",
+    "Complete stock": "المخزون الكامل",
+    "Download a store's complete stock": "تحميل المخزون الكامل للفرع",
+    "All stores": "جميع الفروع",
+    "All stores (combined)": "جميع الفروع (مجمّعة)",
+    "Exports every SKU with a stock value at this store, including quantity, warehouse stock, RSP and status.": "يصدّر كل صنف له رصيد في هذا الفرع، مع الكمية ومخزون المستودع وسعر البيع والحالة.",
+    "Standard columns": "الأعمدة الأساسية",
+    "Include discount pricing": "إضافة أسعار الخصم",
+    "Addnl. 1500": "1500 صنف إضافي",
+    "Discount range": "نطاق الخصم",
+    "All discounts": "جميع الخصومات",
+    "10% to 20%": "من 10% إلى 20%",
+    "21% to 30%": "من 21% إلى 30%",
+    "31% to 40%": "من 31% إلى 40%",
+    "41% to 50%": "من 41% إلى 50%",
+    "51% to 60%": "من 51% إلى 60%",
+    "61% to 70%": "من 61% إلى 70%",
+    "Download Excel": "تحميل Excel",
+    "Download PDF": "تحميل PDF",
+    "Share as image": "مشاركة كصورة",
+    "Negative inventory": "المخزون السالب",
+    "Negative stock by location": "المخزون السالب حسب الموقع",
+    "Location": "الموقع",
+    "All locations": "جميع المواقع",
+    "Neg. qty": "الكمية السالبة",
+    "Neg. value": "القيمة السالبة",
+    "Grand total": "الإجمالي العام",
+    "Tap a location to see its items and export.": "اضغط على موقع لعرض أصنافه وتصديره.",
+    "Item": "الصنف",
+    "Qty": "الكمية",
+    "Value": "القيمة",
+    "Close": "إغلاق",
+    "SKUs held in the warehouses, with the store stock beside them. SKUs with no warehouse stock are hidden.": "الأصناف المتوفرة في المستودعات مع رصيد الفرع بجانبها. الأصناف بدون رصيد في المستودع مخفية.",
+    "No warehouse stock matches these filters.": "لا يوجد مخزون في المستودعات يطابق هذه الفلاتر.",
+    "No warehouse stock": "لا يوجد مخزون في المستودعات",
+    "Store stock": "رصيد الفرع",
+    "Riyadh WH": "مستودع الرياض",
+    "Abha WH": "مستودع أبها",
+    "← Prev": "← السابق",
+    "Next →": "التالي →",
+    "Coverage gap": "فجوة التغطية",
+    "Store assortment breadth": "تنوع الأصناف في الفروع",
+    "Assortment breadth": "تنوع الأصناف",
+    "Brand / category penetration": "انتشار الماركات / الفئات",
+    "Brand / category": "الماركة / الفئة",
+    "Brand penetration by region": "انتشار الماركات حسب المنطقة",
+    "Category penetration by region": "انتشار الفئات حسب المنطقة",
+    "Share of stores in scope that carry each brand or category.": "نسبة الفروع المشمولة التي تحمل كل ماركة أو فئة.",
+    "Region": "المنطقة",
+    "All regions": "جميع المناطق",
+    "By brand": "حسب الماركة",
+    "By category": "حسب الفئة",
+    "SKU": "رقم الصنف",
+    "Coverage": "التغطية",
+    "SKUs": "الأصناف",
+    "SKUs carried": "الأصناف المتوفرة",
+    "SKUs stocked": "الأصناف المخزنة",
+    "Units on hand": "الوحدات المتوفرة",
+    "Region avg SKUs": "متوسط أصناف المنطقة",
+    "vs region %": "مقابل متوسط المنطقة %",
+    "Penetration %": "نسبة الانتشار %",
+    "Stores in scope": "الفروع المشمولة",
+    "Stores carrying": "الفروع التي تحمله",
+    "Stores in region": "فروع المنطقة",
+    "Stores missing": "الفروع غير المتوفرة",
+    "Region qty": "كمية المنطقة",
+    "Warehouse qty": "كمية المستودع",
+    "Warehouse stock": "مخزون المستودع",
+    "Transfer from": "التحويل من",
+    "Missing stores": "الفروع غير المتوفرة",
+    "Not available": "غير متوفر",
+    "Available in every store in scope.": "متوفر في جميع الفروع المشمولة.",
+    "In every store in scope": "متوفر في جميع الفروع المشمولة",
+    "Warehouses": "المستودعات",
+    "Warehouses (fulfilment)": "المستودعات (التوريد)",
+    "No warehouse or store stock — reorder instead.": "لا يوجد مخزون في المستودعات أو الفروع — يُفضّل إعادة الطلب.",
+    "No warehouse or store spare stock — reorder instead.": "لا يوجد مخزون فائض في المستودعات أو الفروع — يُفضّل إعادة الطلب.",
+    "All status": "جميع الحالات",
+    "Continue": "مستمر",
+    "Discontinued": "موقوف",
+    "WH Avl": "توفر المستودع",
+    "All stock": "كل المخزون",
+    "In stock": "متوفر",
+    "Out of stock": "غير متوفر",
+    "All": "الكل",
+    "Overall stock < 30": "إجمالي المخزون < 30",
+    "DESCRIPTION": "الوصف",
+    "Description": "الوصف",
+    "Description 2": "الوصف 2",
+    "Item No.": "رقم الصنف",
+    "WH Stock": "مخزون المستودع",
+    "STATUS": "الحالة",
+    "STOCK BY STORE": "المخزون حسب الفرع",
+    "In Order": "قيد الطلب",
+    "No stock available": "لا يوجد مخزون متاح",
+    "No SKUs match this store and quantity.": "لا توجد أصناف تطابق هذا الفرع وهذه الكمية.",
+    "SKU stock across stores": "رصيد الصنف في الفروع",
+    "SKU or description": "رقم الصنف أو الوصف",
+    "Type a SKU or description…": "اكتب رقم الصنف أو الوصف…",
+    "Type at least 2 characters to search.": "اكتب حرفين على الأقل للبحث.",
+    "Cost incl. VAT": "التكلفة مع الضريبة",
+    "Markup vs RSP": "هامش الربح مقابل سعر البيع",
+    "Now price": "السعر الحالي",
+    "Margin after disc.": "الهامش بعد الخصم",
+    "Qty available": "الكمية المتوفرة",
+    "Total": "الإجمالي",
+    "Was": "السعر السابق",
+    "Now": "السعر الحالي",
+    "RSP": "سعر البيع",
+    "Was/Now Just": "سعر سابق/حالي فقط",
+    "Discount pricing toggle": "مفتاح أسعار الخصم",
+    "Penetration dimension": "بُعد الانتشار",
+    "Status filter": "فلتر الحالة",
+    "Warehouse stock filter": "فلتر مخزون المستودع",
+    "Overall stock filter": "فلتر إجمالي المخزون",
+    "Promo stocks": "مخزون العروض",
+    "APPAREL": "الملابس",
+    "BAGS": "الحقائب",
+    "BBQ ESSENTIALS": "مستلزمات الشوي",
+    "BINOCULARS & SCOPES": "المناظير والمقربات",
+    "COFFEE ESSENTIALS": "مستلزمات القهوة",
+    "DRONES": "الطائرات المسيّرة",
+    "FALCON": "الصقور",
+    "FIREWOOD & CHARCOAL": "الحطب والفحم",
+    "FISHING": "الصيد البحري",
+    "FOLDING BEDS": "الأسرّة القابلة للطي",
+    "GUNS & ACCESSORIES": "الأسلحة وملحقاتها",
+    "HAND TOOLS": "الأدوات اليدوية",
+    "HOUSEWARE": "الأدوات المنزلية",
+    "KNIVES": "السكاكين",
+    "LIGHTS": "الإضاءة",
+    "MATS & CUSHIONS": "الفرش والوسائد",
+    "NON TRADING": "غير تجاري",
+    "OTHERS": "أخرى",
+    "OUTDOORS": "الرحلات والتخييم",
+    "REFRIGERATORS & ACC": "الثلاجات وملحقاتها",
+    "SAMPLES": "العينات",
+    "SERVICES": "الخدمات",
+    "SLEEPING BAGS": "أكياس النوم",
+    "SPARE PARTS": "قطع الغيار",
+    "TABLES": "الطاولات",
+    "TENTS": "الخيام",
+    "VEHICLE ACCESSORIES": "ملحقات السيارات",
+    "WALKING STICKS": "عصي المشي",
+    "ELECTRONICS": "الإلكترونيات",
+    "DRINKWARE": "أدوات الشرب",
+    "KETTLES & THERMOS": "الدلال والترمس",
+    "CHAIRS": "الكراسي",
+    "Ammunition": "الذخيرة",
+    "Gun Spare Parts": "قطع غيار الأسلحة",
+    "Other Spare Parts": "قطع غيار أخرى",
+    "Floor Mats": "فرش الأرضيات",
+    "Aprons & Raincots": "المرايل والمعاطف الواقية",
+    "Caps & Hats": "القبعات",
+    "Footwear & Footgear": "الأحذية",
+    "Jackets": "الجاكيتات",
+    "Lowers": "البناطيل",
+    "Masks & Gloves": "الأقنعة والقفازات",
+    "Shoe Covers": "أغطية الأحذية",
+    "T-Shirts": "التيشيرتات",
+    "Air Cylinder Bags": "حقائب أسطوانات الهواء",
+    "Baby Care Bags": "حقائب مستلزمات الأطفال",
+    "Backpacks": "حقائب الظهر",
+    "Cooler Bags": "حقائب التبريد",
+    "Duffel Bags": "الحقائب الرياضية",
+    "Filled Ezba": "عزبة مجهزة",
+    "Firewood & Gas Bags": "حقائب الحطب والغاز",
+    "Hiking & Hunting Bags": "حقائب المشي والصيد",
+    "Knife Bags": "حقائب السكاكين",
+    "Picnic & Camping Bags": "حقائب الرحلات والتخييم",
+    "Teacup Bags": "حقائب أكواب الشاي",
+    "Thermos Bags": "حقائب الترمس",
+    "Toiletries Bags": "حقائب أدوات النظافة",
+    "Tools & Utility Bags": "حقائب الأدوات",
+    "Trash Bags": "أكياس النفايات",
+    "Kettle Bags": "حقائب الدلال",
+    "Travel Bags": "حقائب السفر",
+    "Plate Bags": "حقائب الأطباق",
+    "Tea / Sugar Bags": "حقائب الشاي والسكر",
+    "Vegetable Bags": "حقائب الخضار",
+    "BBQ Grills": "شوايات",
+    "BBQ Nets": "شبك الشوي",
+    "BBQ Tool Sets": "أطقم أدوات الشوي",
+    "Blowers": "منافخ",
+    "Cleaning Tools": "أدوات التنظيف",
+    "Fire Boxes": "صناديق النار",
+    "Fire Grills": "شبك النار",
+    "Fire Pits": "مواقد النار",
+    "Gas Adaptors": "وصلات الغاز",
+    "Gas Cartridges": "عبوات الغاز",
+    "Mandi Makers": "أجهزة المندي",
+    "Roasters": "محامص",
+    "Skewers": "أسياخ",
+    "Toasters": "محمصات",
+    "Tongs & Grabbers": "الملاقط",
+    "Windshields": "حاجبات الريح",
+    "Fire Starters & Torch": "مشاعل وأدوات إشعال",
+    "Accessories": "ملحقات",
+    "Binoculars": "مناظير",
+    "Monoculars": "مناظير أحادية",
+    "Range Finders": "مقاييس المسافة",
+    "Riflescopes": "مقربات البنادق",
+    "Telescopes": "تلسكوبات",
+    "Coffee Grinders": "مطاحن القهوة",
+    "Coffee Roasters": "محامص القهوة",
+    "Coffee Warmers": "سخانات القهوة",
+    "Drones": "طائرات مسيّرة",
+    "Falcon Accessories": "ملحقات الصقور",
+    "Charcoal": "فحم",
+    "Firewood": "حطب",
+    "Fishing Kits & Accessories": "أطقم وملحقات الصيد",
+    "Folding Beds": "أسرّة قابلة للطي",
+    "Air Cylinders & Accessories": "أسطوانات الهواء وملحقاتها",
+    "Air Rifles": "بنادق هواء",
+    "Gun Cleaning Tools": "أدوات تنظيف الأسلحة",
+    "Gun Safe": "خزائن الأسلحة",
+    "Scope Mounts": "حوامل المقربات",
+    "Targets & Accessories": "الأهداف وملحقاتها",
+    "Compressed Blowers": "منافخ مضغوطة",
+    "Baking Tools": "أدوات الخبز",
+    "Cooking Pots": "قدور الطهي",
+    "Cutting & Shredding": "أدوات التقطيع",
+    "Dish Covers": "أغطية الأطباق",
+    "Frying Pans": "مقالي",
+    "Jars & Containers": "برطمانات وحاويات",
+    "Oil Bottles": "زجاجات الزيت",
+    "Pressure Cookers": "قدور الضغط",
+    "Serving Plates & Dishes": "أطباق التقديم",
+    "Silicone Utensils": "أدوات سيليكون",
+    "Storage Cans": "عبوات التخزين",
+    "Strainers": "مصافي",
+    "Tableware & Cutlery": "أدوات المائدة",
+    "Axe & Shovels": "الفؤوس والمجارف",
+    "Cleavers & Machete": "السواطير",
+    "Kitchen Knives": "سكاكين المطبخ",
+    "Knife Sets": "أطقم السكاكين",
+    "Multitools": "أدوات متعددة",
+    "OTF Knives": "سكاكين آلية",
+    "Outdoor Knives": "سكاكين الرحلات",
+    "Saws & Cutters": "مناشير وقواطع",
+    "Sharpeners": "مسنّنات",
+    "Driving Lights": "كشافات القيادة",
+    "Flashlights": "كشافات يدوية",
+    "Floodlights & Spotlights": "كشافات إضاءة",
+    "Fog Lights": "أضواء الضباب",
+    "Headlamps": "كشافات الرأس",
+    "Light Bars": "شرائح إضاءة",
+    "Light Covers": "أغطية الكشافات",
+    "Sinnara & Lamps": "سنارات ومصابيح",
+    "String Lights": "إضاءة معلقة",
+    "Camping Lights": "إضاءة التخييم",
+    "Outdoor Lights": "إضاءة خارجية",
+    "Carrier Lights": "إضاءة الحمالات",
+    "Arm Rests": "مساند الذراع",
+    "Blankets": "بطانيات",
+    "Cushions": "وسائد",
+    "Inflatable": "قابل للنفخ",
+    "Fixtures": "تجهيزات",
+    "Gift Cards": "بطاقات الهدايا",
+    "Shopping Bags": "أكياس التسوق",
+    "Tailoring Materials": "مواد الخياطة",
+    "Consummables": "مواد استهلاكية",
+    "Tools": "أدوات",
+    "Assembly Items": "أصناف التجميع",
+    "Others": "أخرى",
+    "Watches": "ساعات",
+    "Biking Accessories": "ملحقات الدراجات",
+    "Cooler Boxes": "صناديق التبريد",
+    "Décor": "ديكور",
+    "Fans & Coolers": "مراوح ومكيفات",
+    "Goat Stands": "حوامل الذبائح",
+    "Grooming Kits": "أطقم العناية",
+    "Hanging Hooks & Winches": "خطافات ورافعات",
+    "Heaters": "مدافئ",
+    "Hunting": "الصيد",
+    "Incense Burners": "مباخر",
+    "Keychains & Biners": "سلاسل مفاتيح",
+    "Miscellaneous": "منوعات",
+    "Mobile Phone Accessories": "ملحقات الجوال",
+    "Outdoor Games": "ألعاب خارجية",
+    "Ovens": "أفران",
+    "Picnic Set": "طقم رحلات",
+    "Portable Electronics": "إلكترونيات محمولة",
+    "Sand Sliders": "ألواح الرمل",
+    "Sling Shots": "نبال",
+    "Storage Boxes": "صناديق التخزين",
+    "Survival Gear": "عتاد البقاء",
+    "Tarp Clips": "مشابك المشمع",
+    "Towel": "مناشف",
+    "Trolleys & Wagons": "عربات",
+    "Umbrellas": "مظلات",
+    "Water Gallons & Buckets": "جوالين ودلاء الماء",
+    "Water Sprayers & Pumps": "مضخات ورشاشات الماء",
+    "Weighing Scales": "ميزان",
+    "Water Sports": "الرياضات المائية",
+    "Burners & Stoves": "مواقد وطباخات",
+    "Garden Fire Pits": "مواقد الحدائق",
+    "Fridge Sliders": "سحّابات الثلاجات",
+    "Fridge Transit Covers": "أغطية نقل الثلاجات",
+    "Refrigerator Accessories": "ملحقات الثلاجات",
+    "Refrigerators": "ثلاجات",
+    "Samples": "عينات",
+    "Cash On Delviery - COD": "الدفع عند الاستلام",
+    "Delivery service": "خدمة التوصيل",
+    "Delivery Smsa Jeddah": "توصيل سمسا جدة",
+    "Delivery Smsa Riyadh": "توصيل سمسا الرياض",
+    "Freight Service": "خدمة الشحن",
+    "Gun License": "رخصة سلاح",
+    "Installation Service": "خدمة التركيب",
+    "Maintenance Service": "خدمة الصيانة",
+    "Other Service": "خدمة أخرى",
+    "Repair Services For Warranty Items": "إصلاح أصناف الضمان",
+    "Sleeping Bags": "أكياس النوم",
+    "ARB Spare Parts": "قطع غيار ARB",
+    "Binocular Spare Parts": "قطع غيار المناظير",
+    "Cooker Spare Parts": "قطع غيار الطباخات",
+    "Refrigerator Spare Parts": "قطع غيار الثلاجات",
+    "Walking Stick Spare Parts": "قطع غيار عصي المشي",
+    "Folding Tables": "طاولات قابلة للطي",
+    "Kitchen Tables": "طاولات المطبخ",
+    "Vehicle Fitted Tables": "طاولات مثبتة على السيارة",
+    "Awning Tents": "مظلات خيام",
+    "Camping & Beach Tents": "خيام التخييم والشاطئ",
+    "Canopies": "مظلات",
+    "Car Roof Tents": "خيام سطح السيارة",
+    "Inflatable Tents": "خيام قابلة للنفخ",
+    "Mosquito Tents": "خيام الناموس",
+    "Sleeping Tents": "خيام النوم",
+    "Toilet Tents": "خيام دورات المياه",
+    "Wind Screens": "حاجبات الريح",
+    "Wind Breaks": "صادات الريح",
+    "Air Bag Kits": "أطقم أكياس الهواء",
+    "Air Compressors": "ضواغط الهواء",
+    "Air Lockers": "قواطع تعادل",
+    "Air Tanks": "خزانات الهواء",
+    "Blow Guns": "مسدسات هواء",
+    "Cargo Carriers": "حمالات البضائع",
+    "Cleaning Liquids": "سوائل التنظيف",
+    "Coil Springs": "سبرنجات لولبية",
+    "Deflators & Pressure Gauges": "مفرغات ومقاييس الضغط",
+    "Fridge Connect Modules": "وحدات توصيل الثلاجات",
+    "Lamp Consoles": "حوامل الكشافات",
+    "Lower Control Arms": "مقصات سفلية",
+    "Mounting & Fitting Kits": "أطقم التثبيت",
+    "Panhards": "ذراع بانهارد",
+    "Pressure Control Units": "وحدات التحكم بالضغط",
+    "Recovery Kits & Tools": "أطقم الإنقاذ",
+    "Roller Drawers": "أدراج منزلقة",
+    "Roofracks": "حمالات السطح",
+    "Shock Absorbers": "مساعدات",
+    "Snorkels": "شفاطات هواء",
+    "Steering Damper": "مثبت مقود",
+    "Survival Kit": "طقم بقاء",
+    "Swaybars": "قضبان اتزان",
+    "Towbars": "قضبان السحب",
+    "U Bolts": "مسامير U",
+    "Upper Control Arms": "مقصات علوية",
+    "UVP (Under Vehicle Protection)": "حماية أسفل السيارة",
+    "Vehicle Jacks": "رافعات السيارة",
+    "Winch": "ونش",
+    "Wirings & Looms": "أسلاك وتوصيلات",
+    "Vehicle Interior Acc": "ملحقات داخلية للسيارة",
+    "Jerry Cans": "جوالين",
+    "Fuel Tanks": "خزانات الوقود",
+    "Shocks Accessories": "ملحقات المساعدات",
+    "Sway Bar Accessories": "ملحقات قضبان الاتزان",
+    "Tred Pro Accessories": "ملحقات ترد برو",
+    "Winch Accessories": "ملحقات الونش",
+    "Camera": "كاميرا",
+    "Gearbox Accessories": "ملحقات القير",
+    "Wheel Carriers": "حمالات العجل",
+    "Baserack & Roofracks": "قواعد وحمالات السطح",
+    "Differential Covers": "أغطية الدفرنس",
+    "Leaf Springs": "سبرنجات ورقية",
+    "Hose": "خرطوم",
+    "Torsion Bars": "قضبان التحميل",
+    "Vehicle Covers": "أغطية السيارات",
+    "Fuel Containers": "عبوات الوقود",
+    "Air Hose": "خرطوم هواء",
+    "Grabbers": "ملاقط",
+    "Metal Sticks": "عصي معدنية",
+    "Snake Catchers": "ماسكات الأفاعي",
+    "Wooden Sticks": "عصي خشبية",
+    "Adaptors & Multi-Outlets": "محولات ومقابس",
+    "Batteries & Battery Chargers": "بطاريات وشواحن",
+    "Power Banks & Invertors": "بنوك طاقة وعواكس",
+    "Solar Panels": "ألواح شمسية",
+    "Bottles": "قوارير",
+    "Cups & Mugs": "أكواب",
+    "Thermos": "ترمس",
+    "Cup Holder": "حامل أكواب",
+    "Asiri Kettles": "دلال عسيرية",
+    "Coffee Dalla": "دلة قهوة",
+    "Electric Kettles": "دلال كهربائية",
+    "Glass Tea Kettles": "براد شاي زجاجي",
+    "Milk Dalla": "دلة حليب",
+    "SS Tea Kettles": "براد شاي ستانلس",
+    "Aluminum Kettles": "دلال ألمنيوم",
+    "Floor Chairs": "كراسي أرضية",
+    "Folding Chairs": "كراسي قابلة للطي",
+    "Stools": "مقاعد صغيرة",
+    "Toilet Chairs": "كراسي الحمام",
+    "Riyadh": "الرياض",
+    "Abha": "أبها",
+    "Jeddah": "جدة",
+    "Qaseem": "القصيم",
+    "Qassim": "القصيم",
+    "Hail": "حائل",
+    "Tabuk": "تبوك",
+    "Al Ahsa": "الأحساء",
+    "Al Jouf": "الجوف",
+    "Makkah": "مكة",
+    "Madinah": "المدينة",
+    "Dammam": "الدمام",
+    "Khamis Mushait": "خميس مشيط",
+    "Central": "الوسطى",
+    "Eastern": "الشرقية",
+    "Western": "الغربية",
+    "Southern": "الجنوبية",
+    "Northern": "الشمالية",
+    "Main Warehouse - Riyadh": "المستودع الرئيسي - الرياض",
+    "Sub Warehouse - Abha": "المستودع الفرعي - أبها",
+    "Damages & Shortages Warehouse - Riyadh": "مستودع التوالف والنواقص - الرياض",
+    "Inspection & Review Warehouse": "مستودع الفحص والمراجعة"
+  };
+
+  static AR_PATS = [
+    [/^Page (\\d+) of (\\d+)$/, (m) => 'صفحة ' + m[1] + ' من ' + m[2]],
+    [/^Showing ([\\d,]+)–([\\d,]+) of ([\\d,]+) — the Excel export contains all of them\\.$/, (m) => 'عرض ' + m[1] + '–' + m[2] + ' من ' + m[3] + ' — يحتوي ملف Excel على جميعها.'],
+    [/^Showing first ([\\d,]+) of ([\\d,]+) lines — the PDF and Excel contain all of them\\.$/, (m) => 'عرض أول ' + m[1] + ' من ' + m[2] + ' سطر — تحتوي ملفات PDF وExcel على جميعها.'],
+    [/^([\\d,]+) negative stock lines found$/, (m) => m[1] + ' سطر مخزون سالب'],
+    [/^([\\d,]+) SKU\/region gaps · ([\\d,]+) with spare stock to transfer$/, (m) => m[1] + ' فجوة صنف/منطقة · ' + m[2] + ' يمكن تغطيتها بمخزون فائض'],
+    [/^Ship from (.+) \\(([\\d,]+) pcs\\)$/, (m) => 'التوريد من ' + m[1] + ' (' + m[2] + ' قطعة)'],
+    [/^Move 1 from (.+) \\(([\\d,]+) pcs\\)$/, (m) => 'تحويل قطعة من ' + m[1] + ' (' + m[2] + ' قطعة)'],
+    [/^(\\d+) of (\\d+) stores$/, (m) => m[1] + ' من ' + m[2] + ' فرع'],
+    [/^(\\d+) missing$/, (m) => m[1] + ' غير متوفر'],
+    [/^(\\d+) brands · (\\d+) categories$/, (m) => m[1] + ' ماركة · ' + m[2] + ' فئة'],
+    [/^([+-]?[\\d.]+)% vs region avg \\(([\\d,]+)\\)$/, (m) => m[1] + '% مقابل متوسط المنطقة (' + m[2] + ')'],
+    [/^Tap for the (\\d+) not carrying it$/, (m) => 'اضغط لعرض ' + m[1] + ' فرع لا تحمله'],
+    [/^Missing from (\\d+) of (\\d+) stores in scope$/, (m) => 'غير متوفر في ' + m[1] + ' من ' + m[2] + ' فرع مشمول'],
+    [/^Carried by all (\\d+) stores in scope$/, (m) => 'متوفر في جميع الفروع المشمولة (' + m[1] + ')'],
+    [/^(.+) · (\\d+) of (\\d+) stores carry it · ([\\d,]+) pcs in region · ([\\d,]+) pcs in warehouses$/, (m) => m[1] + ' · ' + m[2] + ' من ' + m[3] + ' فرع تحمله · ' + m[4] + ' قطعة في المنطقة · ' + m[5] + ' قطعة في المستودعات'],
+    [/^Country-wide: (\\d+) of (\\d+) stores carry it · (.+)$/, (m) => 'على مستوى المملكة: ' + m[1] + ' من ' + m[2] + ' فرع تحمله · ' + m[3]],
+    [/^Suggested fulfilment: (.+)$/, (m) => 'التوريد المقترح: ' + m[1]],
+    [/^Suggested transfer: (.+)$/, (m) => 'التحويل المقترح: ' + m[1]],
+    [/^Brand · (.+)$/, (m) => 'الماركة · ' + Component.trWord(m[1])],
+    [/^Category · (.+)$/, (m) => 'الفئة · ' + Component.trWord(m[1])],
+    [/^([\\d,]+) lines · qty ([\\d,.\\-]+) · value (.+)$/, (m) => m[1] + ' سطر · كمية ' + m[2] + ' · قيمة ' + m[3]],
+    [/^Total · ([\\d,]+) lines$/, (m) => 'الإجمالي · ' + m[1] + ' سطر'],
+    [/^([\\d,]+) pcs?$/, (m) => m[1] + ' قطعة'],
+    [/^([\\d,]+) SKUs?$/, (m) => m[1] + ' صنف'],
+    [/^([\\d,]+) continuing$/, (m) => m[1] + ' مستمر'],
+    [/^([\\d,]+) discontinued$/, (m) => m[1] + ' موقوف'],
+    [/^([\\d,]+) on order$/, (m) => m[1] + ' قيد الطلب'],
+    [/^([\\d,]+) gaps · (.+)$/, (m) => m[1] + ' فجوة · ' + m[2]],
+    [/^([\\d,]+) stores · (.+)$/, (m) => m[1] + ' فرع · ' + m[2]],
+    [/^Could not load store data: (.+)$/, (m) => 'تعذر تحميل بيانات الفروع: ' + m[1]],
+    [/^Could not generate the PDF: (.+)$/, (m) => 'تعذر إنشاء ملف PDF: ' + m[1]],
+    [/^(Brand|Category) penetration$/, (m) => (m[1] === 'Brand' ? 'انتشار الماركات' : 'انتشار الفئات')],
+    [/^([A-Za-z][A-Za-z .'&\-]*?) (\d+x?)$/, (m) => { const c = Component.AR[m[1]]; return c ? c + ' ' + m[2] : null; }]
+  ];
+
+  static trWord(s) {
+    const k = String(s).replace(/\s+/g, ' ').trim();
+    return Component.AR[k] || s;
+  }
+
+  static translate(raw) {
+    const key = String(raw).replace(/\s+/g, ' ').trim();
+    if (!key || !/[A-Za-z]/.test(key)) return null;
+    if (Component.AR[key]) return Component.AR[key];
+    for (const [re, fn] of Component.AR_PATS) {
+      const m = key.match(re);
+      if (m) return fn(m);
+    }
+    return null;
+  }
+
+  setLang(lang) {
+    try { window.localStorage.setItem('inv-lang', lang); } catch (e) {}
+    this.setState({ lang: lang });
+  }
+
+  langRoot() {
+    return document.querySelector('.app-shell');
+  }
+
+  scheduleLang() {
+    if (this._langTimer) clearTimeout(this._langTimer);
+    this._langTimer = setTimeout(() => {
+      this._langTimer = 0;
+      try { this.applyLang(); } catch (e) { console.log('[lang] failed', e && e.message); }
+    }, 0);
+  }
+
+  applyLang() {
+    const root = this.langRoot();
+    if (!root) return;
+    const ar = this.state.lang === 'ar';
+    root.classList.toggle('lang-ar', ar);
+    if (!this._langOrig) this._langOrig = new WeakMap();
+    const origs = this._langOrig;
+    if (!this._langObserver && window.MutationObserver) {
+      this._langObserver = new MutationObserver(() => { if (!this._langBusy) this.scheduleLang(); });
+      this._langObserver.observe(root, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['placeholder', 'aria-label'] });
+    }
+    this._langBusy = true;
+    try {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      for (const n of nodes) {
+        const p = n.parentElement;
+        if (!p || p.closest('[data-nolang]') || p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE') continue;
+        const cur = n.nodeValue;
+        const prev = origs.get(n);
+        if (ar) {
+          if (prev && prev.ar === cur) continue;
+          const tr = Component.translate(cur);
+          if (tr === null) continue;
+          const lead = cur.match(/^\s*/)[0];
+          const trail = cur.match(/\s*$/)[0];
+          const next = lead + tr + trail;
+          origs.set(n, { en: cur, ar: next });
+          n.nodeValue = next;
+          if (!p.hasAttribute('dir')) { p.setAttribute('dir', 'auto'); p.setAttribute('data-langdir', '1'); }
+        } else if (prev && prev.ar === cur) {
+          n.nodeValue = prev.en;
+          origs.delete(n);
+          if (p.getAttribute('data-langdir') === '1') { p.removeAttribute('dir'); p.removeAttribute('data-langdir'); }
+        }
+      }
+      for (const el of root.querySelectorAll('[placeholder], [aria-label]')) {
+        if (el.closest('[data-nolang]')) continue;
+        for (const attr of ['placeholder', 'aria-label']) {
+          const cur = el.getAttribute(attr);
+          if (cur === null) continue;
+          const store = attr === 'placeholder' ? '_enPh' : '_enAria';
+          if (ar) {
+            if (el[store] && el[store].ar === cur) continue;
+            const tr = Component.translate(cur);
+            if (tr === null) continue;
+            el[store] = { en: cur, ar: tr };
+            el.setAttribute(attr, tr);
+          } else if (el[store] && el[store].ar === cur) {
+            el.setAttribute(attr, el[store].en);
+            el[store] = null;
+          }
+        }
+      }
+    } finally {
+      this._langBusy = false;
+    }
+  }
+
   state = {
+    lang: (function () { try { return window.localStorage.getItem('inv-lang') === 'ar' ? 'ar' : 'en'; } catch (e) { return 'en'; } })(),
     loading: true,
     loadError: '',
     screen: 'loading',
@@ -1601,7 +2207,7 @@ class Component extends DCLogic {
     return {
       rows: rows,
       has: all.length > 0,
-      summary: all.length.toLocaleString() + ' SKU/region gaps · ' + all.filter(r => r.donor).length.toLocaleString() + ' with spare stock to transfer',
+      summary: all.length.toLocaleString() + ' SKU\/region gaps · ' + all.filter(r => r.donor).length.toLocaleString() + ' with spare stock to transfer',
       truncated: all.length > PAGE,
       truncatedNote: 'Showing ' + (all.length ? (start + 1) : 0).toLocaleString() + '–' + Math.min(start + PAGE, all.length).toLocaleString() + ' of ' + all.length.toLocaleString() + ' — the Excel export contains all of them.',
       pageLabel: 'Page ' + page + ' of ' + pages,
@@ -2692,6 +3298,8 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state;
+    const langAr = s.lang === 'ar';
+    this.scheduleLang();
     const info = s.storeInfoMap && s.storeInfoMap.get(s.resultStore);
     const filteredResults = this.filterResults(s.results, s.statusFilter, s.stockFilter, s.lowStockFilter);
     const subCategoryOptions = (s.screen === 'storestock' || s.screen === 'select') ? this.getSubCategoryOptions() : [];
@@ -2701,6 +3309,10 @@ class Component extends DCLogic {
     const negInvGrandQty = negInvByStore.reduce((sum, r) => sum + r.qty, 0).toLocaleString();
     const negInvGrandValue = negInvByStore.reduce((sum, r) => sum + r.value, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return {
+      langIsEn: !langAr,
+      langIsAr: langAr,
+      onLangEn: () => this.setLang('en'),
+      onLangAr: () => this.setLang('ar'),
       isLoading: s.screen === 'loading',
       loadError: s.loadError,
       isMenu: s.screen === 'menu',
