@@ -20,7 +20,8 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
   <style>
     .lang-ar, .lang-ar *:not(script):not(style) { font-family: 'IBM Plex Sans Arabic', var(--font-body) !important; }
-    .app-shell.lang-ar h1, .app-shell.lang-ar h2, .app-shell.lang-ar h3, .app-shell.lang-ar .card-title, .app-shell.lang-ar .card-kicker { font-family: 'Cairo', var(--font-heading) !important; font-weight: 700; }
+    .app-shell.lang-ar p, .app-shell.lang-ar label, .app-shell.lang-ar .tag, .app-shell.lang-ar .btn { line-height: 1.45 !important; }
+    .app-shell.lang-ar h1, .app-shell.lang-ar h2, .app-shell.lang-ar h3, .app-shell.lang-ar .card-title, .app-shell.lang-ar .card-kicker { font-family: 'Cairo', var(--font-heading) !important; font-weight: 700; line-height: 1.7 !important; }
   </style>
 </helmet>
 
@@ -28,7 +29,7 @@
   <div class="app-shell" style="width: 100%; max-width: 480px; min-height: 100vh; background: var(--color-bg); display: flex; flex-direction: column; padding: var(--space-4) var(--space-4) var(--space-8); gap: var(--space-4); box-sizing: border-box;">
 
     <div class="no-print" style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3);">
-      <div style="display: flex; flex-direction: column; gap: var(--space-1);">
+      <div style="display: flex; flex: 1; min-width: 0; flex-direction: column; gap: var(--space-1);">
         <h1 style="font-family: var(--font-heading); font-size: 26px; margin: 0; color: var(--color-text);">Stock Lookup</h1>
         <p style="font-family: var(--font-body); font-size: 14px; margin: 0; color: var(--color-neutral-700);">Pick a store, and pull stock details.</p>
       </div>
@@ -1255,6 +1256,110 @@ class Component extends DCLogic {
     "Warehouse stock filter": "فلتر مخزون المستودع",
     "Overall stock filter": "فلتر إجمالي المخزون",
     "Promo stocks": "مخزون العروض",
+    "13": "13",
+    "(blank)": "(فارغ)",
+    "#N/A": "غير محدد",
+    "ACCUSHARP": "أكوشارب",
+    "AKINOD": "أكينود",
+    "AL RIMAYA": "الرماية",
+    "ALAZRAQ": "الأزرق",
+    "ALKHAWY": "الخاوي",
+    "ALTINBOGA": "ألتينبوغا",
+    "ARB": "إيه آر بي",
+    "ARCOS": "أركوس",
+    "BALLISTOL": "باليستول",
+    "BESTWAY": "بيست واي",
+    "BIRCHWOOD": "بيرشوود",
+    "BODYSPONGE": "بودي سبونج",
+    "BRE": "بي آر إي",
+    "BUSHNELL": "بوشنيل",
+    "CLEAN": "كلين",
+    "COLD STEEL": "كولد ستيل",
+    "DEEJO": "ديجو",
+    "DEEM": "ديم",
+    "DESERT WOLVES": "ذئاب الصحراء",
+    "DIAVOLINA": "ديافولينا",
+    "DISCOVERY": "ديسكفري",
+    "DJI": "دي جي آي",
+    "DR HUNTER": "دكتور هنتر",
+    "DURACELL": "دوراسيل",
+    "ELEMENT OPTICS": "إليمنت أوبتكس",
+    "EURO CAMP": "يورو كامب",
+    "F.W.KLEVER": "إف دبليو كليفر",
+    "FIVE STAR": "فايف ستار",
+    "FLAME": "فليم",
+    "FX": "إف إكس",
+    "GAMO": "جامو",
+    "GO KAMP": "جو كامب",
+    "GREE": "جري",
+    "GUN POWER": "جن باور",
+    "GUNS & ACCESSORIES": "الأسلحة وملحقاتها",
+    "H&N": "إتش آند إن",
+    "HATSAN": "هاتسان",
+    "HOPPES": "هوبس",
+    "Hi-Lift": "هاي ليفت",
+    "INDEL B": "إندل بي",
+    "INNOVA": "إنوفا",
+    "INTEX": "إنتكس",
+    "KERSHAW": "كيرشو",
+    "KING CAMP": "كينج كامب",
+    "KINGGEAR": "كينج جير",
+    "KITASHO": "كيتاشو",
+    "KITE OPTICS": "كايت أوبتكس",
+    "KOVEA": "كوفيا",
+    "KOZAP": "كوزاب",
+    "KUNMING": "كونمينج",
+    "LASTING SPORTS": "لاستنج سبورتس",
+    "LEATHERMAN": "ليثرمان",
+    "LOCAL": "محلي",
+    "M.I.T LIMITED": "إم آي تي ليمتد",
+    "M.T.M (USA)": "إم تي إم (أمريكا)",
+    "MASERIN": "ماسرين",
+    "MAURIA": "موريا",
+    "MEGALINE": "ميجالاين",
+    "MIDLAND": "ميدلاند",
+    "MINITISSUE": "ميني تيشو",
+    "MR. BLADE": "مستر بليد",
+    "NAPOLEAN": "نابليون",
+    "NEXTOOL": "نكستول",
+    "NITECORE": "نايتكور",
+    "NITEIZE": "نايت آيز",
+    "NON TRADING": "غير تجاري",
+    "OKEY": "أوكي",
+    "OPINEL": "أوبينيل",
+    "POLARSON": "بولارسون",
+    "PRIMUS": "بريموس",
+    "Q20": "كيو 20",
+    "Q90": "كيو 90",
+    "RADAR": "رادار",
+    "RITARGET": "راي تارجت",
+    "ROTHCO": "روثكو",
+    "SAFIX": "سافكس",
+    "SAMPLE": "عينة",
+    "SAMPLES": "عينات",
+    "SERVICES": "خدمات",
+    "SKINNERS": "سكينرز",
+    "SNOWPEAK": "سنو بيك",
+    "SPARE PARTS": "قطع غيار",
+    "STANLEY": "ستانلي",
+    "SULTAN GARDENS": "حدائق السلطان",
+    "TECHNO EST": "تكنو إست",
+    "VICTORY": "فيكتوري",
+    "VORTEX": "فورتكس",
+    "WABOBA": "وابوبا",
+    "WANDER": "واندر",
+    "WARNE": "وارن",
+    "WEBLEY": "ويبلي",
+    "WENGER": "فينجر",
+    "WILDLAND": "وايلد لاند",
+    "ZEISS": "زايس",
+    "Last Pieces": "آخر القطع",
+    "Last Pieces Report": "تقرير آخر القطع",
+    "Lookup SKU in All Stores": "البحث عن صنف في جميع الفروع",
+    "Regular & Promo Stock": "المخزون العادي والعروض",
+    "Negative Inventory": "المخزون السالب",
+    "Warehouse vs Stores": "المستودعات مقابل الفروع",
+    "Distribution Reports": "تقارير التوزيع",
     "APPAREL": "الملابس",
     "BAGS": "الحقائب",
     "BBQ ESSENTIALS": "مستلزمات الشوي",
@@ -1601,6 +1706,89 @@ class Component extends DCLogic {
     [/^([A-Za-z][A-Za-z .'&\-]*?) (\d+x?)$/, (m) => { const c = Component.AR[m[1]]; return c ? c + ' ' + m[2] : null; }]
   ];
 
+
+  static PLACES = {
+    "Al Falah": "الفلاح",
+    "Aqiq": "العقيق",
+    "Badia": "البادية",
+    "Kharj": "الخرج",
+    "Khorais": "خريص",
+    "Taqasussi": "التخصصي",
+    "Thager Plaza": "ثغر بلازا",
+    "Thager": "ثغر",
+    "Tuwaiq": "طويق",
+    "Wadi Laban": "وادي لبن",
+    "Wadi Namar": "وادي نمار",
+    "Al Ahsa": "الأحساء",
+    "Ahsa": "الأحساء",
+    "Dammam": "الدمام",
+    "Hafr Al Batin": "حفر الباطن",
+    "Jubail": "الجبيل",
+    "Khobar": "الخبر",
+    "Jeddah": "جدة",
+    "Abha": "أبها",
+    "Riyadh": "الرياض",
+    "Qaseem": "القصيم",
+    "Qassim": "القصيم",
+    "Unaiza": "عنيزة",
+    "Hail": "حائل",
+    "Tabuk": "تبوك",
+    "Al Jouf": "الجوف",
+    "Al Qods": "القدس",
+    "Shifa": "الشفا",
+    "Al Ula": "العلا",
+    "Salbukh": "الصلبوخ",
+    "Khamis Mushait": "خميس مشيط",
+    "Najran": "نجران",
+    "Jazan": "جيزان",
+    "Taif": "الطائف",
+    "Madinah": "المدينة المنورة",
+    "Makkah": "مكة المكرمة",
+    "Buraidah": "بريدة",
+    "Yanbu": "ينبع",
+    "Sakaka": "سكاكا",
+    "Arar": "عرعر",
+    "Baha": "الباحة",
+    "Bisha": "بيشة",
+    "Wadi Dawasir": "وادي الدواسر",
+    "Zulfi": "الزلفي",
+    "Majmaah": "المجمعة",
+    "Rass": "الرس",
+    "Muzahmiyah": "المزاحمية",
+    "Diriyah": "الدرعية",
+    "Sulay": "السلي",
+    "Naseem": "النسيم",
+    "Malaz": "الملز",
+    "Olaya": "العليا",
+    "Rabwah": "الربوة",
+    "Suwaidi": "السويدي",
+    "Hair": "الحائر",
+    "Yasmin": "الياسمين",
+    "Nakheel": "النخيل",
+    "Rimal": "الرمال",
+    "Sultana": "سلطانة",
+    "Exit 5": "مخرج 5",
+    "Exit 15": "مخرج 15",
+    "Exit 9": "مخرج 9",
+    "Damages & Shortages Ryd": "التوالف والنواقص - الرياض",
+    "Damages & Shortages Abha": "التوالف والنواقص - أبها"
+  };
+
+  static trPlace(key) {
+    const m = key.match(/^(.*?)\s*(\d+\s*x?|WH|Warehouse|Workshop)?$/i);
+    if (!m) return null;
+    let base = (m[1] || '').trim();
+    const suffix = (m[2] || '').trim();
+    if (!base) return null;
+    const hit = Component.PLACES[base] || Component.PLACES[base.replace(/^Al\s+/i, 'Al ')] || null;
+    if (!hit) return null;
+    const suf = suffix.toLowerCase();
+    if (!suffix) return hit;
+    if (suf === 'wh' || suf === 'warehouse') return 'مستودع ' + hit;
+    if (suf === 'workshop') return 'ورشة ' + hit;
+    return hit + ' ' + suffix;
+  }
+
   static trWord(s) {
     const k = String(s).replace(/\s+/g, ' ').trim();
     return Component.AR[k] || s;
@@ -1612,9 +1800,12 @@ class Component extends DCLogic {
     if (Component.AR[key]) return Component.AR[key];
     for (const [re, fn] of Component.AR_PATS) {
       const m = key.match(re);
-      if (m) return fn(m);
+      if (m) {
+        const out = fn(m);
+        if (out) return out;
+      }
     }
-    return null;
+    return Component.trPlace(key);
   }
 
   setLang(lang) {
