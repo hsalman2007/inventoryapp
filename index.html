@@ -14,6 +14,16 @@
   <meta name="ext-resource-dependency" content="./cost-data.json" data-resource-id="cost-json">
   <style>
     #pdf-print-frame { position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; visibility: hidden; }
+    /* White ground — only the light surface tokens are overridden;
+       text and border ramp steps keep their natural values. */
+    body { background: #ffffff; }
+    .page-shell, .app-shell {
+      --color-bg: #ffffff;
+      --color-surface: #f4f4f3;
+      --color-neutral-100: #fbfbfa;
+      --color-neutral-200: #f1f1ef;
+      --color-neutral-300: #e0e0dc;
+    }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -3069,7 +3079,6 @@ class Component extends DCLogic {
       + '<td class="itemno">' + esc(r.itemNo) + '</td>'
       + '<td class="desc">' + esc(r.description2) + '</td>'
       + '<td class="ctr">' + fmtNum(r.qty) + '</td>'
-      + '<td class="ctr">' + fmtNum(r.storeCount) + '</td>'
       + '<td class="ctr">' + fmtNum(r.whStock) + '</td>'
       + (showDiscount ? '<td class="ctr" style="' + (r.pct === 'Was/Now Just' ? 'font-weight:700;color:#8b1a1a;' : '') + '">' + fmtNum(r.was) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + fmtNum(r.now) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + esc(r.pct) + '</td>' : '')
       + '</tr>'
@@ -3084,7 +3093,7 @@ class Component extends DCLogic {
       + 'table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;table-layout:fixed;}'
       + 'tr{break-inside:avoid;}'
       + 'tr.hdr th{border-bottom:2px solid #201e1d;}'
-      + 'col.c-img{width:11%}col.c-item{width:' + (noImages ? '16' : '14') + '%}col.c-desc{width:' + (noImages ? '32' : '25') + '%}col.c-qty{width:' + (noImages ? '8' : '7') + '%}col.c-st{width:' + (noImages ? '8' : '7') + '%}col.c-wh{width:8%}col.c-rsp{width:9%}'
+      + 'col.c-img{width:11%}col.c-item{width:' + (noImages ? '16' : '14') + '%}col.c-desc{width:' + (noImages ? '32' : '25') + '%}col.c-qty{width:10%}col.c-wh{width:10%}col.c-rsp{width:9%}'
       + 'th{text-align:center;font-size:11px;text-transform:uppercase;color:#6b6360;padding:6px;border-bottom:2px solid #201e1d;}'
       + 'th:first-child,th:nth-child(2){text-align:left;}'
       + 'td{padding:6px;border-bottom:1px solid #e6ddd2;white-space:normal;overflow-wrap:break-word;word-break:break-word;text-wrap:pretty;vertical-align:middle;}'
@@ -3097,11 +3106,11 @@ class Component extends DCLogic {
     const totalWh = rows.reduce((s, r) => s + (Number(r.whStock) || 0), 0);
     const bodyHtml = '<h1>' + esc(storeLabel) + '</h1>'
       + '<div class="meta">Promo stocks · ' + rows.length + (truncated ? ' of ' + allRows.length : '') + ' SKUs' + (truncated ? ' (showing first ' + MAX_PDF_ROWS + ' — use Excel for the full list)' : '') + ' · ' + today + '</div>'
-      + '<table><colgroup>' + (noImages ? '' : '<col class="c-img">') + '<col class="c-item"><col class="c-desc"><col class="c-qty"><col class="c-st"><col class="c-wh">' + extraCols + '</colgroup>'
-      + '<tbody><tr class="hdr">' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Qty</th><th>#Stores</th><th>WH Stock</th>' + extraHead + '</tr>'
+      + '<table><colgroup>' + (noImages ? '' : '<col class="c-img">') + '<col class="c-item"><col class="c-desc"><col class="c-qty"><col class="c-wh">' + extraCols + '</colgroup>'
+      + '<tbody><tr class="hdr">' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th>' + extraHead + '</tr>'
       + rowsHtml
       + '<tr class="tot"><td colspan="' + (noImages ? 2 : 3) + '">Total · ' + rows.length + ' SKUs</td>'
-      + '<td class="ctr">' + fmtNum(totalQty) + '</td><td></td><td class="ctr">' + fmtNum(totalWh) + '</td>'
+      + '<td class="ctr">' + fmtNum(totalQty) + '</td><td class="ctr">' + fmtNum(totalWh) + '</td>'
       + '<td></td><td></td><td></td></tr>'
       + '</tbody></table>';
 
@@ -3118,7 +3127,7 @@ class Component extends DCLogic {
     const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500;
     const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
 
-    const header = ['Item No.', 'Description 2', 'Qty', '#Stores', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
+    const header = ['Item No.', 'Description 2', 'Qty', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
     const aoa = [
       [{ v: storeLabel, s: 1 }],
       ['Promo stocks · ' + rows.length + ' SKUs · ' + today],
@@ -3133,14 +3142,13 @@ class Component extends DCLogic {
         { v: r.itemNo, t: 's', s: base },
         { v: r.description2, t: 's', s: base },
         { v: num(r.qty), s: base },
-        { v: num(r.storeCount), s: base },
         { v: num(r.whStock), s: base },
       ];
       if (showDiscount) line.push({ v: num(r.was), s: strong }, { v: num(r.now), s: strong }, { v: r.pct, t: 's', s: strong });
       line.push({ v: r.image || '', t: 's', s: base });
       aoa.push(line);
     }
-    const cols = [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 9 }, { width: 11 }]
+    const cols = [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 11 }]
       .concat(showDiscount ? [{ width: 10 }, { width: 10 }, { width: 14 }] : [])
       .concat([{ width: 42 }]);
     const fileTitle = (storeLabel + '-Promo-Stocks-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
