@@ -69,6 +69,7 @@
         <button class="btn btn-secondary btn-block" onClick="{{onGoSelect}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Last Pcs Report</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Item Lookup in All Stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoMultiLoc}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Multi Locations</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoDistribution}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Distribution</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoWhStores}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">WH vs Stores</button>
@@ -256,6 +257,76 @@
         <button class="btn btn-primary btn-block" onClick="{{onDownloadStoreStockPdf}}" disabled="{{storeStockPdfDownloading}}">{{storeStockPdfDownloadLabel}}</button>
         <button class="btn btn-secondary btn-block" onClick="{{onDownloadStoreStockExcel}}">Download Excel</button>
         <button class="btn btn-ghost btn-block" onClick="{{onBackFromStoreStock}}">← Back</button>
+      </div>
+    </sc-if>
+
+    <!-- MULTI LOCATIONS SCREEN -->
+    <sc-if value="{{isMultiLoc}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div class="card-kicker">Side-by-side stock</div>
+        <div class="card-title" style="font-size: 18px;">Multi locations</div>
+        <span style="font-size: 12px; color: var(--color-neutral-700);">Pick two or more locations — the export puts one quantity column per location side by side, with Was / Now / % pricing.</span>
+
+        <div class="field">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+            <label style="margin: 0;">Locations</label>
+            <span style="font-size: 11.5px; color: var(--color-neutral-700);">{{mlCountLabel}}</span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+            <button class="btn btn-ghost" onClick="{{onMlSelectAllStores}}" style="font-size: 12px; padding: 4px 10px;">All stores</button>
+            <button class="btn btn-ghost" onClick="{{onMlSelectWarehouses}}" style="font-size: 12px; padding: 4px 10px;">Warehouses</button>
+            <button class="btn btn-ghost" onClick="{{onMlClearLocations}}" style="font-size: 12px; padding: 4px 10px;">Clear</button>
+          </div>
+          <div style="max-height: 260px; overflow-y: auto; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); padding: var(--space-2); display: flex; flex-direction: column; gap: 2px;">
+            <sc-for list="{{mlLocationOptions}}" as="loc" hint-placeholder-count="8">
+              <label style="display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 6px 8px; border-radius: var(--radius-sm); cursor: pointer;" style-hover="background: var(--color-neutral-200);">
+                <input type="checkbox" checked="{{loc.checked}}" onChange="{{loc.onToggle}}" style="flex: none; width: 16px; height: 16px; accent-color: var(--color-accent);">
+                <span style="flex: 1; color: var(--color-text);">{{loc.label}}</span>
+                <sc-if value="{{loc.isWarehouse}}" hint-placeholder-val="{{false}}">
+                  <span class="tag tag-outline" style="font-size: 10px;">WH</span>
+                </sc-if>
+              </label>
+            </sc-for>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="ml-brand-select">Brand</label>
+          <select id="ml-brand-select" class="input" value="{{mlBrand}}" onChange="{{onMlBrandChange}}">
+            <option value="">All brands</option>
+            <sc-for list="{{mlBrandOptions}}" as="b" hint-placeholder-count="3">
+              <option value="{{b}}">{{b}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="ml-category-select">Category</label>
+          <select id="ml-category-select" class="input" value="{{mlCategory}}" onChange="{{onMlCategoryChange}}">
+            <option value="">All categories</option>
+            <sc-for list="{{mlCategoryOptions}}" as="c" hint-placeholder-count="3">
+              <option value="{{c}}">{{c}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <sc-if value="{{mlHasSubCategoryOptions}}" hint-placeholder-val="{{false}}">
+          <div class="field">
+            <label for="ml-subcategory-select">Sub-category</label>
+            <select id="ml-subcategory-select" class="input" value="{{mlSubCategory}}" onChange="{{onMlSubCategoryChange}}">
+              <option value="">All sub-categories</option>
+              <sc-for list="{{mlSubCategoryOptions}}" as="sc" hint-placeholder-count="3">
+                <option value="{{sc}}">{{sc}}</option>
+              </sc-for>
+            </select>
+          </div>
+        </sc-if>
+
+        <div style="font-size: 12.5px; color: var(--color-neutral-700); border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3);">{{mlSummary}}</div>
+
+        <button class="btn btn-primary btn-block" onClick="{{onDownloadMultiLocPdf}}" disabled="{{mlExportDisabled}}">{{mlPdfLabel}}</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onDownloadMultiLocExcel}}" disabled="{{mlExportDisabled}}">Download Excel</button>
+        <button class="btn btn-ghost btn-block" onClick="{{onBackFromMultiLoc}}">← Back</button>
       </div>
     </sc-if>
 
@@ -1931,6 +2002,11 @@ class Component extends DCLogic {
     storeStockBrand: '',
     storeStockCategory: '',
     storeStockSubCategory: '',
+    mlLocations: [],
+    mlBrand: '',
+    mlCategory: '',
+    mlSubCategory: '',
+    mlPdfDownloading: false,
     storeStockSelected: '__ALL__',
     negInvLocation: '__ALL__',
     negInvModalOpen: false,
@@ -2226,7 +2302,7 @@ class Component extends DCLogic {
       + 'tr.hdr th{border-bottom:2px solid #201e1d;}'
       + 'col.c-img{width:11%}col.c-item{width:' + (noImages ? '16' : '14') + '%}col.c-desc{width:' + (noImages ? '35' : '27') + '%}col.c-num{width:8%}col.c-price{width:8%}'
       + 'th{text-align:center;font-size:11px;text-transform:uppercase;color:#6b6360;padding:6px;border-bottom:2px solid #201e1d;}'
-      + 'th:first-child,th:nth-child(2){text-align:left;}'
+      + 'th:nth-child(' + (noImages ? 1 : 2) + '),th:nth-child(' + (noImages ? 2 : 3) + '){text-align:left;}'
       + 'td{padding:6px;border-bottom:1px solid #e6ddd2;white-space:normal;overflow-wrap:break-word;word-break:break-word;text-wrap:pretty;vertical-align:middle;}'
       + 'td.ctr{text-align:center;white-space:nowrap;}'
       + 'td .sub{font-size:10.5px;color:#6b6360;}'
@@ -2872,6 +2948,216 @@ class Component extends DCLogic {
     });
   }
 
+  onGoMultiLoc() { this.setState({ screen: 'multiloc' }); }
+  onBackFromMultiLoc() { this.setState({ screen: 'menu' }); }
+  onMlBrandChange(e) { this.setState({ mlBrand: e.target.value }); }
+  onMlCategoryChange(e) { this.setState({ mlCategory: e.target.value, mlSubCategory: '' }); }
+  onMlSubCategoryChange(e) { this.setState({ mlSubCategory: e.target.value }); }
+  onMlClearLocations() { this.setState({ mlLocations: [] }); }
+  onMlToggleLocation(name) {
+    const cur = this.state.mlLocations || [];
+    this.setState({ mlLocations: cur.indexOf(name) >= 0 ? cur.filter(n => n !== name) : cur.concat([name]) });
+  }
+  onMlSelectAllStores() {
+    this.setState({ mlLocations: this.getMlLocationOptions().filter(o => !o.isWarehouse).map(o => o.name) });
+  }
+  onMlSelectWarehouses() {
+    this.setState({ mlLocations: this.getMlLocationOptions().filter(o => o.isWarehouse).map(o => o.name) });
+  }
+
+  getMlLocationOptions() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const stores = [];
+    const warehouses = [];
+    for (const name of st.parsed.matrix.storeNames) {
+      const lc = name.trim().toLowerCase();
+      const info = st.storeInfoMap && st.storeInfoMap.get(name);
+      const displayName = ((info && info.shortName) || name).trim();
+      if (STORE_STOCK_WH_LOCATIONS_LC.has(lc) || STORE_STOCK_WH_LOCATIONS_LC.has(displayName.toLowerCase())) {
+        warehouses.push({ name, short: displayName, label: displayName, isWarehouse: true });
+        continue;
+      }
+      if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) continue;
+      if (EXCLUDED_STORES.has(displayName.toLowerCase()) || EXCLUDED_STORES.has(lc)) continue;
+      stores.push({ name, short: displayName, label: info.region ? displayName + ' — ' + info.region : displayName, isWarehouse: false });
+    }
+    stores.sort((a, b) => naturalCompare(a.label, b.label));
+    warehouses.sort((a, b) => naturalCompare(a.label, b.label));
+    return stores.concat(warehouses);
+  }
+
+  getMlSubCategoryOptions() {
+    const st = this.state;
+    if (!st.parsed) return [];
+    const { matrix, retailMap } = st.parsed;
+    const set = new Set();
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo);
+      if (!r || !r.subCategory || !r.subCategory.trim()) continue;
+      if (st.mlCategory && (r.category || '').trim() !== st.mlCategory) continue;
+      set.add(r.subCategory.trim());
+    }
+    return Array.from(set).sort(naturalCompare);
+  }
+
+  getMlRows() {
+    const st = this.state;
+    if (!st.parsed) return { locations: [], rows: [] };
+    const { matrix, retailMap, discountMap } = st.parsed;
+    const sel = st.mlLocations || [];
+    const locations = this.getMlLocationOptions().filter(o => sel.indexOf(o.name) >= 0);
+    if (!locations.length) return { locations: [], rows: [] };
+    const rows = [];
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo) || {};
+      const brand = (r.brand || '').trim();
+      if (st.mlBrand && brand !== st.mlBrand) continue;
+      if (st.mlCategory && (r.category || '').trim() !== st.mlCategory) continue;
+      if (st.mlSubCategory && (r.subCategory || '').trim() !== st.mlSubCategory) continue;
+      const qtys = locations.map(l => Number(it.stores[l.name]) || 0);
+      if (qtys.every(q => q === 0)) continue;
+      const disc = discountMap ? discountMap.get(it.itemNo) : null;
+      const pctNum = disc && /%$/.test(disc.pct) ? parseFloat(disc.pct) : null;
+      rows.push({
+        itemNo: it.itemNo,
+        description2: r.description2 || it.description2,
+        qtys,
+        total: qtys.reduce((a, b) => a + b, 0),
+        was: (disc && disc.was) || it.rsp || '',
+        now: disc ? disc.now : '',
+        pct: disc ? disc.pct : '',
+        image: (r.image && r.image !== '(blank)') ? r.image : '',
+        promo: !!disc && disc.pct === 'Was/Now Just',
+        highlight: pctNum !== null && pctNum >= 50 && pctNum <= 70,
+        brand,
+      });
+    }
+    rows.sort((a, b) => naturalCompare(a.itemNo, b.itemNo));
+    return { locations, rows };
+  }
+
+  mlScopeLabel() {
+    const st = this.state;
+    const bits = [];
+    if (st.mlBrand) bits.push(st.mlBrand);
+    if (st.mlCategory) bits.push(st.mlCategory);
+    if (st.mlSubCategory) bits.push(st.mlSubCategory);
+    return bits.length ? bits.join(' · ') : 'All brands & categories';
+  }
+
+  async onDownloadMultiLocPdf() {
+    const { locations: allLocations, rows: allRows } = this.getMlRows();
+    if (!allLocations.length || !allRows.length) return;
+    this.setState({ mlPdfDownloading: true });
+    // Beyond this many columns the quantities clip on a printed sheet — the
+    // Excel export carries every location.
+    const MAX_PDF_LOCS = 10;
+    const locsTruncated = allLocations.length > MAX_PDF_LOCS;
+    const locations = locsTruncated ? allLocations.slice(0, MAX_PDF_LOCS) : allLocations;
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const fmtNum = v => {
+      if (v === '' || v === null || v === undefined || isNaN(Number(v))) return esc(v);
+      return Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    };
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const MAX_PDF_ROWS = 6000;
+    const truncated = allRows.length > MAX_PDF_ROWS;
+    const rows = truncated ? allRows.slice(0, MAX_PDF_ROWS) : allRows;
+    const noImages = rows.length > 5000;
+    const scaledRows = noImages ? rows : await this.scaleRowImages(rows);
+    const n = locations.length;
+    const landscape = n > 4;
+    // Was · Now · % and the thumbnail are fixed; locations take what they need
+    // (never under 5% so 4-digit quantities fit), and Item + Description absorb
+    // the remainder so the colgroup always sums to exactly 100%.
+    const TAIL_W = 6 + 6 + 6;
+    const IMG_W = noImages ? 0 : 10;
+    const locW = Math.min(9, (100 - TAIL_W - IMG_W - 25) / n);
+    const restW = 100 - TAIL_W - IMG_W - locW * n;
+    const itemW = restW * 0.35;
+    const descW = restW - itemW;
+    const locCols = locations.map(() => '<col style="width:' + locW.toFixed(2) + '%">').join('');
+    const locHead = locations.map(l => '<th class="loc">' + esc(l.short) + '</th>').join('');
+    const rowsHtml = scaledRows.map(r => (
+      '<tr' + (r.highlight ? ' style="background:#fbe1de;"' : '') + '>'
+      + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" />' : '') + '</td>')
+      + '<td class="itemno">' + esc(r.itemNo) + '</td>'
+      + '<td class="desc">' + esc(r.description2) + '</td>'
+      + r.qtys.map(q => '<td class="ctr' + (q === 0 ? ' zero' : '') + '">' + (q === 0 ? '–' : fmtNum(q)) + '</td>').join('')
+      + '<td class="ctr"' + (r.promo ? ' style="font-weight:700;color:#8b1a1a;"' : '') + '>' + fmtNum(r.was) + '</td>'
+      + '<td class="ctr" style="font-weight:700;' + (r.promo ? 'color:#8b1a1a;' : '') + '">' + fmtNum(r.now) + '</td>'
+      + '<td class="ctr" style="font-weight:700;' + (r.promo ? 'color:#8b1a1a;' : '') + '">' + esc(r.pct) + '</td>'
+      + '</tr>'
+    )).join('');
+    const locTotals = locations.map((l, i) => rows.reduce((s, r) => s + (r.qtys[i] || 0), 0));
+    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
+      + 'h1{font-size:20px;margin:0 0 4px;}'
+      + '.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
+      + 'table{width:100%;border-collapse:separate;border-spacing:0;font-size:' + (n > 8 ? '10' : n > 5 ? '11' : '12.5') + 'px;table-layout:fixed;}'
+      + 'tr{break-inside:avoid;}'
+      + 'th{text-align:center;font-size:' + (n > 8 ? '9' : '10.5') + 'px;text-transform:uppercase;color:#6b6360;padding:6px 4px;border-bottom:2px solid #201e1d;vertical-align:bottom;}'
+      + 'th:nth-child(' + (noImages ? 1 : 2) + '),th:nth-child(' + (noImages ? 2 : 3) + '){text-align:left;}'
+      + 'th.loc{color:#201e1d;font-weight:700;}'
+      + 'td{padding:6px 4px;border-bottom:1px solid #e6ddd2;white-space:normal;overflow-wrap:break-word;word-break:break-word;text-wrap:pretty;vertical-align:middle;}'
+      + 'td.ctr{text-align:center;white-space:nowrap;}'
+      + 'td.zero{color:#b8afa6;}'
+      + 'td.img-cell{overflow:hidden;}'
+      + 'td.img-cell img{width:100%;height:' + (n > 8 ? '40' : '52') + 'px;object-fit:contain;display:block;}'
+      + 'tr.tot td{border-top:2px solid #201e1d;border-bottom:none;font-weight:700;font-size:12px;padding-top:8px;}';
+    const bodyHtml = '<h1>Multi locations · ' + n + (locsTruncated ? ' of ' + allLocations.length : '') + ' locations</h1>'
+      + '<div class="meta">' + esc(this.mlScopeLabel()) + ' · ' + rows.length + (truncated ? ' of ' + allRows.length : '') + ' SKUs'
+      + (truncated ? ' (showing first ' + MAX_PDF_ROWS + ' rows)' : '')
+      + (locsTruncated ? ' · first ' + MAX_PDF_LOCS + ' locations only — use Excel for all ' + allLocations.length : '')
+      + ' · ' + today + '</div>'
+      + '<table><colgroup>' + (noImages ? '' : '<col style="width:' + IMG_W + '%">')
+      + '<col style="width:' + itemW.toFixed(2) + '%"><col style="width:' + descW.toFixed(2) + '%">' + locCols
+      + '<col style="width:6%"><col style="width:6%"><col style="width:6%"></colgroup>'
+      + '<tbody><tr class="hdr">' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th>' + locHead
+      + '<th>Was</th><th>Now</th><th>%</th></tr>'
+      + rowsHtml
+      + '<tr class="tot"><td colspan="' + (noImages ? 2 : 3) + '">Total · ' + rows.length + ' SKUs</td>'
+      + locTotals.map(t => '<td class="ctr">' + fmtNum(t) + '</td>').join('')
+      + '<td></td><td></td><td></td></tr>'
+      + '</tbody></table>';
+    const fileTitle = ('Multi-Locations-' + n + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    this.printHtmlInPage(styleCss, bodyHtml, fileTitle, () => this.setState({ mlPdfDownloading: false }), landscape ? 'landscape' : 'portrait');
+  }
+
+  onDownloadMultiLocExcel() {
+    const { locations, rows } = this.getMlRows();
+    if (!locations.length || !rows.length) return;
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
+    const header = ['Item No.', 'Description 2']
+      .concat(locations.map(l => l.short))
+      .concat(['Was', 'Now', '%', 'Image Link']);
+    const aoa = [
+      [{ v: 'Multi locations · ' + locations.length + ' locations', s: 1 }],
+      [this.mlScopeLabel() + ' · ' + rows.length + ' SKUs · ' + today],
+      [],
+      header.map(h => ({ v: h, s: 5 })),
+    ];
+    for (const r of rows) {
+      const base = r.highlight ? 3 : 0;
+      const strong = r.promo ? (r.highlight ? 4 : 2) : base;
+      const line = [{ v: r.itemNo, t: 's', s: base }, { v: r.description2, t: 's', s: base }];
+      for (const q of r.qtys) line.push({ v: q, s: base });
+      line.push({ v: num(r.was), s: strong }, { v: num(r.now), s: strong }, { v: r.pct, t: 's', s: strong });
+      line.push({ v: r.image || '', t: 's', s: base });
+      aoa.push(line);
+    }
+    const locTotals = locations.map((l, i) => rows.reduce((s, r) => s + (r.qtys[i] || 0), 0));
+    aoa.push([{ v: 'Total · ' + rows.length + ' SKUs', s: 5 }, { v: '', s: 5 }]
+      .concat(locTotals.map(t => ({ v: t, s: 5 })))
+      .concat([{ v: '', s: 5 }, { v: '', s: 5 }, { v: '', s: 5 }, { v: '', s: 5 }]));
+    const cols = [{ width: 16 }, { width: 44 }]
+      .concat(locations.map(() => ({ width: 12 })))
+      .concat([{ width: 10 }, { width: 10 }, { width: 14 }, { width: 42 }]);
+    const fileTitle = ('Multi-Locations-' + locations.length + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    downloadXlsx(aoa, fileTitle, { sheetName: 'Multi Locations', cols });
+  }
+
   getStoreStockRows() {
     const st = this.state;
     const store = st.storeStockSelected;
@@ -2963,9 +3249,9 @@ class Component extends DCLogic {
     return rows.map(r => (r.image ? Object.assign({}, r, { image: map.get(r.image) || '' }) : r));
   }
 
-  printHtmlInPage(styleCss, bodyHtml, fileTitle, onDone) {
+  printHtmlInPage(styleCss, bodyHtml, fileTitle, onDone, orientation) {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (isIOS) return this.printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone);
+    if (isIOS) return this.printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone, orientation);
     let frame = document.getElementById('pdf-print-frame');
     if (!frame) {
       frame = document.createElement('iframe');
@@ -2975,7 +3261,7 @@ class Component extends DCLogic {
     }
     const doc = frame.contentDocument;
     doc.open();
-    doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + fileTitle + '</title><style>@page{margin:0}body{margin:0.5in}' + styleCss + '</style></head><body>' + bodyHtml + '</body></html>');
+    doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + fileTitle + '</title><style>@page{margin:0;' + (orientation ? 'size:' + orientation + ';' : '') + '}body{margin:0.5in}' + styleCss + '</style></head><body>' + bodyHtml + '</body></html>');
     doc.close();
     const win = frame.contentWindow;
     const doPrint = () => {
@@ -3003,7 +3289,7 @@ class Component extends DCLogic {
     }, 9000);
   }
 
-  printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone) {
+  printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone, orientation) {
     let overlay = document.getElementById('pdf-print-overlay');
     if (!overlay) {
       overlay = document.createElement('div');
@@ -3019,7 +3305,7 @@ class Component extends DCLogic {
     const scoped = styleCss.replace(/(^|\})\s*([^{}]+)\{/g, (m, brace, sel) =>
       brace + sel.split(',').map(s => '#pdf-print-overlay ' + s.trim()).join(',') + '{');
     styleEl.textContent = '#pdf-print-overlay{display:none;}'
-      + '@media print{@page{margin:0}body>*:not(#pdf-print-overlay){display:none!important;}#pdf-print-overlay{display:block!important;padding:0.5in;}}'
+      + '@media print{@page{margin:0;' + (orientation ? 'size:' + orientation + ';' : '') + '}body>*:not(#pdf-print-overlay){display:none!important;}#pdf-print-overlay{display:block!important;padding:0.5in;}}'
       + scoped;
     overlay.innerHTML = bodyHtml;
     const prevTitle = document.title;
@@ -3095,7 +3381,7 @@ class Component extends DCLogic {
       + 'tr.hdr th{border-bottom:2px solid #201e1d;}'
       + 'col.c-img{width:11%}col.c-item{width:' + (noImages ? '16' : '14') + '%}col.c-desc{width:' + (noImages ? '32' : '25') + '%}col.c-qty{width:10%}col.c-wh{width:10%}col.c-rsp{width:9%}'
       + 'th{text-align:center;font-size:11px;text-transform:uppercase;color:#6b6360;padding:6px;border-bottom:2px solid #201e1d;}'
-      + 'th:first-child,th:nth-child(2){text-align:left;}'
+      + 'th:nth-child(' + (noImages ? 1 : 2) + '),th:nth-child(' + (noImages ? 2 : 3) + '){text-align:left;}'
       + 'td{padding:6px;border-bottom:1px solid #e6ddd2;white-space:normal;overflow-wrap:break-word;word-break:break-word;text-wrap:pretty;vertical-align:middle;}'
       + 'td.ctr{white-space:nowrap;}'
       + 'td.ctr{text-align:center}'
@@ -3514,6 +3800,23 @@ class Component extends DCLogic {
     const filteredResults = this.filterResults(s.results, s.statusFilter, s.stockFilter, s.lowStockFilter);
     const subCategoryOptions = (s.screen === 'storestock' || s.screen === 'select') ? this.getSubCategoryOptions() : [];
     const skuMatches = this.getSkuMatches(s.skuQuery);
+    const mlSelected = s.mlLocations || [];
+    const mlSelectedCount = mlSelected.length;
+    const mlLocationOptions = s.screen === 'multiloc'
+      ? this.getMlLocationOptions().map(o => Object.assign({}, o, {
+          checked: mlSelected.indexOf(o.name) >= 0,
+          onToggle: () => this.onMlToggleLocation(o.name),
+        }))
+      : [];
+    const mlSubCategoryOptions = s.screen === 'multiloc' ? this.getMlSubCategoryOptions() : [];
+    let mlSummary = '';
+    if (s.screen === 'multiloc') {
+      if (mlSelectedCount === 0) mlSummary = 'Select at least one location to enable the export.';
+      else {
+        const mlPreview = this.getMlRows();
+        mlSummary = mlPreview.rows.length + ' SKUs across ' + mlSelectedCount + ' location' + (mlSelectedCount === 1 ? '' : 's') + ' · ' + this.mlScopeLabel();
+      }
+    }
     const negInvByStore = s.screen === 'neginv' ? this.getNegInvByStore() : [];
     const negInvModal = this.getNegInvModalView();
     const negInvGrandQty = negInvByStore.reduce((sum, r) => sum + r.qty, 0).toLocaleString();
@@ -3625,6 +3928,29 @@ class Component extends DCLogic {
       isSelect: s.screen === 'select',
       isResults: s.screen === 'results',
       isSkuLookup: s.screen === 'skulookup',
+      isMultiLoc: s.screen === 'multiloc',
+      onGoMultiLoc: () => this.onGoMultiLoc(),
+      onBackFromMultiLoc: () => this.onBackFromMultiLoc(),
+      mlLocationOptions: mlLocationOptions,
+      mlCountLabel: mlSelectedCount === 0 ? 'None selected' : mlSelectedCount + ' selected',
+      onMlClearLocations: () => this.onMlClearLocations(),
+      onMlSelectAllStores: () => this.onMlSelectAllStores(),
+      onMlSelectWarehouses: () => this.onMlSelectWarehouses(),
+      mlBrand: s.mlBrand,
+      mlCategory: s.mlCategory,
+      mlSubCategory: s.mlSubCategory,
+      mlBrandOptions: s.screen === 'multiloc' ? this.getBrandOptions() : [],
+      mlCategoryOptions: s.screen === 'multiloc' ? this.getCategoryOptions() : [],
+      mlSubCategoryOptions: mlSubCategoryOptions,
+      mlHasSubCategoryOptions: mlSubCategoryOptions.length > 0,
+      onMlBrandChange: e => this.onMlBrandChange(e),
+      onMlCategoryChange: e => this.onMlCategoryChange(e),
+      onMlSubCategoryChange: e => this.onMlSubCategoryChange(e),
+      mlSummary: mlSummary,
+      mlExportDisabled: mlSelectedCount < 1 || !!s.mlPdfDownloading,
+      mlPdfLabel: s.mlPdfDownloading ? 'Downloading…' : 'Download PDF',
+      onDownloadMultiLocPdf: () => this.onDownloadMultiLocPdf(),
+      onDownloadMultiLocExcel: () => this.onDownloadMultiLocExcel(),
       isStoreStock: s.screen === 'storestock',
       storeStockSelected: s.storeStockSelected,
       hasDiscountFile: !!(s.parsed && s.parsed.discountMap && s.parsed.discountMap.size),
