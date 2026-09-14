@@ -322,6 +322,16 @@
           </div>
         </sc-if>
 
+        <div class="field">
+          <label for="ml-sort-select">Sort rows by</label>
+          <select id="ml-sort-select" class="input" value="{{mlSortBy}}" onChange="{{onMlSortChange}}">
+            <option value="">Item number (A → Z)</option>
+            <sc-for list="{{mlSortOptions}}" as="so" hint-placeholder-count="2">
+              <option value="{{so.value}}">{{so.label}}</option>
+            </sc-for>
+          </select>
+        </div>
+
         <div style="font-size: 12.5px; color: var(--color-neutral-700); border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3);">{{mlSummary}}</div>
 
         <button class="btn btn-primary btn-block" onClick="{{onDownloadMultiLocPdf}}" disabled="{{mlExportDisabled}}">{{mlPdfLabel}}</button>
@@ -2953,6 +2963,7 @@ class Component extends DCLogic {
   onMlBrandChange(e) { this.setState({ mlBrand: e.target.value }); }
   onMlCategoryChange(e) { this.setState({ mlCategory: e.target.value, mlSubCategory: '' }); }
   onMlSubCategoryChange(e) { this.setState({ mlSubCategory: e.target.value }); }
+  onMlSortChange(e) { this.setState({ mlSortBy: e.target.value }); }
   onMlClearLocations() { this.setState({ mlLocations: [] }); }
   onMlToggleLocation(name) {
     const cur = this.state.mlLocations || [];
@@ -3033,7 +3044,16 @@ class Component extends DCLogic {
         brand,
       });
     }
-    rows.sort((a, b) => naturalCompare(a.itemNo, b.itemNo));
+    const sortBy = st.mlSortBy || '';
+    if (sortBy === 'total') {
+      rows.sort((a, b) => (b.total - a.total) || naturalCompare(a.itemNo, b.itemNo));
+    } else if (sortBy.indexOf('loc:') === 0) {
+      const li = locations.findIndex(l => l.name === sortBy.slice(4));
+      if (li >= 0) rows.sort((a, b) => (b.qtys[li] - a.qtys[li]) || naturalCompare(a.itemNo, b.itemNo));
+      else rows.sort((a, b) => naturalCompare(a.itemNo, b.itemNo));
+    } else {
+      rows.sort((a, b) => naturalCompare(a.itemNo, b.itemNo));
+    }
     return { locations, rows };
   }
 
@@ -3943,6 +3963,14 @@ class Component extends DCLogic {
       mlCategoryOptions: s.screen === 'multiloc' ? this.getCategoryOptions() : [],
       mlSubCategoryOptions: mlSubCategoryOptions,
       mlHasSubCategoryOptions: mlSubCategoryOptions.length > 0,
+      mlSortBy: s.mlSortBy || '',
+      mlSortOptions: s.screen === 'multiloc'
+        ? [{ value: 'total', label: 'Total qty across selected (high → low)' }].concat(
+            this.getMlLocationOptions()
+              .filter(o => mlSelected.indexOf(o.name) >= 0)
+              .map(o => ({ value: 'loc:' + o.name, label: o.short + ' qty (high → low)' })))
+        : [],
+      onMlSortChange: e => this.onMlSortChange(e),
       onMlBrandChange: e => this.onMlBrandChange(e),
       onMlCategoryChange: e => this.onMlCategoryChange(e),
       onMlSubCategoryChange: e => this.onMlSubCategoryChange(e),
