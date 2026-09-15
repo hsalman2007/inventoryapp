@@ -272,6 +272,19 @@
         <div class="card-title" style="font-size: 18px;">Multi locations</div>
         <span style="font-size: 12px; color: var(--color-neutral-700);">Pick two or more locations — the export puts one quantity column per location side by side, with Was / Now / % pricing.</span>
 
+        <sc-if value="{{mlHasNational}}" hint-placeholder-val="{{false}}">
+          <div class="seg" role="radiogroup" aria-label="Pricing source">
+            <label class="seg-opt">
+              <input type="radio" name="mlPriceSource" checked="{{mlSeasonalChecked}}" onChange="{{onMlSeasonal}}">
+              Seasonal discounts
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="mlPriceSource" checked="{{mlNationalChecked}}" onChange="{{onMlNational}}">
+              National Day 2026
+            </label>
+          </div>
+        </sc-if>
+
         <div class="field">
           <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
             <label style="margin: 0;">Locations</label>
@@ -2039,6 +2052,7 @@ class Component extends DCLogic {
     storeStockCategory: '',
     storeStockSubCategory: '',
     mlLocations: [],
+    mlPriceSource: 'discount',
     mlBrand: '',
     mlCategory: '',
     mlSubCategory: '',
@@ -2989,6 +3003,8 @@ class Component extends DCLogic {
   onGoMultiLoc() { this.setState({ screen: 'multiloc' }); }
   onBackFromMultiLoc() { this.setState({ screen: 'menu' }); }
   onMlBrandChange(e) { this.setState({ mlBrand: e.target.value }); }
+  onMlSeasonal() { this.setState({ mlPriceSource: 'discount' }); }
+  onMlNational() { this.setState({ mlPriceSource: 'national' }); }
   onMlCategoryChange(e) { this.setState({ mlCategory: e.target.value, mlSubCategory: '' }); }
   onMlSubCategoryChange(e) { this.setState({ mlSubCategory: e.target.value }); }
   onMlSortChange(e) { this.setState({ mlSortBy: e.target.value }); }
@@ -3043,7 +3059,8 @@ class Component extends DCLogic {
   getMlRows() {
     const st = this.state;
     if (!st.parsed) return { locations: [], rows: [] };
-    const { matrix, retailMap, discountMap } = st.parsed;
+    const { matrix, retailMap, discountMap, nationalMap } = st.parsed;
+    const priceMap = st.mlPriceSource === 'national' ? (nationalMap || new Map()) : discountMap;
     const sel = st.mlLocations || [];
     const locations = this.getMlLocationOptions().filter(o => sel.indexOf(o.name) >= 0);
     if (!locations.length) return { locations: [], rows: [] };
@@ -3056,7 +3073,7 @@ class Component extends DCLogic {
       if (st.mlSubCategory && (r.subCategory || '').trim() !== st.mlSubCategory) continue;
       const qtys = locations.map(l => Number(it.stores[l.name]) || 0);
       if (qtys.every(q => q === 0)) continue;
-      const disc = discountMap ? discountMap.get(it.itemNo) : null;
+      const disc = priceMap ? priceMap.get(it.itemNo) : null;
       const pctNum = disc && /%$/.test(disc.pct) ? parseFloat(disc.pct) : null;
       rows.push({
         itemNo: it.itemNo,
@@ -3091,7 +3108,8 @@ class Component extends DCLogic {
     if (st.mlBrand) bits.push(st.mlBrand);
     if (st.mlCategory) bits.push(st.mlCategory);
     if (st.mlSubCategory) bits.push(st.mlSubCategory);
-    return bits.length ? bits.join(' · ') : 'All brands & categories';
+    bits.push(st.mlPriceSource === 'national' ? 'National Day 2026' : 'Seasonal discounts');
+    return bits.join(' · ');
   }
 
   async onDownloadMultiLocPdf() {
@@ -3202,7 +3220,7 @@ class Component extends DCLogic {
     const cols = [{ width: 16 }, { width: 44 }]
       .concat(locations.map(() => ({ width: 12 })))
       .concat([{ width: 10 }, { width: 10 }, { width: 14 }, { width: 42 }]);
-    const fileTitle = ('Multi-Locations-' + locations.length + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const fileTitle = ('Multi-Locations-' + locations.length + '-' + (this.state.mlPriceSource === 'national' ? 'National-Day-2026-' : '') + today).replace(/[^a-z0-9\-_.]+/gi, '-');
     downloadXlsx(aoa, fileTitle, { sheetName: 'Multi Locations', cols });
   }
 
@@ -4015,6 +4033,11 @@ class Component extends DCLogic {
       onMlSelectAllStores: () => this.onMlSelectAllStores(),
       onMlSelectWarehouses: () => this.onMlSelectWarehouses(),
       mlBrand: s.mlBrand,
+      mlHasNational: !!(s.parsed && s.parsed.nationalMap && s.parsed.nationalMap.size),
+      mlSeasonalChecked: s.mlPriceSource !== 'national',
+      mlNationalChecked: s.mlPriceSource === 'national',
+      onMlSeasonal: () => this.onMlSeasonal(),
+      onMlNational: () => this.onMlNational(),
       mlCategory: s.mlCategory,
       mlSubCategory: s.mlSubCategory,
       mlBrandOptions: s.screen === 'multiloc' ? this.getBrandOptions() : [],
