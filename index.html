@@ -222,7 +222,7 @@
           </div>
         </sc-if>
 
-        <sc-if value="{{hasDiscountFile}}" hint-placeholder-val="{{false}}">
+        <sc-if value="{{hasPricingFile}}" hint-placeholder-val="{{false}}">
           <div class="seg" role="radiogroup" aria-label="Discount pricing toggle">
             <label class="seg-opt">
               <input type="radio" name="discountToggle" checked="{{discountOffChecked}}" onChange="{{onDiscountOff}}">
@@ -235,6 +235,10 @@
             <label class="seg-opt">
               <input type="radio" name="discountToggle" checked="{{addnl1500Checked}}" onChange="{{onAddnl1500On}}">
               Addnl. 1500
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="discountToggle" checked="{{nationalDayChecked}}" onChange="{{onNationalDayOn}}">
+              National Day 2026
             </label>
           </div>
         </sc-if>
@@ -1240,6 +1244,7 @@ class Component extends DCLogic {
     "Standard columns": "الأعمدة الأساسية",
     "Include discount pricing": "إضافة أسعار الخصم",
     "Addnl. 1500": "1500 صنف إضافي",
+    "National Day 2026": "اليوم الوطني 2026",
     "Discount range": "نطاق الخصم",
     "All discounts": "جميع الخصومات",
     "10% to 20%": "من 10% إلى 20%",
@@ -2008,6 +2013,7 @@ class Component extends DCLogic {
     whPage: 1,
     storeStockShowDiscount: false,
     storeStockAddnl1500: false,
+    storeStockNationalDay: false,
     storeStockPctRange: '',
     storeStockBrand: '',
     storeStockCategory: '',
@@ -2081,6 +2087,7 @@ class Component extends DCLogic {
       const retailMap = new Map(snap.retailMap);
       const openOrders = new Set(snap.openOrders);
       const discountMap = new Map(snap.discountMap || []);
+      const nationalMap = new Map(snap.nationalMap || []);
       const storeInfoMap = new Map(snap.storeInfoMap);
       const storeOptions = (snap.storeOptions || []).filter(opt => {
         const info = storeInfoMap.get(opt.name);
@@ -2093,7 +2100,7 @@ class Component extends DCLogic {
       this.setState({
         loading: false,
         isAdmin: wasAdmin,
-        parsed: { matrix: snap.matrix, retailMap, openOrders, discountMap },
+        parsed: { matrix: snap.matrix, retailMap, openOrders, discountMap, nationalMap },
         storeInfoMap,
         storeOptions,
         selectedStore: storeOptions[0] ? storeOptions[0].name : '',
@@ -2115,9 +2122,10 @@ class Component extends DCLogic {
   onGoStoreStock() { this.setState({ screen: 'storestock', storeStockSelected: this.state.isAdmin ? '__ALL__' : (this.state.storeOptions[0] ? this.state.storeOptions[0].name : '') }); }
   onBackFromStoreStock() { this.setState({ screen: 'menu' }); }
   onStoreStockChange(e) { this.setState({ storeStockSelected: e.target.value }); }
-  onDiscountOn() { this.setState({ storeStockShowDiscount: true, storeStockAddnl1500: false }); }
-  onDiscountOff() { this.setState({ storeStockShowDiscount: false, storeStockAddnl1500: false, storeStockPctRange: '' }); }
-  onAddnl1500On() { this.setState({ storeStockAddnl1500: true, storeStockShowDiscount: false, storeStockPctRange: '' }); }
+  onDiscountOn() { this.setState({ storeStockShowDiscount: true, storeStockAddnl1500: false, storeStockNationalDay: false }); }
+  onDiscountOff() { this.setState({ storeStockShowDiscount: false, storeStockAddnl1500: false, storeStockNationalDay: false, storeStockPctRange: '' }); }
+  onAddnl1500On() { this.setState({ storeStockAddnl1500: true, storeStockShowDiscount: false, storeStockNationalDay: false, storeStockPctRange: '' }); }
+  onNationalDayOn() { this.setState({ storeStockNationalDay: true, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' }); }
   onPctRangeChange(e) { this.setState({ storeStockPctRange: e.target.value }); }
   onBrandChange(e) { this.setState({ storeStockBrand: e.target.value }); }
   onCategoryChange(e) { this.setState({ storeStockCategory: e.target.value, storeStockSubCategory: '' }); }
@@ -3181,8 +3189,9 @@ class Component extends DCLogic {
   getStoreStockRows() {
     const st = this.state;
     const store = st.storeStockSelected;
-    const { matrix, retailMap, discountMap } = st.parsed;
-    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500;
+    const { matrix, retailMap, discountMap, nationalMap } = st.parsed;
+    const priceMap = st.storeStockNationalDay ? (nationalMap || new Map()) : discountMap;
+    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay;
     const allStores = store === '__ALL__';
     const eligibleStores = matrix.storeNames.filter(name => {
           if (STORE_STOCK_WH_LOCATIONS_LC.has(name.trim().toLowerCase())) return false;
@@ -3207,7 +3216,7 @@ class Component extends DCLogic {
       const whStock = STORE_STOCK_WH_LOCATIONS.reduce((sum, loc) => sum + (Number(it.stores[loc] || 0) || 0), 0);
       let storeCount = 0;
       for (const s of eligibleStores) { if ((Number(it.stores[s]) || 0) > 0) storeCount++; }
-      const disc = discountMap ? discountMap.get(it.itemNo) : null;
+      const disc = priceMap ? priceMap.get(it.itemNo) : null;
       if (showDiscount && !disc) continue;
       const pctNum = disc && /%$/.test(disc.pct) ? parseFloat(disc.pct) : null;
       if (showDiscount && st.storeStockPctRange) {
@@ -3430,7 +3439,7 @@ class Component extends DCLogic {
     const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
     const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     const rows = this.getStoreStockRows();
-    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500;
+    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay;
     const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
 
     const header = ['Item No.', 'Description 2', 'Qty', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
@@ -3983,9 +3992,11 @@ class Component extends DCLogic {
       storeStockSelected: s.storeStockSelected,
       hasDiscountFile: !!(s.parsed && s.parsed.discountMap && s.parsed.discountMap.size),
       discountOnChecked: s.storeStockShowDiscount,
-      discountOffChecked: !s.storeStockShowDiscount && !s.storeStockAddnl1500,
+      discountOffChecked: !s.storeStockShowDiscount && !s.storeStockAddnl1500 && !s.storeStockNationalDay,
       addnl1500Checked: s.storeStockAddnl1500,
-      showDiscountRange: s.storeStockShowDiscount || s.storeStockAddnl1500,
+      nationalDayChecked: s.storeStockNationalDay,
+      hasPricingFile: !!(s.parsed && ((s.parsed.discountMap && s.parsed.discountMap.size) || (s.parsed.nationalMap && s.parsed.nationalMap.size))),
+      showDiscountRange: s.storeStockShowDiscount || s.storeStockAddnl1500 || s.storeStockNationalDay,
       storeStockPctRange: s.storeStockPctRange,
       storeStockBrand: s.storeStockBrand,
       brandOptions: (s.screen === 'storestock' || s.screen === 'select' || s.screen === 'distribution') ? this.getBrandOptions() : [],
@@ -4002,6 +4013,7 @@ class Component extends DCLogic {
       onDiscountOn: () => this.onDiscountOn(),
       onDiscountOff: () => this.onDiscountOff(),
       onAddnl1500On: () => this.onAddnl1500On(),
+      onNationalDayOn: () => this.onNationalDayOn(),
       onPctRangeChange: e => this.onPctRangeChange(e),
       onBrandChange: e => this.onBrandChange(e),
       onCategoryChange: e => this.onCategoryChange(e),
