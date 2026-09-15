@@ -937,6 +937,14 @@
                     <div style="font-size: 11px; font-weight: 700; color: #fff; background: #8b1a1a; border-radius: 999px; padding: 1px 7px;">{{item.pct}}</div>
                   </sc-if>
                 </div>
+                <sc-if value="{{item.hasNational}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                    <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">National Day</div>
+                    <div style="font-size: 12px; color: var(--color-neutral-700);">Was {{item.natWas}}</div>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Now {{item.natNow}}</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #fff; background: var(--color-accent-800); border-radius: 999px; padding: 1px 7px;">{{item.natPct}}</div>
+                  </div>
+                </sc-if>
                 <div style="font-size: 12px; color: var(--color-neutral-700);">{{item.description2}}</div>
               </div>
             </div>
@@ -958,6 +966,16 @@
                   <div style="display: flex; flex-direction: column;">
                     <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #8b1a1a;">Margin after disc.</span>
                     <span style="font-size: 13px; font-weight: 700; color: #8b1a1a;">{{item.discMarginText}}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{item.hasNatMargin}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">Nat. Day price</span>
+                    <span style="font-size: 13px; font-weight: 700; color: var(--color-accent-800);">{{item.natNow}}</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">Margin after Nat. Day</span>
+                    <span style="font-size: 13px; font-weight: 700; color: var(--color-accent-800);">{{item.natMarginText}}</span>
                   </div>
                 </sc-if>
               </div>
@@ -3642,7 +3660,7 @@ class Component extends DCLogic {
     const s = this.state;
     if (!s.parsed || !query || query.trim().length < 2) return [];
     const q = query.trim().toLowerCase();
-    const { matrix, retailMap, discountMap } = s.parsed;
+    const { matrix, retailMap, discountMap, nationalMap } = s.parsed;
     const storeCols = matrix.storeNames.filter(name => {
       const info = s.storeInfoMap && s.storeInfoMap.get(name);
       if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return false;
@@ -3679,14 +3697,22 @@ class Component extends DCLogic {
         .sort((a, b) => b.qty - a.qty);
       const totalQty = storeRows.reduce((sum, sr) => sum + sr.qty, 0);
       const disc = discountMap ? discountMap.get(it.itemNo) : null;
+      const nat = nationalMap ? nationalMap.get(it.itemNo) : null;
       const exp = expandAll || s.skuExpanded === it.itemNo;
       const metrics = this.costMetrics(it.itemNo, it.rsp, disc);
+      const natMetrics = nat ? this.costMetrics(it.itemNo, nat.was || it.rsp, nat) : null;
       return {
         itemNo: it.itemNo,
         description2: r.description2 || it.description2,
         rsp: it.rsp || '',
         now: disc ? disc.now : '',
         pct: disc ? disc.pct : '',
+        hasNational: !!(nat && (nat.now || nat.pct)),
+        natWas: nat ? nat.was : '',
+        natNow: nat ? nat.now : '',
+        natPct: nat ? nat.pct : '',
+        natMarginText: (natMetrics && natMetrics.discMarginText) || '',
+        hasNatMargin: !!(exp && natMetrics && natMetrics.showCost && natMetrics.discMarginText),
         image: r.image && r.image !== '(blank)' ? r.image : '',
         storeRows,
         totalQty,
