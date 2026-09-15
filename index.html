@@ -3230,10 +3230,11 @@ class Component extends DCLogic {
       if (showDiscount && !disc) continue;
       const pctNum = disc && /%$/.test(disc.pct) ? parseFloat(disc.pct) : null;
       if (showDiscount && st.storeStockPctRange === 'wasnow') {
-        // Rows the sheet gave no explicit % for — the % shown may be derived
-        // from Was/Now, so test the source flag, not the displayed value.
-        if (disc && disc.hasPct) continue;
-        if (!disc || disc.was === '' || disc.now === '') continue;
+        // Rows the sheet gave no explicit % for. Older baked-in data carries no
+        // hasPct flag, so fall back to testing the stored % text itself.
+        const explicitPct = disc ? (disc.hasPct !== undefined ? !!disc.hasPct : /%\s*$/.test(String(disc.pct || '').trim())) : false;
+        if (explicitPct) continue;
+        if (!disc || String(disc.was).trim() === '' || String(disc.now).trim() === '') continue;
       } else if (showDiscount && st.storeStockPctRange) {
         const [lo, hi] = st.storeStockPctRange.split('-').map(Number);
         if (pctNum === null || pctNum < lo || pctNum > hi) continue;
