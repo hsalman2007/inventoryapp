@@ -254,6 +254,7 @@
               <option value="41-50">41% to 50%</option>
               <option value="51-60">51% to 60%</option>
               <option value="61-70">61% to 70%</option>
+              <option value="wasnow">Was &amp; Now (no %)</option>
             </select>
           </div>
         </sc-if>
@@ -1252,6 +1253,7 @@ class Component extends DCLogic {
     "31% to 40%": "من 31% إلى 40%",
     "41% to 50%": "من 41% إلى 50%",
     "51% to 60%": "من 51% إلى 60%",
+    "Was & Now (no %)": "السعر السابق والحالي",
     "61% to 70%": "من 61% إلى 70%",
     "Download Excel": "تحميل Excel",
     "Download PDF": "تحميل PDF",
@@ -3186,6 +3188,14 @@ class Component extends DCLogic {
     downloadXlsx(aoa, fileTitle, { sheetName: 'Multi Locations', cols });
   }
 
+  storeStockModeName() {
+    const s = this.state;
+    if (s.storeStockNationalDay) return 'National Day 2026';
+    if (s.storeStockAddnl1500) return 'Addnl 1500';
+    if (s.storeStockShowDiscount) return 'Promo Stocks';
+    return 'Stock';
+  }
+
   getStoreStockRows() {
     const st = this.state;
     const store = st.storeStockSelected;
@@ -3219,7 +3229,9 @@ class Component extends DCLogic {
       const disc = priceMap ? priceMap.get(it.itemNo) : null;
       if (showDiscount && !disc) continue;
       const pctNum = disc && /%$/.test(disc.pct) ? parseFloat(disc.pct) : null;
-      if (showDiscount && st.storeStockPctRange) {
+      if (showDiscount && st.storeStockPctRange === 'wasnow') {
+        if (pctNum !== null) continue;
+      } else if (showDiscount && st.storeStockPctRange) {
         const [lo, hi] = st.storeStockPctRange.split('-').map(Number);
         if (pctNum === null || pctNum < lo || pctNum > hi) continue;
       }
@@ -3294,6 +3306,13 @@ class Component extends DCLogic {
     doc.close();
     const win = frame.contentWindow;
     const doPrint = () => {
+      // Chrome names the saved PDF after the TOP document's title, not the
+      // printed iframe's — set it here and restore once the dialog closes.
+      const prevTitle = document.title;
+      document.title = fileTitle;
+      const restore = () => { document.title = prevTitle; };
+      setTimeout(restore, 3000);
+      window.addEventListener('focus', restore, { once: true });
       try {
         win.focus();
         win.print();
@@ -3399,7 +3418,7 @@ class Component extends DCLogic {
       + '</tr>'
     )).join('');
 
-    const fileTitle = (storeLabel + '-Promo-Stocks-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const fileTitle = (storeLabel + '-' + this.storeStockModeName() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
     const extraCols = showDiscount ? '<col class="c-rsp"><col class="c-rsp"><col class="c-rsp">' : '';
     const extraHead = showDiscount ? '<th>Was</th><th>Now</th><th>%</th>' : '';
     const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
@@ -3466,7 +3485,7 @@ class Component extends DCLogic {
     const cols = [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 11 }]
       .concat(showDiscount ? [{ width: 10 }, { width: 10 }, { width: 14 }] : [])
       .concat([{ width: 42 }]);
-    const fileTitle = (storeLabel + '-Promo-Stocks-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const fileTitle = (storeLabel + '-' + this.storeStockModeName() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
     downloadXlsx(aoa, fileTitle, { sheetName: 'Stock', cols });
   }
 
