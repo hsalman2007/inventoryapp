@@ -3230,7 +3230,10 @@ class Component extends DCLogic {
       if (showDiscount && !disc) continue;
       const pctNum = disc && /%$/.test(disc.pct) ? parseFloat(disc.pct) : null;
       if (showDiscount && st.storeStockPctRange === 'wasnow') {
-        if (pctNum !== null) continue;
+        // Rows the sheet gave no explicit % for — the % shown may be derived
+        // from Was/Now, so test the source flag, not the displayed value.
+        if (disc && disc.hasPct) continue;
+        if (!disc || disc.was === '' || disc.now === '') continue;
       } else if (showDiscount && st.storeStockPctRange) {
         const [lo, hi] = st.storeStockPctRange.split('-').map(Number);
         if (pctNum === null || pctNum < lo || pctNum > hi) continue;
@@ -3439,7 +3442,7 @@ class Component extends DCLogic {
     const totalQty = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
     const totalWh = rows.reduce((s, r) => s + (Number(r.whStock) || 0), 0);
     const bodyHtml = '<h1>' + esc(storeLabel) + '</h1>'
-      + '<div class="meta">Promo stocks · ' + rows.length + (truncated ? ' of ' + allRows.length : '') + ' SKUs' + (truncated ? ' (showing first ' + MAX_PDF_ROWS + ' — use Excel for the full list)' : '') + ' · ' + today + '</div>'
+      + '<div class="meta">' + this.storeStockModeName() + ' · ' + rows.length + (truncated ? ' of ' + allRows.length : '') + ' SKUs' + (truncated ? ' (showing first ' + MAX_PDF_ROWS + ' — use Excel for the full list)' : '') + ' · ' + today + '</div>'
       + '<table><colgroup>' + (noImages ? '' : '<col class="c-img">') + '<col class="c-item"><col class="c-desc"><col class="c-qty"><col class="c-wh">' + extraCols + '</colgroup>'
       + '<tbody><tr class="hdr">' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th>' + extraHead + '</tr>'
       + rowsHtml
@@ -3464,7 +3467,7 @@ class Component extends DCLogic {
     const header = ['Item No.', 'Description 2', 'Qty', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
     const aoa = [
       [{ v: storeLabel, s: 1 }],
-      ['Promo stocks · ' + rows.length + ' SKUs · ' + today],
+      [this.storeStockModeName() + ' · ' + rows.length + ' SKUs · ' + today],
       [],
       header.map(h => ({ v: h, s: 5 })),
     ];
