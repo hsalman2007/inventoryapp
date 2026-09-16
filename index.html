@@ -73,6 +73,7 @@
         <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoDistribution}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Distribution</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoWhStores}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">WH vs Stores</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoPriceTags}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Price Tags</button>
 
         <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2);">
           <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
@@ -804,6 +805,122 @@
           </div>
         </div>
       </sc-if>
+    </sc-if>
+
+    <!-- PRICE TAGS SCREEN -->
+    <sc-if value="{{isPriceTags}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromPriceTags}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">Price tags</div>
+        </div>
+        <span style="font-size: 12px; color: var(--color-neutral-700);">{{tagIntro}}</span>
+
+        <div class="field" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
+          <label>Tags per sheet</label>
+          <div class="seg" role="radiogroup" aria-label="Tags per sheet">
+            <label class="seg-opt">
+              <input type="radio" name="tagLayout" checked="{{tagFourChecked}}" onChange="{{onTagLayoutFour}}">
+              4 per A4
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="tagLayout" checked="{{tagOneChecked}}" onChange="{{onTagLayoutOne}}">
+              1 per A4
+            </label>
+          </div>
+        </div>
+
+        <div class="field" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
+          <label>Discount type</label>
+          <div class="seg" role="radiogroup" aria-label="Discount type">
+            <label class="seg-opt">
+              <input type="radio" name="tagPriceSource" checked="{{tagSeasonalChecked}}" onChange="{{onTagSeasonal}}">
+              Seasonal Discounts
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="tagPriceSource" checked="{{tagNationalChecked}}" onChange="{{onTagNational}}">
+              National Day 2026
+            </label>
+          </div>
+          <span style="font-size: 11.5px; color: var(--color-neutral-700);">{{tagSourceNote}}</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+          <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="4">
+            <div class="field">
+              <label for="{{c.inputId}}">{{c.slotLabel}}</label>
+              <input id="{{c.inputId}}" class="input" type="text" placeholder="e.g. 26-720" value="{{c.value}}" onChange="{{c.onChange}}">
+              <sc-if value="{{c.note}}" hint-placeholder-val="{{false}}">
+                <span style="font-size: 11.5px; color: {{c.noteColor}};">{{c.note}}</span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <button class="btn btn-primary btn-block" onClick="{{onPrintPriceTags}}" disabled="{{tagsPrinting}}">{{tagsPrintLabel}}</button>
+
+        <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 12px; color: var(--color-neutral-700);">{{tagPreviewNote}}</span>
+          <div style="display: grid; grid-template-columns: {{tagGridCols}}; gap: 6px; background: var(--color-neutral-200); padding: 6px; border-radius: var(--radius-sm);">
+            <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="4">
+              <div style="background: #fff; aspect-ratio: {{tagCellRatio}}; padding: {{tagCellPad}}; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 100%; aspect-ratio: 102 / 140.5; container-type: inline-size;">
+                <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
+                  <div style="width: 100%; height: 100%; border: {{c.frame}}; display: flex; flex-direction: column; align-items: center; padding: 2.94cqw 3.92cqw 3.92cqw; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a; overflow: hidden;">
+                    <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
+                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 86%; display: block; margin: 0.98cqw auto 1.96cqw;">
+                    </sc-if>
+                    <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
+                      <div style="width: 86%; height: 13.79cqw; margin: 0.98cqw auto 1.96cqw; flex: none;"></div>
+                    </sc-if>
+                    <div style="font-family: Arial, sans-serif; font-weight: 700; font-size: 5.1cqw; text-align: center; height: 5.89cqw; line-height: 5.89cqw; flex: none;">{{c.itemNo}}</div>
+                    <div style="font-family: Arial, sans-serif; font-size: 4.9cqw; line-height: 1.15; text-align: center; width: 100%; height: 10.78cqw; display: flex; align-items: center; justify-content: center; overflow: hidden; flex: none;">{{c.description}}</div>
+                    <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
+                      <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; flex: none;">
+                        <span style="font-size: 8.04cqw; font-weight: 900;">WAS</span>
+                        <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900;">قبل</span>
+                      </div>
+                      <div style="display: inline-flex; align-items: center; gap: 1.47cqw; font-size: 9.8cqw; font-weight: 900; text-decoration: line-through; text-decoration-thickness: 1.07cqw; height: 11.76cqw; flex: none;">
+                        <img src="assets/riyal-black.png" alt="SAR" style="height: 7.85cqw; display: block;">{{c.wasText}}
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
+                      <div style="height: 21.57cqw; flex: none;"></div>
+                    </sc-if>
+                    <div style="position: relative; width: calc(100% + 7.85cqw); margin: 11.28cqw -3.92cqw 0; border-top: 0.49cqw solid #1a1a1a; height: 0; display: flex; justify-content: center;">
+                      <sc-if value="{{c.hasPct}}" hint-placeholder-val="{{true}}">
+                        <span style="position: absolute; top: -10.29cqw; width: 20.59cqw; height: 20.59cqw; border: 0.49cqw solid #1a1a1a; border-radius: 50%; background: {{c.accent}}; color: #fff; font-size: 7.46cqw; font-weight: 900; font-style: italic; letter-spacing: -0.03em; text-shadow: 0.49cqw 0.49cqw 0 {{c.shade}}; display: flex; align-items: center; justify-content: center;">{{c.pctText}}</span>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
+                      <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 3.92cqw; flex: none;">
+                        <span style="font-size: 8.04cqw; font-weight: 900; color: {{c.accent}};">NOW</span>
+                        <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; color: {{c.accent}};">بعد</span>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
+                      <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 3.92cqw; flex: none;">
+                        <span style="font-size: 8.04cqw; font-weight: 900; color: {{c.accent}};">PRICE</span>
+                        <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; color: {{c.accent}};">السعر</span>
+                      </div>
+                    </sc-if>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 1.96cqw; width: 100%; height: 21.07cqw; margin: 0; color: {{c.accent}}; font-size: {{c.pvNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
+                      <img src="{{c.rySrc}}" alt="SAR" style="height: {{c.pvNowRy}}; display: block;">{{c.priceText}}
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{c.empty}}" hint-placeholder-val="{{false}}">
+                  <div style="width: 100%; height: 100%; border: 1px dashed var(--color-neutral-400); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-neutral-700);">{{c.slotLabel}}</div>
+                </sc-if>
+                <sc-if value="{{c.unusable}}" hint-placeholder-val="{{false}}">
+                  <div style="width: 100%; height: 100%; border: 1px dashed #8b1a1a; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 11px; color: #8b1a1a;">{{c.note}}</div>
+                </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
     </sc-if>
 
     <!-- RESULTS SCREEN -->
@@ -2031,6 +2148,10 @@ class Component extends DCLogic {
     stockFilter: 'all',
     lowStockFilter: 'all',
     skuQuery: '',
+    tagSkus: ['', '', '', ''],
+    tagPriceSource: 'discount',
+    tagLayout: 'four',
+    tagsPrinting: false,
     skuExpanded: '',
     distReport: 'coverage',
     distRegion: '',
@@ -3352,6 +3473,198 @@ class Component extends DCLogic {
     return rows.map(r => (r.image ? Object.assign({}, r, { image: map.get(r.image) || '' }) : r));
   }
 
+  onGoPriceTags() { this.setState({ screen: 'pricetags' }); }
+  onBackFromPriceTags() { this.setState({ screen: 'menu' }); }
+  onTagLayoutFour() { this.setState({ tagLayout: 'four' }); }
+  onTagLayoutOne() { this.setState({ tagLayout: 'one' }); }
+  onTagSeasonal() { this.setState({ tagPriceSource: 'discount' }); }
+  onTagNational() { this.setState({ tagPriceSource: 'national' }); }
+  tagSourceNote() {
+    const s = this.state;
+    const nat = s.tagPriceSource === 'national';
+    const map = s.parsed && (nat ? s.parsed.nationalMap : s.parsed.discountMap);
+    if (!map || !map.size) return (nat ? 'National Day 2026' : 'Seasonal Discounts') + ' file not loaded — tags print the current price only.';
+    return 'Was / now / % taken from ' + (nat ? 'National Day 2026' : 'Seasonal Discounts') + '.';
+  }
+  onTagSkuChange(i, e) {
+    const v = e.target.value;
+    this.setState(s => { const list = (s.tagSkus || ['', '', '', '']).slice(); list[i] = v; return { tagSkus: list }; });
+  }
+  tagMoney(v) {
+    const n = parseFloat(String(v ?? '').replace(/[^0-9.\-]/g, ''));
+    if (!isFinite(n)) return '';
+    const s = n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return s.replace(/\.00$/, '');
+  }
+  tagBrandTheme(brand) {
+    const key = String(brand || '').trim().toLowerCase();
+    const themes = {
+      arb: { label: 'ARB', logo: 'assets/arb-tag-header.png', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-red.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' },
+    };
+    // Exact match on the normalised name, plus explicit aliases — never a prefix match,
+    // or brands like "Arbortech" would inherit the ARB template.
+    const aliases = { 'arb': 'arb', 'arb 4x4': 'arb', 'arb 4x4 accessories': 'arb', 'arb accessories': 'arb' };
+    const hit = themes[key] || themes[aliases[key]];
+    if (hit) return hit;
+    return { label: String(brand || '').trim(), logo: '', accent: '#1a1a1a', shade: '#5a5a5a', ry: 'assets/riyal-black.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' };
+  }
+  getTagCards() {
+    const s = this.state;
+    const all = s.tagSkus || ['', '', '', ''];
+    const list = s.tagLayout === 'one' ? all.slice(0, 1) : all;
+    const parsed = s.parsed;
+    return list.map((raw, i) => {
+      const q = String(raw || '').trim();
+      const card = { index: i, slotLabel: s.tagLayout === 'one' ? 'SKU' : 'Tag ' + (i + 1), inputId: 'tag-sku-' + i, value: raw || '', empty: !q, unusable: !!q, found: false, itemNo: q, description: '', wasText: '', nowText: '', pctText: '', hasPct: false, note: '', noteColor: q ? '#8b1a1a' : 'var(--color-neutral-700)', onChange: e => this.onTagSkuChange(i, e) };
+      if (!q || !parsed) { card.note = q ? 'No data loaded' : 'Empty slot'; return card; }
+      const lc = q.toLowerCase();
+      const it = parsed.matrix.items.find(x => String(x.itemNo).trim().toLowerCase() === lc);
+      const r = parsed.retailMap.get(it ? it.itemNo : q);
+      if (!it && !r) { card.note = 'SKU not found'; return card; }
+      const itemNo = it ? it.itemNo : q;
+      const nat = s.tagPriceSource === 'national';
+      const primary = nat ? parsed.nationalMap : parsed.discountMap;
+      const disc = (primary && primary.get(itemNo)) || null;
+      const was = disc && disc.was ? disc.was : ((it && it.rsp) || (r && r.rsp) || '');
+      const now = disc && disc.now ? disc.now : '';
+      const wasN = parseFloat(String(was).replace(/[^0-9.]/g, ''));
+      const nowN = parseFloat(String(now).replace(/[^0-9.]/g, ''));
+      let pct = disc && disc.pct ? String(disc.pct).trim() : '';
+      if (!/%$/.test(pct) && isFinite(wasN) && isFinite(nowN) && wasN > 0 && nowN > 0) pct = Math.round((1 - nowN / wasN) * 100) + '%';
+      card.found = true;
+      card.itemNo = itemNo;
+      const brand = ((r && r.brand) || (it && it.brand) || '').trim();
+      const theme = this.tagBrandTheme(brand);
+      card.brand = brand;
+      card.brandLabel = theme.label || brand || 'No brand';
+      card.logoSrc = theme.logo;
+      card.hasLogo = !!theme.logo;
+      card.noLogo = !theme.logo;
+      card.accent = theme.accent;
+      card.shade = theme.shade;
+      card.rySrc = theme.ry;
+      card.frame = theme.frame;
+      card.frameMm = theme.frameMm;
+      card.badgeShadow = theme.shade;
+      card.description = ((r && r.description2) || (it && it.description2) || '').toUpperCase();
+      card.wasText = this.tagMoney(was);
+      card.nowText = this.tagMoney(now);
+      card.pctText = /%$/.test(pct) ? pct : '';
+      card.hasPct = !!card.pctText;
+      if (!card.wasText && !card.nowText) {
+        card.found = false;
+        card.unusable = true;
+        card.note = 'No price in the loaded data — cannot print this tag';
+        card.noteColor = '#8b1a1a';
+        return card;
+      }
+      card.unusable = false;
+      card.hasPromo = !!card.nowText;
+      card.noPromo = !card.nowText;
+      card.priceText = card.nowText || card.wasText;
+      card.noteColor = 'var(--color-neutral-700)';
+      card.note = (brand ? card.brandLabel + ' template' : 'No brand in the item master — tag prints without a logo')
+        + (card.nowText ? '' : ' · no promo price, current price only');
+      if (brand && !theme.logo) card.note = card.brandLabel + ' — no logo artwork loaded, tag prints without one';
+      // Size the price to the widest it can be without touching the frame:
+      // Arial Black digits run ~0.62em, separators ~0.3em, the riyal ~0.75em.
+      const shown = (card.nowText || card.wasText || '').replace(/[^0-9.,]/g, '');
+      let em = 0.75;
+      for (const ch of shown) em += /[0-9]/.test(ch) ? 0.62 : 0.3;
+      const mm = Math.min(21.5, Math.max(11, (95 / em)));
+      card.nowSize = mm.toFixed(1) + 'mm';
+      card.nowRy = (mm * 0.78).toFixed(1) + 'mm';
+      // Preview uses container units so it matches print at any shell width
+      // (the tag is 102mm wide, so 1mm = 0.980cqw).
+      card.pvNowSize = (mm * 0.980).toFixed(2) + 'cqw';
+      card.pvNowRy = (mm * 0.78 * 0.980).toFixed(2) + 'cqw';
+      return card;
+    });
+  }
+  async assetDataUrl(path) {
+    this._assetCache = this._assetCache || new Map();
+    if (this._assetCache.has(path)) return this._assetCache.get(path);
+    const p = (async () => {
+      try {
+        const res = await fetch(path);
+        const blob = await res.blob();
+        return await new Promise(resolve => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = () => resolve('');
+          fr.readAsDataURL(blob);
+        });
+      } catch (e) { return ''; }
+    })();
+    this._assetCache.set(path, p);
+    return p;
+  }
+  async onPrintPriceTags() {
+    const cards = this.getTagCards().filter(c => c.found && (c.nowText || c.wasText));
+    if (!cards.length) { this.setState({ loadError: 'Add at least one SKU that exists in the loaded data.' }); return; }
+    this.setState({ tagsPrinting: true });
+    const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const logoPaths = Array.from(new Set(cards.map(c => c.logoSrc).filter(Boolean)));
+    const [riyalRed, riyalBlack, ...logos] = await Promise.all([
+      this.assetDataUrl('assets/riyal-red.png'),
+      this.assetDataUrl('assets/riyal-black.png'),
+      ...logoPaths.map(p => this.assetDataUrl(p)),
+    ]);
+    const logoMap = new Map(logoPaths.map((p, i) => [p, logos[i]]));
+    const ryFor = c => (c.rySrc === 'assets/riyal-black.png' ? riyalBlack : riyalRed);
+    const solo = this.state.tagLayout === 'one';
+    const slots = solo ? cards.slice(0, 1) : cards.slice(0, 4);
+    if (!solo) while (slots.length < 4) slots.push(null);
+    const tagHtml = c => {
+      if (!c) return '<div class="tag blank"></div>';
+      const ac = c.accent, ry = ryFor(c);
+      return '<div class="tag"><div class="frame" style="border:' + c.frameMm + '">'
+        + (c.logoSrc
+          ? '<img class="hdr" src="' + logoMap.get(c.logoSrc) + '" alt="' + esc(c.brandLabel) + '" />'
+          : '<div class="hdr blanklogo"></div>')
+        + '<div class="sku">' + esc(c.itemNo) + '</div>'
+        + '<div class="desc">' + esc(c.description) + '</div>'
+        + (c.nowText
+          ? '<div class="wasrow"><span class="lbl">WAS</span><span class="lbl ar">قبل</span></div>'
+            + '<div class="wasprice"><span class="strike"><img class="ry blk" src="' + riyalBlack + '" alt="SAR" />' + esc(c.wasText) + '</span></div>'
+            + '<div class="rule">' + (c.hasPct ? '<span class="badge" style="background:' + ac + ';text-shadow:0.5mm 0.5mm 0 ' + c.shade + '">' + esc(c.pctText) + '</span>' : '') + '</div>'
+            + '<div class="nowrow"><span class="lbl" style="color:' + ac + '">NOW</span><span class="lbl ar" style="color:' + ac + '">بعد</span></div>'
+            + '<div class="nowprice" style="font-size:' + c.nowSize + ';color:' + ac + '"><img class="ry big" style="height:' + c.nowRy + '" src="' + ry + '" alt="SAR" />' + esc(c.nowText) + '</div>'
+          : '<div class="gap"></div><div class="rule"></div>'
+            + '<div class="nowrow"><span class="lbl" style="color:' + ac + '">PRICE</span><span class="lbl ar" style="color:' + ac + '">السعر</span></div>'
+            + '<div class="nowprice" style="font-size:' + c.nowSize + ';color:' + ac + '"><img class="ry big" style="height:' + c.nowRy + '" src="' + ry + '" alt="SAR" />' + esc(c.wasText) + '</div>')
+        + '</div></div>';
+    };
+    const styleCss = '@page{size:A4;margin:0}html,body{margin:0!important;padding:0!important;}'
+      + '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+      + '.sheet{width:210mm;height:297mm;display:grid;grid-template-columns:105mm 105mm;grid-template-rows:148.5mm 148.5mm;}'
+      + '.sheet.solo{display:flex;align-items:center;justify-content:center;}'
+      + '.tag{padding:4mm 1.5mm;}'
+      + '.sheet.solo .tag{padding:0;width:102mm;height:140.5mm;flex:none;transform:scale(2.029);transform-origin:center center;}'
+      + '.frame{width:100%;height:100%;overflow:hidden;background:#fff;display:flex;flex-direction:column;align-items:center;padding:3mm 4mm 4mm;font-family:Arial Black,Arial Bold,Arial,Helvetica,sans-serif;color:#1a1a1a;}'
+      + '.hdr{width:86%;display:block;margin:1mm auto 2mm;}'
+      + '.hdr.blanklogo{height:14mm;flex:none;}'
+      + '.sku{font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:5.2mm;letter-spacing:0.02em;text-align:center;height:6mm;line-height:6mm;flex:none;}'
+      + '.desc{font-family:Arial,Helvetica,sans-serif;font-weight:500;font-size:5mm;line-height:1.15;text-align:center;width:100%;height:11mm;display:flex;align-items:center;justify-content:center;overflow:hidden;text-wrap:pretty;flex:none;}'
+      + '.wasrow,.nowrow{width:100%;display:flex;justify-content:space-between;align-items:center;height:10mm;flex:none;}'
+      + '.lbl{font-size:8.2mm;font-weight:900;letter-spacing:0.01em;}'
+      + '.lbl.ar{font-family:Tahoma,Arial,sans-serif;font-size:9mm;}'
+      + '.lbl.red{color:#e1261c;}'
+      + '.wasprice{display:flex;justify-content:center;align-items:center;width:100%;height:12mm;margin:0;flex:none;}'
+      + '.strike{display:inline-flex;align-items:center;gap:1.5mm;font-size:10.5mm;font-weight:900;text-decoration:line-through;text-decoration-thickness:1.1mm;}'
+      + '.ry{display:block;}'
+      + '.ry.blk{height:8mm;}'
+      + '.ry.big{height:20mm;}'
+      + '.rule{position:relative;width:calc(100% + 8mm);margin:11.5mm -4mm 0;border-top:0.5mm solid #1a1a1a;height:0;display:flex;justify-content:center;}'
+      + '.badge{position:absolute;top:-10.5mm;width:21mm;height:21mm;border:0.5mm solid #1a1a1a;border-radius:50%;background:#e1261c;color:#fff;font-size:7.6mm;font-weight:900;font-style:italic;letter-spacing:-0.03em;text-shadow:0.5mm 0.5mm 0 #8f120c;display:flex;align-items:center;justify-content:center;}'
+      + '.nowprice{display:flex;align-items:center;justify-content:center;gap:2mm;width:100%;max-width:100%;height:21.5mm;margin:0;color:#e1261c;font-weight:900;line-height:1;white-space:nowrap;flex:none;}'
+      + '.nowrow{margin-top:4mm;}'
+      + '.gap{height:22mm;flex:none;}'
+      + '.blank{}';
+    const bodyHtml = '<div class="sheet' + (solo ? ' solo' : '') + '">' + slots.map(tagHtml).join('') + '</div>';
+    const names = cards.map(c => c.itemNo).join('-');
+    this.printHtmlInPage(styleCss, bodyHtml, ('Price-Tags-' + names).replace(/[^a-z0-9\-_.]+/gi, '-'), () => this.setState({ tagsPrinting: false }));
+  }
   printHtmlInPage(styleCss, bodyHtml, fileTitle, onDone, orientation) {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     if (isIOS) return this.printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone, orientation);
@@ -3948,6 +4261,36 @@ class Component extends DCLogic {
       isLoading: s.screen === 'loading',
       loadError: s.loadError,
       isMenu: s.screen === 'menu',
+      isPriceTags: s.screen === 'pricetags',
+      tagCards: s.screen === 'pricetags' ? this.getTagCards() : [],
+      tagsPrintLabel: s.tagsPrinting ? 'Preparing…' : 'Print / save A4 sheet',
+      tagsPrinting: s.tagsPrinting,
+      onGoPriceTags: () => this.onGoPriceTags(),
+      onBackFromPriceTags: () => this.onBackFromPriceTags(),
+      tagFourChecked: s.tagLayout !== 'one',
+      tagOneChecked: s.tagLayout === 'one',
+      onTagLayoutFour: () => this.onTagLayoutFour(),
+      onTagLayoutOne: () => this.onTagLayoutOne(),
+      tagIntro: s.tagLayout === 'one'
+        ? 'One tag filling the A4 sheet. Enter a single SKU — description, prices and discount come from the loaded data, and the tag takes its brand template from the item master.'
+        : 'Four tags per A4 sheet. Enter up to four SKUs — description, prices and discount come from the loaded data, and each tag takes its brand template from the item master.',
+      tagPreviewNote: s.tagLayout === 'one'
+        ? 'Preview — printed output is one tag filling an A4 sheet.'
+        : 'Preview — printed output is A4, four tags per sheet.',
+      tagGridCols: s.tagLayout === 'one' ? '1fr' : '1fr 1fr',
+      tagCellRatio: s.tagLayout === 'one' ? '210 / 297' : '105 / 148.5',
+      tagCellPad: s.tagLayout === 'one' ? '1.35% 0.71%' : '3.81% 1.43%',
+      tagSeasonalChecked: s.tagPriceSource !== 'national',
+      tagNationalChecked: s.tagPriceSource === 'national',
+      tagSourceNote: s.screen === 'pricetags' ? this.tagSourceNote() : '',
+      onTagSeasonal: () => this.onTagSeasonal(),
+      onTagNational: () => this.onTagNational(),
+      onTagSku0: e => this.onTagSkuChange(0, e),
+      onTagSku1: e => this.onTagSkuChange(1, e),
+      onTagSku2: e => this.onTagSkuChange(2, e),
+      onTagSku3: e => this.onTagSkuChange(3, e),
+      onPrintPriceTags: () => this.onPrintPriceTags(),
+
       isWhStores: s.screen === 'whstores',
       onGoWhStores: () => this.onGoWhStores(),
       onBackFromWhStores: () => this.onBackFromWhStores(),
