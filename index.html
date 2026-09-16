@@ -1004,7 +1004,7 @@
                       <tr>
                         <td style="padding: 6px 6px; font-weight: 700;">{{sr.label}}</td>
                         <td dir="rtl" style="padding: 6px 6px; text-align: right; font-weight: 700; color: var(--color-neutral-800);">{{sr.labelAr}}</td>
-                        <td style="padding: 6px 6px; text-align: center; font-weight: 800;">{{sr.qty}}</td>
+                        <td style="padding: 6px 6px; text-align: center; font-weight: 800; color: {{sr.qtyColor}};">{{sr.qty}}</td>
                       </tr>
                     </sc-for>
                   </tbody>
@@ -2123,6 +2123,13 @@ class Component extends DCLogic {
       const discountMap = new Map(snap.discountMap || []);
       const nationalMap = new Map(snap.nationalMap || []);
       const storeInfoMap = new Map(snap.storeInfoMap);
+      // Locations the store master mistypes but which hold sellable stock —
+      // without this they are dropped from every report.
+      for (const [key, info] of storeInfoMap) {
+        const n = String(key || '').trim().toLowerCase();
+        const sn = String((info && info.shortName) || '').trim().toLowerCase();
+        if (n === 'arb 4*4 workshop aqiq' || sn === 'arb 4*4 workshop aqiq') storeInfoMap.set(key, Object.assign({}, info, { storeType: 'Store' }));
+      }
       const storeOptions = (snap.storeOptions || []).filter(opt => {
         const info = storeInfoMap.get(opt.name);
         const displayName = (info && (info.shortName || opt.name) || opt.name).trim().toLowerCase();
@@ -2239,8 +2246,8 @@ class Component extends DCLogic {
       if (st.whBrand && (r.brand || '').trim() !== st.whBrand) continue;
       if (st.whCategory && (r.category || '').trim() !== st.whCategory) continue;
       if (st.whSubCategory && (r.subCategory || '').trim() !== st.whSubCategory) continue;
-      let storeQty = 0;
-      for (const s of scope) storeQty += num(it.stores[s.name]);
+      let storeQty = 0, storeNeg = 0;
+      for (const s of scope) { const n = num(it.stores[s.name]); if (n > 0) storeQty += n; else if (n < 0) storeNeg += n; }
       const disc = discountMap ? discountMap.get(it.itemNo) : null;
       const was = disc ? (disc.was || it.rsp || '') : (it.rsp || '');
       const money = v => {
@@ -2254,10 +2261,11 @@ class Component extends DCLogic {
         image: r.image && r.image !== '(blank)' ? r.image : '',
         brandLine: [(r.brand || '').trim(), (r.category || '').trim(), (r.subCategory || '').trim()].filter(Boolean).join(' · '),
         storeQty: storeQty,
+        storeNeg: storeNeg,
         riyadh: riyadh,
         abha: abha,
         whTotal: riyadh + abha,
-        storeQtyText: storeQty.toLocaleString(),
+        storeQtyText: storeNeg ? storeQty.toLocaleString() + ' (' + storeNeg.toLocaleString() + ')' : storeQty.toLocaleString(),
         riyadhText: riyadh.toLocaleString(),
         abhaText: abha.toLocaleString(),
         storeQtyColor: storeQty > 0 ? 'var(--color-text)' : '#8b1a1a',
@@ -2303,17 +2311,17 @@ class Component extends DCLogic {
       [{ v: 'WH vs Stores', s: 1 }],
       [scope + ' · ' + rows.length + ' SKUs · ' + today],
       [],
-      ['Item No.', 'Description 2', 'Brand / category', 'Store stock', 'Riyadh WH', 'Abha WH', 'Was', 'Now', '%', 'Image Link'].map(h => ({ v: h, s: 5 })),
+      ['Item No.', 'Description 2', 'Brand / category', 'Store stock', 'Neg Qty', 'Riyadh WH', 'Abha WH', 'Was', 'Now', '%', 'Image Link'].map(h => ({ v: h, s: 5 })),
     ];
     for (const r of rows) {
       aoa.push([
         { v: r.itemNo, t: 's' }, { v: r.description2, t: 's' }, { v: r.brandLine, t: 's' },
-        { v: r.storeQty }, { v: r.riyadh }, { v: r.abha },
+        { v: r.storeQty }, { v: r.storeNeg ? r.storeNeg : '' }, { v: r.riyadh }, { v: r.abha },
         { v: r.wasText === '—' ? '' : r.wasText, t: 's' }, { v: r.nowText, t: 's' }, { v: r.pctText, t: 's' },
         { v: r.image || '', t: 's' },
       ]);
     }
-    const cols = [{ width: 16 }, { width: 34 }, { width: 26 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 10 }, { width: 10 }, { width: 8 }, { width: 30 }];
+    const cols = [{ width: 16 }, { width: 34 }, { width: 26 }, { width: 12 }, { width: 10 }, { width: 12 }, { width: 12 }, { width: 10 }, { width: 10 }, { width: 8 }, { width: 30 }];
     const fileTitle = ('WH-vs-Stores-' + scope + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
     downloadXlsx(aoa, fileTitle, { sheetName: 'WH vs Stores', cols: cols });
   }
@@ -3247,17 +3255,29 @@ class Component extends DCLogic {
           if (STORE_STOCK_WH_LOCATIONS_LC.has(displayName)) return false;
           return !EXCLUDED_STORES.has(displayName);
     });
-    const storeList = allStores ? eligibleStores : [store];
+    // "All stores" folds the warehouse locations into Qty as well, so
+    // warehouse-only items are counted rather than looking empty.
+    const whStoreNames = matrix.storeNames.filter(name => {
+      if (STORE_STOCK_WH_LOCATIONS_LC.has(name.trim().toLowerCase())) return true;
+      const info = st.storeInfoMap && st.storeInfoMap.get(name);
+      const displayName = ((info && info.shortName) || name).trim().toLowerCase();
+      return STORE_STOCK_WH_LOCATIONS_LC.has(displayName);
+    });
+    const storeList = allStores ? eligibleStores.concat(whStoreNames) : [store];
     const rows = [];
     const addnl1500 = st.storeStockAddnl1500;
     for (const it of matrix.items) {
       if (addnl1500 && !ADDNL_1500_SET.has(it.itemNo)) continue;
-      let qty = 0;
+      // Positives and negatives are kept apart so a minus somewhere never
+      // cancels real stock elsewhere and hides the row entirely.
+      let qty = 0, negQty = 0;
       for (const s of storeList) {
         const raw = it.stores[s];
-        if (raw !== undefined && raw !== '') qty += Number(raw) || 0;
+        if (raw === undefined || raw === '') continue;
+        const n = Number(raw) || 0;
+        if (n > 0) qty += n; else if (n < 0) negQty += n;
       }
-      if (qty === 0) continue;
+      if (qty === 0 && negQty === 0) continue;
       const r = retailMap.get(it.itemNo) || {};
       const whStock = STORE_STOCK_WH_LOCATIONS.reduce((sum, loc) => sum + (Number(it.stores[loc] || 0) || 0), 0);
       let storeCount = 0;
@@ -3283,6 +3303,8 @@ class Component extends DCLogic {
         itemNo: it.itemNo,
         description2: r.description2 || it.description2,
         qty,
+        negQty,
+        qtyText: negQty ? qty.toLocaleString() + ' (' + negQty.toLocaleString() + ')' : qty.toLocaleString(),
         storeCount,
         whStock,
         rsp: it.rsp || '',
@@ -3452,7 +3474,7 @@ class Component extends DCLogic {
       + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" referrerpolicy="no-referrer" />' : '') + '</td>')
       + '<td class="itemno">' + esc(r.itemNo) + '</td>'
       + '<td class="desc">' + esc(r.description2) + '</td>'
-      + '<td class="ctr">' + fmtNum(r.qty) + '</td>'
+      + '<td class="ctr"' + (r.negQty ? ' style="color:#8b1a1a;"' : '') + '>' + (r.qtyText || fmtNum(r.qty)) + '</td>'
       + '<td class="ctr">' + fmtNum(r.whStock) + '</td>'
       + (showDiscount ? '<td class="ctr" style="' + (r.pct === 'Was/Now Just' ? 'font-weight:700;color:#8b1a1a;' : '') + '">' + fmtNum(r.was) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + fmtNum(r.now) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + esc(r.pct) + '</td>' : '')
       + '</tr>'
@@ -3501,7 +3523,7 @@ class Component extends DCLogic {
     const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay;
     const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
 
-    const header = ['Item No.', 'Description 2', 'Qty', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
+    const header = ['Item No.', 'Description 2', 'Qty', 'Neg Qty', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
     const aoa = [
       [{ v: storeLabel, s: 1 }],
       [this.storeStockModeName() + ' · ' + rows.length + ' SKUs · ' + today],
@@ -3516,13 +3538,14 @@ class Component extends DCLogic {
         { v: r.itemNo, t: 's', s: base },
         { v: r.description2, t: 's', s: base },
         { v: num(r.qty), s: base },
+        { v: r.negQty ? num(r.negQty) : '', s: base },
         { v: num(r.whStock), s: base },
       ];
       if (showDiscount) line.push({ v: num(r.was), s: strong }, { v: num(r.now), s: strong }, { v: r.pct, t: 's', s: strong });
       line.push({ v: r.image || '', t: 's', s: base });
       aoa.push(line);
     }
-    const cols = [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 11 }]
+    const cols = [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 9 }, { width: 11 }]
       .concat(showDiscount ? [{ width: 10 }, { width: 10 }, { width: 14 }] : [])
       .concat([{ width: 42 }]);
     const fileTitle = (storeLabel + '-' + this.storeStockModeName() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
@@ -3709,11 +3732,11 @@ class Component extends DCLogic {
         .map(name => {
           const qty = Number(it.stores[name] || 0) || 0;
           const info = s.storeInfoMap.get(name);
-          return { label: info.shortName || name, labelAr: info.nameAr || '', qty };
+          return { label: info.shortName || name, labelAr: info.nameAr || '', qty, qtyColor: qty < 0 ? '#8b1a1a' : 'var(--color-text)' };
         })
-        .filter(sr => sr.qty > 0)
+        .filter(sr => sr.qty !== 0)
         .sort((a, b) => b.qty - a.qty);
-      const totalQty = storeRows.reduce((sum, sr) => sum + sr.qty, 0);
+      const totalQty = storeRows.reduce((sum, sr) => sum + (sr.qty > 0 ? sr.qty : 0), 0);
       const disc = discountMap ? discountMap.get(it.itemNo) : null;
       const nat = nationalMap ? nationalMap.get(it.itemNo) : null;
       const exp = expandAll || s.skuExpanded === it.itemNo;
