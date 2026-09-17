@@ -35,7 +35,7 @@
   </style>
 </helmet>
 
-<div class="page-shell" style="min-height: 100vh; background: var(--color-bg); display: flex; justify-content: center;">
+<div class="page-shell" style="min-height: 100vh; background: var(--color-bg); display: flex; justify-content: center; flex-direction: row; align-items: stretch; gap: 0px">
   <div class="app-shell" style="width: 100%; max-width: 480px; min-height: 100vh; background: var(--color-bg); display: flex; flex-direction: column; padding: var(--space-4) var(--space-4) var(--space-8); gap: var(--space-4); box-sizing: border-box;">
 
     <div class="no-print" style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3);">
@@ -874,7 +874,7 @@
                     <div style="width: 100%; height: 100%; border: {{c.shFrame}}; background: #fff; position: relative; display: flex; overflow: hidden; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a;">
                       <div style="width: 34%; flex: none; display: flex; flex-direction: column; justify-content: flex-start; padding: 0.5cqw 0.5cqw 0; min-width: 0;">
                         <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
-                          <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 129px; display: block; height: 65px">
+                          <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 127px; display: block; z-index: 0; align-self: auto; height: 36px">
                         </sc-if>
                         <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
                           <div style="height: 13.6cqw;"></div>
