@@ -3,17 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="ext-resource-dependency" content="./doc-page.js" data-resource-id="docpage-js" />
+<meta name="ext-resource-dependency" content="./inventory-parser.js" data-resource-id="parser-js" />
+<meta name="ext-resource-dependency" content="./cost-data.json" data-resource-id="cost-json" />
 <script src="./support.js"></script>
 </head>
 <body>
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg" data-bg-color="#f5ead8">
+    <rect width="200" height="140" fill="#f5ead8"/>
+    <rect x="60" y="35" width="80" height="70" rx="10" fill="none" stroke="#c67139" stroke-width="5"/>
+    <line x1="75" y1="55" x2="125" y2="55" stroke="#7a8a5e" stroke-width="5" stroke-linecap="round"/>
+    <line x1="75" y1="70" x2="125" y2="70" stroke="#7a8a5e" stroke-width="5" stroke-linecap="round"/>
+    <line x1="75" y1="85" x2="105" y2="85" stroke="#7a8a5e" stroke-width="5" stroke-linecap="round"/>
+  </svg>
+</template>
 <x-dc>
 <helmet>
   <link rel="stylesheet" href="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/styles.css">
   <script src="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/_ds_bundle.js"></script>
-  <meta name="ext-resource-dependency" content="./inventory-data.json" data-resource-id="data-json">
-  <meta name="ext-resource-dependency" content="./cost-data.json" data-resource-id="cost-json">
   <style>
-    #pdf-print-frame { position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; visibility: hidden; }
     /* White ground — only the light surface tokens are overridden;
        text and border ramp steps keep their natural values. */
     body { background: #ffffff; }
@@ -25,9 +34,12 @@
       --color-neutral-300: #e0e0dc;
     }
   </style>
+  <style>
+    #pdf-print-frame { position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; visibility: hidden; }
+  </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&amp;family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap">
   <style>
     .lang-ar, .lang-ar *:not(script):not(style) { font-family: 'IBM Plex Sans Arabic', var(--font-body) !important; }
     .app-shell.lang-ar p, .app-shell.lang-ar label, .app-shell.lang-ar .tag, .app-shell.lang-ar .btn { line-height: 1.45 !important; }
@@ -35,13 +47,13 @@
   </style>
 </helmet>
 
-<div class="page-shell" style="min-height: 100vh; background: var(--color-bg); display: flex; justify-content: center;">
+<div class="page-shell" style="min-height: 100vh; background: var(--color-bg); display: flex; justify-content: center; flex-direction: row; align-items: stretch; gap: 0px">
   <div class="app-shell" style="width: 100%; max-width: 480px; min-height: 100vh; background: var(--color-bg); display: flex; flex-direction: column; padding: var(--space-4) var(--space-4) var(--space-8); gap: var(--space-4); box-sizing: border-box;">
 
     <div class="no-print" style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3);">
       <div style="display: flex; flex: 1; min-width: 0; flex-direction: column; gap: var(--space-1);">
         <h1 style="font-family: var(--font-heading); font-size: 26px; margin: 0; color: var(--color-text);">Stock Lookup</h1>
-        <p style="font-family: var(--font-body); font-size: 14px; margin: 0; color: var(--color-neutral-700);">Pick a store, and pull stock details.</p>
+        <p style="font-family: var(--font-body); font-size: 14px; margin: 0; color: var(--color-neutral-700);">Upload your reports, pick a store, and pull a low-stock list in seconds.</p>
       </div>
       <div data-nolang="1" style="display: flex; flex: none; gap: 2px; padding: 3px; border-radius: 999px; background: var(--color-neutral-200); border: 1px solid var(--color-neutral-300);">
         <sc-if value="{{langIsEn}}" hint-placeholder-val="{{true}}">
@@ -55,52 +67,307 @@
       </div>
     </div>
 
-    <sc-if value="{{isLoading}}" hint-placeholder-val="{{true}}">
-      <div class="card elev-sm" style="padding: var(--space-4); text-align: center; color: var(--color-neutral-700);">Loading store data…</div>
-    </sc-if>
+    <!-- UPLOAD SCREEN -->
+    <sc-if value="{{isUpload}}" hint-placeholder-val="{{true}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div class="card-kicker">Step 1</div>
+        <div class="card-title" style="font-size: 18px;">Upload your data files</div>
+        <span style="font-size: 12px; color: var(--color-neutral-700); margin-top: -8px;">4 required, plus 2 optional</span>
 
-    <sc-if value="{{loadError}}" hint-placeholder-val="{{false}}">
-      <div class="card elev-sm" style="padding: var(--space-4); color: var(--color-accent-800);">{{loadError}}</div>
+        <label style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">Items by Location Matrix (.xlsx)</span>
+          <span style="font-size: 12px; color: var(--color-neutral-700);">Per-store stock quantities</span>
+          <input type="file" accept=".xlsx" onChange="{{onFileMatrix}}" style="font-size: 13px;">
+        </label>
+
+        <label style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">Store List (.xlsx)</span>
+          <span style="font-size: 12px; color: var(--color-neutral-700);">Sheet5 — store name &amp; region lookup</span>
+          <input type="file" accept=".xlsx" onChange="{{onFileStores}}" style="font-size: 13px;">
+        </label>
+
+        <label style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">Retail Items (.csv or .xlsx)</span>
+          <span style="font-size: 12px; color: var(--color-neutral-700);">Descriptions, images &amp; discontinued flag</span>
+          <input type="file" accept=".csv,.xlsx" onChange="{{onFileRetail}}" style="font-size: 13px;">
+        </label>
+
+        <label style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">Purchase Lines (.xlsx)</span>
+          <span style="font-size: 12px; color: var(--color-neutral-700);">Open orders — drives "In Order"</span>
+          <input type="file" accept=".xlsx" onChange="{{onFilePurchase}}" style="font-size: 13px;">
+        </label>
+
+        <label style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">Seasonal Discounts (.xlsx) — optional</span>
+          <span style="font-size: 12px; color: var(--color-neutral-700);">Was/Now/% pricing for the store stock export</span>
+          <input type="file" accept=".xlsx" onChange="{{onFileDiscount}}" style="font-size: 13px;">
+        </label>
+
+        <label style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">National Day 2026 (.xlsx) — optional</span>
+          <span style="font-size: 12px; color: var(--color-neutral-700);">Was/Now/% pricing for the National Day 2026 export</span>
+          <input type="file" accept=".xlsx" onChange="{{onFileNational}}" style="font-size: 13px;">
+        </label>
+
+        <sc-if value="{{error}}" hint-placeholder-val="{{false}}">
+          <div style="background: var(--color-accent-100); color: var(--color-accent-800); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-size: 13px;">{{error}}</div>
+        </sc-if>
+
+        <button class="btn btn-primary btn-block" onClick="{{onProcess}}" disabled="{{processDisabled}}">
+          {{processLabel}}
+        </button>
+      </div>
     </sc-if>
 
     <!-- MENU SCREEN -->
     <sc-if value="{{isMenu}}" hint-placeholder-val="{{false}}">
       <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-        <button class="btn btn-secondary btn-block" onClick="{{onGoSelect}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Last Pcs Report</button>
-        <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Item Lookup in All Stores</button>
-        <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoSelect}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Last Pieces</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Lookup SKU in All Stores</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stock</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoMultiLoc}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Multi Locations</button>
-        <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inventory</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoDistribution}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Distribution</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoWhStores}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">WH vs Stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoPriceTags}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Price Tags</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoDiag}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">SKU Diagnostics</button>
+        <button class="btn btn-ghost btn-block" onClick="{{onResetUpload}}">Upload different files</button>
+        <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: 6px;">
+          <button class="btn btn-ghost btn-block" onClick="{{onExportSnapshot}}">Export snapshot for public page</button>
+          <span style="font-size: 11px; color: var(--color-neutral-700);">Downloads inventory-data.json — replace the copy alongside the public page/repo to update it. Admin only, never shared with store users.</span>
+        </div>
+      </div>
+    </sc-if>
 
-        <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2);">
-          <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
-            <div style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
-              <span class="tag tag-accent-2">Admin mode on</span>
-              <button class="btn btn-ghost" onClick="{{onAdminSignOut}}" style="font-size: 13px;">Sign out</button>
+    <!-- PRICE TAGS SCREEN -->
+    <sc-if value="{{isPriceTags}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromPriceTags}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">Price tags</div>
+        </div>
+        <span style="font-size: 12px; color: var(--color-neutral-700);">{{tagIntro}}</span>
+
+        <div class="field" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
+          <label>Tags per sheet</label>
+          <div class="seg" role="radiogroup" aria-label="Tags per sheet">
+            <label class="seg-opt">
+              <input type="radio" name="tagLayout" checked="{{tagFourChecked}}" onChange="{{onTagLayoutFour}}">
+              4 per A4
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="tagLayout" checked="{{tagOneChecked}}" onChange="{{onTagLayoutOne}}">
+              1 per A4
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="tagLayout" checked="{{tagShelfChecked}}" onChange="{{onTagLayoutShelf}}">
+              Shelves (6)
+            </label>
+          </div>
+        </div>
+
+        <div class="field" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
+          <label>Discount type</label>
+          <div class="seg" role="radiogroup" aria-label="Discount type">
+            <label class="seg-opt">
+              <input type="radio" name="tagPriceSource" checked="{{tagSeasonalChecked}}" onChange="{{onTagSeasonal}}">
+              Seasonal Discounts
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="tagPriceSource" checked="{{tagNationalChecked}}" onChange="{{onTagNational}}">
+              National Day 2026
+            </label>
+          </div>
+          <span style="font-size: 11.5px; color: var(--color-neutral-700);">{{tagSourceNote}}</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+          <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="4">
+            <div class="field">
+              <label for="{{c.inputId}}">{{c.slotLabel}}</label>
+              <input id="{{c.inputId}}" class="input" type="text" placeholder="e.g. 26-720" value="{{c.value}}" onChange="{{c.onChange}}">
+              <sc-if value="{{c.note}}" hint-placeholder-val="{{false}}">
+                <span style="font-size: 11.5px; color: {{c.noteColor}};">{{c.note}}</span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <button class="btn btn-primary btn-block" onClick="{{onPrintPriceTags}}" disabled="{{tagsPrinting}}">{{tagsPrintLabel}}</button>
+
+        <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 12px; color: var(--color-neutral-700);">{{tagPreviewNote}}</span>
+
+          <sc-if value="{{isShelfLayout}}" hint-placeholder-val="{{false}}">
+            <div style="background: #fff; aspect-ratio: 210 / 297; padding: 2.02% 2.38%; display: flex; flex-direction: column; gap: 1.01%; border-radius: var(--radius-sm);">
+              <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="6">
+                <div style="flex: 1 1 0; min-height: 0; container-type: inline-size;">
+                  <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
+                    <div style="width: 100%; height: 100%; border: {{c.shFrame}}; background: #fff; position: relative; display: flex; overflow: hidden; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a;">
+                      <div style="width: 34%; flex: none; display: flex; flex-direction: column; justify-content: flex-start; padding: 0.5cqw 0.5cqw 0; min-width: 0;">
+                        <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
+                          
+                        </sc-if>
+                        <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
+                          <div style="height: 13.6cqw;"></div>
+                        </sc-if>
+                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 127px; display: block; z-index: 0; align-self: auto; height: 36px"></div>
+                      <div style="position: absolute; left: 0; bottom: 0; width: 52%; padding: 0.5cqw 1cqw 0.6cqw; border-top: 0.25cqw solid #1a1a1a; font-family: Arial, sans-serif; font-weight: 700; font-size: 1.7cqw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.shLine}}</div>
+                      <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
+                        <div style="width: 18%; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3cqw; padding-bottom: 3cqw;">
+                          <sc-if value="{{c.hasPct}}" hint-placeholder-val="{{true}}">
+                            <div style="width: 6cqw; height: 6cqw; flex: none; border-radius: 50%; border: 0.3cqw solid #1a1a1a; background: {{c.accent}}; color: #fff; font-size: 2.2cqw; font-weight: 900; font-style: italic; letter-spacing: -0.03em; display: flex; align-items: center; justify-content: center; margin-bottom: 0.4cqw;">{{c.pctText}}</div>
+                          </sc-if>
+                          <div style="display: flex; align-items: baseline; gap: 1cqw; direction: ltr;">
+                            <span style="font-size: 2.4cqw; font-weight: 900;">WAS</span>
+                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 2.6cqw; font-weight: 900; unicode-bidi: isolate;">قبل</span>
+                          </div>
+                          <div style="display: inline-flex; align-items: center; gap: 0.6cqw; font-size: {{c.shPvWasSize}}; font-weight: 900; text-decoration: line-through; text-decoration-thickness: 0.45cqw;">
+                            <img src="assets/riyal-black.png" alt="" style="height: {{c.shPvWasRy}}; display: block;">{{c.wasText}}
+                          </div>
+                        </div>
+                      </sc-if>
+                      <div style="position: absolute; top: 0; right: 0; bottom: 0; width: 48%; background: {{c.accent}}; clip-path: polygon(8% 0, 100% 0, 100% 100%, 8% 100%, 0 50%); display: flex; flex-direction: column; justify-content: flex-start; padding: 0.3cqw 2.5cqw 0.6cqw 5cqw; color: #fff;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex: none; direction: ltr;">
+                          <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
+                            <span style="font-size: 3.6cqw; font-weight: 900;">NOW</span>
+                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 3.8cqw; font-weight: 900; unicode-bidi: isolate;">بعد</span>
+                          </sc-if>
+                          <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
+                            <span style="font-size: 3.6cqw; font-weight: 900;">PRICE</span>
+                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 3.8cqw; font-weight: 900; unicode-bidi: isolate;">السعر</span>
+                          </sc-if>
+                        </div>
+                        <div style="flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 1cqw; font-size: {{c.shPvNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
+                          <img src="assets/riyal-white.png" alt="" style="height: {{c.shPvNowRy}}; display: block;">{{c.priceText}}
+                        </div>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{c.empty}}" hint-placeholder-val="{{false}}">
+                    <div style="width: 100%; height: 100%; border: 1px dashed var(--color-neutral-400); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-neutral-700);">{{c.slotLabel}}</div>
+                  </sc-if>
+                  <sc-if value="{{c.unusable}}" hint-placeholder-val="{{false}}">
+                    <div style="width: 100%; height: 100%; border: 1px dashed #8b1a1a; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 11px; color: #8b1a1a;">{{c.note}}</div>
+                  </sc-if>
+                </div>
+              </sc-for>
             </div>
           </sc-if>
 
-          <sc-if value="{{adminSignedOut}}" hint-placeholder-val="{{true}}">
-            <sc-if value="{{adminPromptOpen}}" hint-placeholder-val="{{false}}">
-              <div style="display: flex; flex-direction: column; gap: var(--space-2);">
-                <label for="admin-pw" style="font-size: 13px; font-weight: 600; color: var(--color-text);">Admin password</label>
-                <div style="display: flex; gap: 8px;">
-                  <input id="admin-pw" class="input" type="password" inputmode="numeric" value="{{adminPw}}" onChange="{{onAdminPwChange}}" onKeyDown="{{onAdminPwKeyDown}}" placeholder="••••" style="flex: 1;">
-                  <button class="btn btn-primary" onClick="{{onAdminSubmit}}" style="flex: none;">Unlock</button>
-                </div>
-                <sc-if value="{{adminError}}" hint-placeholder-val="{{false}}">
-                  <span style="font-size: 12px; color: var(--color-accent-800);">{{adminError}}</span>
+          <sc-if value="{{isCardLayout}}" hint-placeholder-val="{{true}}">
+          <div style="display: grid; grid-template-columns: {{tagGridCols}}; gap: 6px; background: var(--color-neutral-200); padding: 6px; border-radius: var(--radius-sm);">
+            <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="4">
+              <div style="background: #fff; aspect-ratio: {{tagCellRatio}}; padding: {{tagCellPad}}; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 100%; aspect-ratio: 102 / 140.5; container-type: inline-size;">
+                <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
+                  <div style="width: 100%; height: 100%; border: {{c.frame}}; display: flex; flex-direction: column; align-items: center; padding: 2.94cqw 3.92cqw 3.92cqw; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a; overflow: hidden;">
+                    <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
+                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 86%; display: block; margin: 0.98cqw auto 1.96cqw;">
+                    </sc-if>
+                    <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
+                      <div style="width: 86%; height: 13.79cqw; margin: 0.98cqw auto 1.96cqw; flex: none;"></div>
+                    </sc-if>
+                    <div style="font-family: Arial, sans-serif; font-weight: 700; font-size: 5.1cqw; text-align: center; height: 5.89cqw; line-height: 5.89cqw; flex: none;">{{c.itemNo}}</div>
+                    <div style="font-family: Arial, sans-serif; font-size: 4.9cqw; line-height: 1.15; text-align: center; width: 100%; height: 10.78cqw; display: flex; align-items: center; justify-content: center; overflow: hidden; flex: none;">{{c.description}}</div>
+                    <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
+                      <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; flex: none;">
+                        <span style="font-size: 8.04cqw; font-weight: 900;">WAS</span>
+                        <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900;">قبل</span>
+                      </div>
+                      <div style="display: inline-flex; align-items: center; gap: 1.47cqw; font-size: 9.8cqw; font-weight: 900; text-decoration: line-through; text-decoration-thickness: 1.07cqw; height: 11.76cqw; flex: none;">
+                        <img src="assets/riyal-black.png" alt="SAR" style="height: 7.85cqw; display: block;">{{c.wasText}}
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
+                      <div style="height: 21.57cqw; flex: none;"></div>
+                    </sc-if>
+                    <div style="position: relative; z-index: 2; width: calc(100% + 7.85cqw); margin: 11.28cqw -3.92cqw 0; border-top: 0.49cqw solid #1a1a1a; height: 0; display: flex; justify-content: center;">
+                      <sc-if value="{{c.hasPct}}" hint-placeholder-val="{{true}}">
+                        <span style="position: absolute; top: -10.29cqw; width: 20.59cqw; height: 20.59cqw; border: 0.49cqw solid #1a1a1a; border-radius: 50%; background: {{c.accent}}; color: #fff; font-size: 7.46cqw; font-weight: 900; font-style: italic; letter-spacing: -0.03em; text-shadow: 0.49cqw 0.49cqw 0 {{c.shade}}; display: flex; align-items: center; justify-content: center;">{{c.pctText}}</span>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{c.noBand}}" hint-placeholder-val="{{true}}">
+                      <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
+                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 3.92cqw; flex: none;">
+                          <span style="font-size: 8.04cqw; font-weight: 900; color: {{c.accent}};">NOW</span>
+                          <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; color: {{c.accent}};">بعد</span>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
+                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 3.92cqw; flex: none;">
+                          <span style="font-size: 8.04cqw; font-weight: 900; color: {{c.accent}};">PRICE</span>
+                          <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; color: {{c.accent}};">السعر</span>
+                        </div>
+                      </sc-if>
+                      <div style="display: flex; align-items: center; justify-content: center; gap: 1.96cqw; width: 100%; height: 21.07cqw; margin: 0; color: {{c.accent}}; font-size: {{c.pvNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
+                        <img src="{{c.rySrc}}" alt="" style="height: {{c.pvNowRy}}; display: block;">{{c.priceText}}
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{c.band}}" hint-placeholder-val="{{false}}">
+                      <div style="width: calc(100% + 7.85cqw); margin: 0 -3.92cqw -3.92cqw; padding: 1.96cqw 3.92cqw 2.94cqw; background: {{c.accent}}; color: #fff; display: flex; flex-direction: column; align-items: center; flex: 1 1 auto; justify-content: flex-start;">
+                        <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
+                          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 8cqw; flex: none; direction: ltr;">
+                            <span style="font-size: 8.04cqw; font-weight: 900;">NOW</span>
+                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; unicode-bidi: isolate;">بعد</span>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
+                          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 8cqw; flex: none; direction: ltr;">
+                            <span style="font-size: 8.04cqw; font-weight: 900;">PRICE</span>
+                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; unicode-bidi: isolate;">السعر</span>
+                          </div>
+                        </sc-if>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 1.96cqw; width: 100%; flex: 1 1 auto; margin: 0; font-size: {{c.pvBandNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
+                          <img src="assets/riyal-white.png" alt="" style="height: {{c.pvBandNowRy}}; display: block;">{{c.priceText}}
+                        </div>
+                      </div>
+                    </sc-if>
+                  </div>
                 </sc-if>
+                <sc-if value="{{c.empty}}" hint-placeholder-val="{{false}}">
+                  <div style="width: 100%; height: 100%; border: 1px dashed var(--color-neutral-400); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-neutral-700);">{{c.slotLabel}}</div>
+                </sc-if>
+                <sc-if value="{{c.unusable}}" hint-placeholder-val="{{false}}">
+                  <div style="width: 100%; height: 100%; border: 1px dashed #8b1a1a; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 11px; color: #8b1a1a;">{{c.note}}</div>
+                </sc-if>
+                </div>
               </div>
-            </sc-if>
-            <sc-if value="{{adminPromptClosed}}" hint-placeholder-val="{{true}}">
-              <button class="btn btn-ghost btn-block" onClick="{{onAdminOpen}}" style="font-size: 13px;">Admin sign in</button>
-            </sc-if>
+            </sc-for>
+          </div>
           </sc-if>
         </div>
+      </div>
+    </sc-if>
+
+    <!-- SKU DIAGNOSTICS SCREEN -->
+    <sc-if value="{{isDiag}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromDiag}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">SKU diagnostics</div>
+        </div>
+        <div class="field">
+          <label for="diag-query">Item numbers</label>
+          <input id="diag-query" class="input" type="text" placeholder="e.g. 26-1808, 26-1809" value="{{diagQuery}}" onChange="{{onDiagQueryChange}}">
+        </div>
+        <span style="font-size: 12px; color: var(--color-neutral-700);">Comma or space separated. Reports whether each SKU exists in the loaded stock matrix and item master, its raw per-location values, and which report filters would drop it.</span>
+
+        <sc-for list="{{diagResults}}" as="d" hint-placeholder-count="1">
+          <div style="display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); padding: var(--space-3);">
+            <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;">
+              <span style="font-family: var(--font-heading); font-size: 16px; color: var(--color-text);">{{d.itemNo}}</span>
+              <span class="tag {{d.statusTag}}">{{d.status}}</span>
+            </div>
+            <sc-for list="{{d.facts}}" as="f" hint-placeholder-count="3">
+              <div style="display: flex; gap: 10px; font-size: 12.5px;">
+                <span style="flex: none; width: 150px; color: var(--color-neutral-700);">{{f.k}}</span>
+                <span style="flex: 1; min-width: 0; font-weight: 600; color: {{f.color}}; overflow-wrap: break-word;">{{f.v}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
       </div>
     </sc-if>
 
@@ -171,7 +438,7 @@
       </div>
     </sc-if>
 
-    <!-- STORE STOCK SCREEN -->
+<!-- STORE STOCK SCREEN -->
     <sc-if value="{{isStoreStock}}" hint-placeholder-val="{{false}}">
       <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
         <div class="card-kicker">Complete stock</div>
@@ -180,9 +447,7 @@
         <div class="field">
           <label for="storestock-select">Store</label>
           <select id="storestock-select" class="input" value="{{storeStockSelected}}" onChange="{{onStoreStockChange}}">
-            <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
-              <option value="__ALL__">All stores</option>
-            </sc-if>
+            <option value="__ALL__">All stores</option>
             <sc-for list="{{storeOptions}}" as="opt" hint-placeholder-count="5">
               <option value="{{opt.name}}">{{opt.label}}</option>
             </sc-for>
@@ -807,207 +1072,6 @@
       </sc-if>
     </sc-if>
 
-    <!-- PRICE TAGS SCREEN -->
-    <sc-if value="{{isPriceTags}}" hint-placeholder-val="{{false}}">
-      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
-        <div style="display: flex; gap: 10px;">
-          <button class="btn btn-secondary" onClick="{{onBackFromPriceTags}}" style="flex: none;">← Back</button>
-          <div class="card-title" style="font-size: 18px; align-self: center;">Price tags</div>
-        </div>
-        <span style="font-size: 12px; color: var(--color-neutral-700);">{{tagIntro}}</span>
-
-        <div class="field" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
-          <label>Tags per sheet</label>
-          <div class="seg" role="radiogroup" aria-label="Tags per sheet">
-            <label class="seg-opt">
-              <input type="radio" name="tagLayout" checked="{{tagFourChecked}}" onChange="{{onTagLayoutFour}}">
-              4 per A4
-            </label>
-            <label class="seg-opt">
-              <input type="radio" name="tagLayout" checked="{{tagOneChecked}}" onChange="{{onTagLayoutOne}}">
-              1 per A4
-            </label>
-            <label class="seg-opt">
-              <input type="radio" name="tagLayout" checked="{{tagShelfChecked}}" onChange="{{onTagLayoutShelf}}">
-              Shelves (6)
-            </label>
-          </div>
-        </div>
-
-        <div class="field" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
-          <label>Discount type</label>
-          <div class="seg" role="radiogroup" aria-label="Discount type">
-            <label class="seg-opt">
-              <input type="radio" name="tagPriceSource" checked="{{tagSeasonalChecked}}" onChange="{{onTagSeasonal}}">
-              Seasonal Discounts
-            </label>
-            <label class="seg-opt">
-              <input type="radio" name="tagPriceSource" checked="{{tagNationalChecked}}" onChange="{{onTagNational}}">
-              National Day 2026
-            </label>
-          </div>
-          <span style="font-size: 11.5px; color: var(--color-neutral-700);">{{tagSourceNote}}</span>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-          <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="4">
-            <div class="field">
-              <label for="{{c.inputId}}">{{c.slotLabel}}</label>
-              <input id="{{c.inputId}}" class="input" type="text" placeholder="e.g. 26-720" value="{{c.value}}" onChange="{{c.onChange}}">
-              <sc-if value="{{c.note}}" hint-placeholder-val="{{false}}">
-                <span style="font-size: 11.5px; color: {{c.noteColor}};">{{c.note}}</span>
-              </sc-if>
-            </div>
-          </sc-for>
-        </div>
-
-        <button class="btn btn-primary btn-block" onClick="{{onPrintPriceTags}}" disabled="{{tagsPrinting}}">{{tagsPrintLabel}}</button>
-
-        <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: 6px;">
-          <span style="font-size: 12px; color: var(--color-neutral-700);">{{tagPreviewNote}}</span>
-
-          <sc-if value="{{isShelfLayout}}" hint-placeholder-val="{{false}}">
-            <div style="background: #fff; aspect-ratio: 210 / 297; padding: 2.02% 2.38%; display: flex; flex-direction: column; gap: 1.01%; border-radius: var(--radius-sm);">
-              <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="6">
-                <div style="flex: 1 1 0; min-height: 0; container-type: inline-size;">
-                  <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
-                    <div style="width: 100%; height: 100%; border: {{c.shFrame}}; background: #fff; position: relative; display: flex; overflow: hidden; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a;">
-                      <div style="width: 34%; flex: none; display: flex; flex-direction: column; justify-content: flex-start; padding: 0.5cqw 0.5cqw 0; min-width: 0;">
-                        <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
-                          <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 129px; display: block; height: 65px">
-                        </sc-if>
-                        <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
-                          <div style="height: 13.6cqw;"></div>
-                        </sc-if>
-                      </div>
-                      <div style="position: absolute; left: 0; bottom: 0; width: 52%; padding: 0.5cqw 1cqw 0.6cqw; border-top: 0.25cqw solid #1a1a1a; font-family: Arial, sans-serif; font-weight: 700; font-size: 1.7cqw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.shLine}}</div>
-                      <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
-                        <div style="width: 18%; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3cqw; padding-bottom: 3cqw;">
-                          <sc-if value="{{c.hasPct}}" hint-placeholder-val="{{true}}">
-                            <div style="width: 6cqw; height: 6cqw; flex: none; border-radius: 50%; border: 0.3cqw solid #1a1a1a; background: {{c.accent}}; color: #fff; font-size: 2.2cqw; font-weight: 900; font-style: italic; letter-spacing: -0.03em; display: flex; align-items: center; justify-content: center; margin-bottom: 0.4cqw;">{{c.pctText}}</div>
-                          </sc-if>
-                          <div style="display: flex; align-items: baseline; gap: 1cqw; direction: ltr;">
-                            <span style="font-size: 2.4cqw; font-weight: 900;">WAS</span>
-                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 2.6cqw; font-weight: 900; unicode-bidi: isolate;">قبل</span>
-                          </div>
-                          <div style="display: inline-flex; align-items: center; gap: 0.6cqw; font-size: {{c.shPvWasSize}}; font-weight: 900; text-decoration: line-through; text-decoration-thickness: 0.45cqw;">
-                            <img src="assets/riyal-black.png" alt="" style="height: {{c.shPvWasRy}}; display: block;">{{c.wasText}}
-                          </div>
-                        </div>
-                      </sc-if>
-                      <div style="position: absolute; top: 0; right: 0; bottom: 0; width: 48%; background: {{c.accent}}; clip-path: polygon(8% 0, 100% 0, 100% 100%, 8% 100%, 0 50%); display: flex; flex-direction: column; justify-content: flex-start; padding: 0.3cqw 2.5cqw 0.6cqw 5cqw; color: #fff;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex: none; direction: ltr;">
-                          <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
-                            <span style="font-size: 3.6cqw; font-weight: 900;">NOW</span>
-                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 3.8cqw; font-weight: 900; unicode-bidi: isolate;">بعد</span>
-                          </sc-if>
-                          <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
-                            <span style="font-size: 3.6cqw; font-weight: 900;">PRICE</span>
-                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 3.8cqw; font-weight: 900; unicode-bidi: isolate;">السعر</span>
-                          </sc-if>
-                        </div>
-                        <div style="flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 1cqw; font-size: {{c.shPvNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
-                          <img src="assets/riyal-white.png" alt="" style="height: {{c.shPvNowRy}}; display: block;">{{c.priceText}}
-                        </div>
-                      </div>
-                    </div>
-                  </sc-if>
-                  <sc-if value="{{c.empty}}" hint-placeholder-val="{{false}}">
-                    <div style="width: 100%; height: 100%; border: 1px dashed var(--color-neutral-400); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-neutral-700);">{{c.slotLabel}}</div>
-                  </sc-if>
-                  <sc-if value="{{c.unusable}}" hint-placeholder-val="{{false}}">
-                    <div style="width: 100%; height: 100%; border: 1px dashed #8b1a1a; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 11px; color: #8b1a1a;">{{c.note}}</div>
-                  </sc-if>
-                </div>
-              </sc-for>
-            </div>
-          </sc-if>
-
-          <sc-if value="{{isCardLayout}}" hint-placeholder-val="{{true}}">
-          <div style="display: grid; grid-template-columns: {{tagGridCols}}; gap: 6px; background: var(--color-neutral-200); padding: 6px; border-radius: var(--radius-sm);">
-            <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="4">
-              <div style="background: #fff; aspect-ratio: {{tagCellRatio}}; padding: {{tagCellPad}}; display: flex; align-items: center; justify-content: center;">
-                <div style="width: 100%; aspect-ratio: 102 / 140.5; container-type: inline-size;">
-                <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
-                  <div style="width: 100%; height: 100%; border: {{c.frame}}; display: flex; flex-direction: column; align-items: center; padding: 2.94cqw 3.92cqw 3.92cqw; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a; overflow: hidden;">
-                    <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
-                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 86%; display: block; margin: 0.98cqw auto 1.96cqw;">
-                    </sc-if>
-                    <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
-                      <div style="width: 86%; height: 13.79cqw; margin: 0.98cqw auto 1.96cqw; flex: none;"></div>
-                    </sc-if>
-                    <div style="font-family: Arial, sans-serif; font-weight: 700; font-size: 5.1cqw; text-align: center; height: 5.89cqw; line-height: 5.89cqw; flex: none;">{{c.itemNo}}</div>
-                    <div style="font-family: Arial, sans-serif; font-size: 4.9cqw; line-height: 1.15; text-align: center; width: 100%; height: 10.78cqw; display: flex; align-items: center; justify-content: center; overflow: hidden; flex: none;">{{c.description}}</div>
-                    <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
-                      <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; flex: none;">
-                        <span style="font-size: 8.04cqw; font-weight: 900;">WAS</span>
-                        <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900;">قبل</span>
-                      </div>
-                      <div style="display: inline-flex; align-items: center; gap: 1.47cqw; font-size: 9.8cqw; font-weight: 900; text-decoration: line-through; text-decoration-thickness: 1.07cqw; height: 11.76cqw; flex: none;">
-                        <img src="assets/riyal-black.png" alt="SAR" style="height: 7.85cqw; display: block;">{{c.wasText}}
-                      </div>
-                    </sc-if>
-                    <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
-                      <div style="height: 21.57cqw; flex: none;"></div>
-                    </sc-if>
-                    <div style="position: relative; z-index: 2; width: calc(100% + 7.85cqw); margin: 11.28cqw -3.92cqw 0; border-top: 0.49cqw solid #1a1a1a; height: 0; display: flex; justify-content: center;">
-                      <sc-if value="{{c.hasPct}}" hint-placeholder-val="{{true}}">
-                        <span style="position: absolute; top: -10.29cqw; width: 20.59cqw; height: 20.59cqw; border: 0.49cqw solid #1a1a1a; border-radius: 50%; background: {{c.accent}}; color: #fff; font-size: 7.46cqw; font-weight: 900; font-style: italic; letter-spacing: -0.03em; text-shadow: 0.49cqw 0.49cqw 0 {{c.shade}}; display: flex; align-items: center; justify-content: center;">{{c.pctText}}</span>
-                      </sc-if>
-                    </div>
-                    <sc-if value="{{c.noBand}}" hint-placeholder-val="{{true}}">
-                      <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
-                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 3.92cqw; flex: none;">
-                          <span style="font-size: 8.04cqw; font-weight: 900; color: {{c.accent}};">NOW</span>
-                          <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; color: {{c.accent}};">بعد</span>
-                        </div>
-                      </sc-if>
-                      <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
-                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 3.92cqw; flex: none;">
-                          <span style="font-size: 8.04cqw; font-weight: 900; color: {{c.accent}};">PRICE</span>
-                          <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; color: {{c.accent}};">السعر</span>
-                        </div>
-                      </sc-if>
-                      <div style="display: flex; align-items: center; justify-content: center; gap: 1.96cqw; width: 100%; height: 21.07cqw; margin: 0; color: {{c.accent}}; font-size: {{c.pvNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
-                        <img src="{{c.rySrc}}" alt="" style="height: {{c.pvNowRy}}; display: block;">{{c.priceText}}
-                      </div>
-                    </sc-if>
-                    <sc-if value="{{c.band}}" hint-placeholder-val="{{false}}">
-                      <div style="width: calc(100% + 7.85cqw); margin: 0 -3.92cqw -3.92cqw; padding: 1.96cqw 3.92cqw 2.94cqw; background: {{c.accent}}; color: #fff; display: flex; flex-direction: column; align-items: center; flex: 1 1 auto; justify-content: flex-start;">
-                        <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
-                          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 8cqw; flex: none; direction: ltr;">
-                            <span style="font-size: 8.04cqw; font-weight: 900;">NOW</span>
-                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; unicode-bidi: isolate;">بعد</span>
-                          </div>
-                        </sc-if>
-                        <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
-                          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 8cqw; flex: none; direction: ltr;">
-                            <span style="font-size: 8.04cqw; font-weight: 900;">PRICE</span>
-                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; unicode-bidi: isolate;">السعر</span>
-                          </div>
-                        </sc-if>
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 1.96cqw; width: 100%; flex: 1 1 auto; margin: 0; font-size: {{c.pvBandNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
-                          <img src="assets/riyal-white.png" alt="" style="height: {{c.pvBandNowRy}}; display: block;">{{c.priceText}}
-                        </div>
-                      </div>
-                    </sc-if>
-                  </div>
-                </sc-if>
-                <sc-if value="{{c.empty}}" hint-placeholder-val="{{false}}">
-                  <div style="width: 100%; height: 100%; border: 1px dashed var(--color-neutral-400); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-neutral-700);">{{c.slotLabel}}</div>
-                </sc-if>
-                <sc-if value="{{c.unusable}}" hint-placeholder-val="{{false}}">
-                  <div style="width: 100%; height: 100%; border: 1px dashed #8b1a1a; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 11px; color: #8b1a1a;">{{c.note}}</div>
-                </sc-if>
-                </div>
-              </div>
-            </sc-for>
-          </div>
-          </sc-if>
-        </div>
-      </div>
-    </sc-if>
-
     <!-- RESULTS SCREEN -->
     <sc-if value="{{isResults}}" hint-placeholder-val="{{false}}">
       <div class="results-wrap" style="display: flex; flex-direction: column; gap: var(--space-4);">
@@ -1090,7 +1154,7 @@
                     <tr>
                       <td style="padding: 6px; line-height: 1.1;">
                         <sc-if value="{{row.image}}" hint-placeholder-val="{{false}}">
-                          <img src="{{row.image}}" loading="lazy" referrerpolicy="no-referrer" style="width: 46px; height: 46px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); display: block;">
+                          <img src="{{row.image}}" loading="lazy" style="width: 46px; height: 46px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); display: block;">
                         </sc-if>
                       </td>
                       <td style="font-weight: 600; white-space: nowrap; padding: 6px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis;">{{row.itemNo}}</td>
@@ -1137,7 +1201,7 @@
           <div style="display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-lg); padding: var(--space-3); background: #fff;">
             <div style="display: flex; gap: 10px; align-items: center;">
               <sc-if value="{{item.image}}" hint-placeholder-val="{{false}}">
-                <img src="{{item.image}}" referrerpolicy="no-referrer" style="width: 62px; height: 62px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); flex: none;">
+                <img src="{{item.image}}" style="width: 62px; height: 62px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); flex: none;">
               </sc-if>
               <div style="display: flex; flex-direction: column; gap: 2px;">
                 <div style="font-weight: 700; font-size: 13px; color: var(--color-text);">{{item.itemNo}}</div>
@@ -1231,20 +1295,9 @@
 
   </div>
 </div>
+
 </x-dc>
-<script type="text/x-dc" data-dc-script>
-const STORE_STOCK_WH_LOCATIONS = ['Inspection & Review Warehouse', 'Damages & Shortages Warehouse - Riyadh', 'Sub Warehouse - Abha', 'Main Warehouse - Riyadh'];
-const STORE_STOCK_WH_LOCATIONS_LC = new Set(STORE_STOCK_WH_LOCATIONS.map(s => s.toLowerCase()));
-
-const ADDNL_1500_SET = new Set(["10-210","10-225","11-324","11-379","11-387","11-400","11-421","11-442","11-443","11-446","11-454","11-477","11-482","11-484","1-149","11-493","11-519","11-521","11-527","11-535","11-539","11-559","11-568","11-592","11-613","11-632","11-634","11-638","11-639","11-640","11-653","11-658","11-662","11-663","11-681","11-685","11-687","11-688","1-169","11-698","11-700","11-701","11-702","11-714","11-723","11-724","11-732","1-174","11-741","11-742","11-745","11-748","11-749","1-175","11-752","11-755","11-769","11-776","11-799","11-801","11-802","11-803","11-804","11-807","11-808","11-809","11-810","11-811","11-812","11-813","11-817","11-818","11-820","11-821","11-822","11-823","11-824","11-827","11-831","11-832","11-840","11-841","11-842","11-844","1-191","1-192","1-193","1-194","1-196","12-103","12-109","1-234","13-44","14-60","14-61","14-70","14-74","14-81","16-36","16-45","16-46","16-62","16-66","17-28","17-7","18-462","18-619","18-638","18-677","18-708","18-795","18-797","18-808","18-812","18-828","18-838","18-840","18-863","18-866","18-870","18-875","18-881","18-884","18-886","18-887","18-894","18-895","18-904","18-928","18-929","18-931","18-932","18-934","18-938","18-939","18-940","18-941","18-944","18-945","18-956","18-957","18-964","18-966","18-967","18-968","18-972","18-980","18-984","19-353","19-354","19-370","19-393","19-398","19-402","19-403","19-404","19-405","19-406","19-409","19-410","22-1018","22-1024","22-1027","22-1059","22-1069","22-1073","22-1102","22-1104","22-1114","22-1118","22-1121","22-1125","22-1126","22-1130","22-1175","22-1182","22-1192","22-1193","22-1211","22-1215","22-1308","22-1309","22-1312","22-1375","22-1383","22-1406","22-1435","22-1441","22-1444","22-1476","22-1485","22-1497","22-1500","22-1504","22-1513","22-1529","22-1557","22-1587","22-1592","22-1593","22-1611","22-1612","22-1613","22-1637","22-1643","22-1645","22-1666","22-1678","22-1696","22-1728","22-1743","22-1746","22-1762","22-1764","22-1781","22-1794","22-1800","22-1803","22-1805","22-1822","22-1846","22-1851","22-1878","22-1879","22-1883","22-1891","22-1894","22-1905","22-1955","22-1956","22-1967","22-1971","22-1973","22-1978","22-1993","22-2001","22-2017","22-2018","22-2035","22-2051","22-2075","22-2077","22-2079","22-208","22-2096","22-2109","22-2110","22-2111","22-2112","22-2114","22-2115","22-2116","22-2119","22-2122","22-2125","22-2128","22-2131","22-2138","22-2139","22-2140","22-2143","22-2162","22-2175","22-2177","22-2179","22-2211","22-2236","22-2238","22-2258","22-2261","22-2266","22-2271","22-2277","22-2279","22-2282","22-2294","22-2308","22-2323","22-2332","22-2334","22-2335","22-2339","22-2340","22-2342","22-2343","22-2353","22-2355","22-2368","22-2369","22-2370","22-2371","22-2384","22-2387","22-2396","22-2400","22-2401","22-2403","22-2419","22-2426","22-2429","22-2437","22-2452","22-2455","22-2460","22-2471","22-2476","22-2480","22-2481","22-2482","22-2485","22-2486","22-2487","22-2489","22-2495","22-2497","22-2519","22-2524","22-2525","22-2526","22-2527","22-2528","22-2529","22-2530","22-2531","22-2540","22-2545","22-2547","22-2548","22-2550","22-2552","22-2555","22-2559","22-2573","22-2576","22-2577","22-2579","22-2587","22-2597","22-2600","22-2601","22-2603","22-2604","22-2610","22-2612","22-2622","22-2623","22-2625","22-2627","22-2632","22-2659","22-2663","22-2664","22-2667","22-2669","22-2680","22-2687","22-2688","22-2692","22-2717","22-2718","22-2730","22-2742","22-2744","22-2753","22-2759","22-2763","22-2768","22-2771","22-2772","22-2773","22-2776","22-2788","22-2789","22-2790","22-2791","22-2793","22-2794","22-2798","22-2800","22-2802","22-2803","22-2804","22-2805","22-2811","22-2815","22-2822","22-2825","22-2829","22-2831","22-2836","22-2839","22-2851","22-2852","22-2853","22-2857","22-2858","22-2862","22-2864","22-2865","22-2869","22-2872","22-2877","22-2878","22-2879","22-2882","22-2887","22-2893","22-2901","22-2902","22-2903","22-2904","22-2905","22-2906","22-2908","22-2909","22-2912","22-2913","22-2917","22-2920","22-2932","22-2937","22-2959","22-2964","22-2966","22-2972","22-2974","22-2978","22-2979","22-2984","22-2987","22-2990","22-2992","22-2993","22-2994","22-2998","22-2999","22-3001","22-3003","22-3006","22-3008","22-3015","22-3019","22-3020","22-3022","22-3028","22-3032","22-3034","22-3035","22-3050","22-3052","22-3056","22-3057","22-3058","22-3061","22-3067","22-3068","22-3071","22-3072","22-3080","22-3081","22-3082","22-3092","22-3093","22-3105","22-3106","22-3108","22-3116","22-3117","22-3118","22-3124","22-3125","22-3127","22-3129","22-3130","22-3135","22-3138","22-3142","22-3145","22-3146","22-3153","22-3154","22-3158","22-3159","22-3160","22-3162","22-3164","22-3167","22-3168","22-3179","22-3194","22-3195","22-3201","22-3206","22-3207","22-3208","22-3217","22-3218","22-3221","22-3234","22-3268","22-3269","22-3270","22-3272","22-3273","22-3275","22-3290","22-3293","22-3301","22-3302","22-3303","22-3304","22-3306","22-3307","22-3308","22-3319","22-3334","22-3337","22-3338","22-3352","22-3362","22-3363","22-3365","22-3366","22-3367","22-3369","22-3377","22-3388","22-3389","22-3390","22-3403","22-3405","22-3423","22-3424","22-3426","22-3429","22-3431","22-3433","22-3437","22-3443","22-3445","22-3446","22-3447","22-3451","22-3459","22-3471","22-3475","22-3481","22-3482","22-3483","22-3486","22-3487","22-3489","22-3490","22-3491","22-3492","22-3507","22-3508","22-3523","22-3542","22-3546","22-3547","22-3558","22-3567","22-3568","22-3569","22-3570","22-3573","22-3574","22-3577","22-3583","22-3591","22-3592","22-3599","22-3600","22-3601","22-3605","22-3606","22-3607","22-3625","22-3639","22-3653","22-3659","22-3664","22-3666","22-3667","22-3690","22-3691","22-3692","22-3694","22-3695","22-3696","22-3705","22-3714","22-3722","22-3726","22-3737","22-374","22-3758","22-3759","22-3761","22-3764","22-3765","22-3769","22-3770","22-3771","22-3772","22-3788","22-3801","22-3804","22-3813","22-3820","22-3824","22-3825","22-3826","22-3827","22-3828","22-3829","22-3839","22-3841","22-3853","22-3855","22-3868","22-3874","22-3875","22-3880","22-3881","22-3886","22-3887","22-3894","22-3909","22-3913","22-3920","22-3921","22-3922","22-3923","22-3924","22-3925","22-3926","22-3927","22-3930","22-3931","22-3932","22-3937","22-3942","22-3946","22-3959","22-3960","22-3965","22-3975","22-3978","22-3993","22-4013","22-4035","22-4038","22-4039","22-4049","22-4050","22-4059","22-4063","22-4069","22-4085","22-4088","22-4089","22-4090","22-4113","22-4114","22-4118","22-4120","22-4122","22-4126","22-4127","22-4128","22-4129","22-4133","22-4144","22-4146","22-4147","22-4150","22-4151","22-4154","22-4155","22-4156","22-4157","22-4161","22-4176","22-4177","22-4181","22-4182","22-4183","22-4187","22-4188","22-4190","22-4195","22-4205","22-4207","22-4210","22-4216","22-4217","22-4218","22-4220","22-4221","22-4222","22-4225","22-4227","22-4232","22-4236","22-4237","22-424","22-4244","22-4245","22-4250","22-4251","22-4257","22-4260","22-4262","22-4265","22-4266","22-4267","22-4268","22-4273","22-4275","22-4276","22-4277","22-4279","22-4282","22-4284","22-4286","22-4295","22-4300","22-4301","22-4302","22-4303","22-4310","22-4314","22-4320","22-4323","22-4327","22-4328","22-4338","22-4339","22-4340","22-4341","22-4342","22-4343","22-4344","22-4345","22-4356","22-4359","22-4361","22-4362","22-4365","22-4370","22-4374","22-438","22-4380","22-4384","22-4387","22-4388","22-4410","22-4411","22-4413","22-4420","22-4425","22-4428","22-4432","22-4433","22-4434","22-4435","22-793","22-804","22-851","22-928","22-969","22-980","22-986","2-48","2-5","4-287","4-288","4-290","4-38","4-402","4-403","4-494","4-496","4-505","4-508","4-519","4-527","4-531","5-44","6-2","6-39","7-1010","7-1048","7-1050","7-1113","7-1127","7-1144","7-1146","7-1157","7-1161","7-1186","7-1196","7-1214","7-1240","7-1246","7-1249","7-1291","7-1292","7-1315","7-1322","7-1324","7-1325","7-1326","7-1327","7-1328","7-1336","7-1357","7-1359","7-1360","7-1361","7-1362","7-1364","7-1366","7-1389","7-1390","7-1392","7-1393","7-1395","7-1397","7-1398","7-1400","7-1419","7-1420","7-1421","7-1426","7-1435","7-1438","7-1453","7-1454","7-1466","7-1467","7-1476","7-1483","7-1486","7-1491","7-1498","7-1502","7-1520","7-1522","7-1531","7-1544","7-1551","7-1553","7-1554","7-1567","7-325","7-338","7-429","7-523","7-657","7-825","99-1001","99-1005","99-1008","99-1011","99-1012","99-1013","99-1016","99-1017","99-1035","99-285","99-307","99-347","99-348","99-355","99-356","99-376","99-391","99-392","99-393","99-394","99-442","99-443","99-444","99-474","99-514","99-518","99-519","99-539","99-548","99-558","99-566","99-611","99-614","99-622","99-623","99-647","99-649","99-658","99-781","99-793","99-797","99-807","99-839","99-847","99-853","99-857","99-880","99-883","99-897","99-921","99-946","99-949","99-950","99-951","99-952","99-953","99-979","AR-BAG13","AR-BAG23","AR-BAG24","AR-BAG25","AR-BAG26","AR-BAG27","AR-BAG36","AR-BAG37","AR-BAG41","AR-BAG42","AR-BAG44","AR-BAG45","AR-BAG46","AR-BAG55","AR-BOX21","AR-BOX22","AR-BSC10","AR-BSC11","AR-BSC12","AR-BSC13","AR-BSC14","AR-BSC15","AR-BSC16","AR-BSC17","AR-BSC18","AR-BSC19","AR-BSC24","AR-BSC25","AR-BSC26","AR-BSC27","AR-BSC28","AR-BSC33","AR-CAN11","AR-CAO11","AR-CAO14","AR-CAO17","AR-CAO18","AR-CMP20","AR-CMP30","AR-FIR12","AR-FIR13","AR-FIR15","AR-FUR10","AR-FUR11","AR-FUR12","AR-FUR13","AR-FUR14","AR-FUR15","AR-FUR16","AR-FUR17","AR-FUR18","AR-FUR19","AR-FUR24","AR-FUR35","AR-FUR36","AR-FUR48","AR-FUR53","AR-FUR57","AR-HAT12","AR-KNF17","AR-KNF19","AR-KNF20","AR-LIT17","AR-LIT27","AR-MAT10","AR-MAT11","AR-MAT12","AR-MAT13","AR-MAT14","AR-MAT15","AR-MAT16","AR-MAT19","AR-OCP25","AR-OCP34","AR-SLB19","AR-SLB20","AR-SLB21","AR-SPC10","AR-SPC11","AR-SPC12","AR-SPC13","AR-TNT10","AR-VAC16","AR-WST11","AR-WST12","AR-WST13","AR-WST14","AR-WST19","AR-WST21","BB8515","BB8516","BSS8376","ERS8539","HJS-2024","KOB8508","KOB8521","LCL-KIT01","LCL-WST26","NC-EC30","NC-EDC33","NC-LR70","NC-NU11","NC-P18","NC-SRT7I","NC-TIPSE","NC-TM06S","NC-TM12K","NT-NE0126","NT-NE20015","NT-NE20021","NT-NE20045","NT-NE20101","NT-NE20107","NT-NE20151","NT-NE20153","NT-NE20213","SLP1642","SLP1643","SLP1644","SLP1659","SLP1662","SLP1663","SLP1665","SLP1667","SPL0006","SPL0022","SPL0029","SPL0032","SPL0040","SPL0050","SPL0062","SPL0063","SPL0067","SPL0073","SPL0074","SPL0117","SPL0118","SPL0125","SPL0136","SPL0146","SPL0147","SPL0155","SPL0157","SPL0164","SPL0172","SPL0178","SPL0204","SPL0213","SPL0224","SPL0238","SPL0240","SPL0241","SPL0259","SPL0260","SPL0261","SPL0263","SPL0264","SPL0272","SPL0293","SPL0297","SPL0300","SPL0303","SPL0305","SPL0309","SPL0314","SPL0346","SPL0350","SPL0353","SPL0359","SPL0380","SPL0383","SPL0384","SPL0388","SPL0439","SPL0468","SPL0471","SPL0484","SPL0488","SPL0500","SPL0526","SPL0564","SPL0577","SPL0578","SPL0584","SPL0591","SPL0602","SPL0603","SPL0604","SPL0611","SPL0617","SPL0625","SPL0638","SPL0669","SPL0679","SPL0700","SPL0711","SPL0718","SPL0752","SPL0757","SPL0765","SPL0767","SPL0774","SPL0776","SPL0778","SPL0779","SPL0780","SPL0782","SPL0783","SPL0787","SPL0798","SPL0806","SPL0838","SPL0839","SPL0840","SPL0880","SPL0881","SPL0882","SPL0884","SPL0885","SPL0886","SPL0887","SPL0888","SPL0890","SPL0891","SPL0892","SPL0893","SPL0897","SPL0898","SPL0900","SPL0915","SPL0919","SPL0942","SPL0944","SPL0947","SPL0959","SPL0960","SPL0984","SPL1012","SPL1015","SPL1017","SPL1018","SPL1025","SPL1033","SPL1053","SPL1054","SPL1056","SPL1061","SPL1083","SPL1085","SPL1106","SPL1148","SPL1162","SPL1166","SPL1173","SPL1174","SPL1202","SPL1263","SPL1266","SPL1319","SPL1324","SPL1331","SPL1336","SPL1339","SPL1342","SPL1344","SPL1366","SPL1373","SPL1376","SPL1401","SPL1421","SPL1429","SPL1430","SPL1438","SPL1440","SPL1442","SPL1448","SPL1457","SPL1464","SPL1466","SPL1479","SPL1485","SPL1492","SPL1497","SPL1498","SPL1513","SPL1527","SPL1532","SPL1533","SPL1534","SPL1535","SPL1538","SPL1540","SPL1553","SPL1556","SPL1565","SPL1576","SPL1579","SPL1582","SPL1591","SPL1594","SPL1595","SPL1613","SPL1631","SPL1641","SPL1673","SPL1677","SPL1683","SPL1688","SPL1691","SPL1692","SPL1720","SPL1748","SPL1761","SPL1768","SPL1770","SPL1784","SPL1812","SPL1832","SPL1844","SPL1847","SPL1855","SPL1856","SPL1862","SPL1868","SPL1869","SPL1885","SPL1901","SPL1919","SPL1920","SPL1929","SPL1955","SPL1985","SPL1995","SPL2013","SPL2015","SPL2022","SPL2032","SPL2033","SPL2034","SPL2035","SPL2036","SPL2037","SPL2039","SPL2043","SPL2047","SPL2049","SPL2056","SPL2058","SPL2066","SPL2067","SPL2071","SPL2078","SPL2093","SPL2095","SPL2104","SPL2117","SPL2122","SPL2128","SPL2130","SPL2131","SPL2137","SPL2138","SPL2139","SPL2140","SPL2141","SPL2142","SPL2143","SPL2144","SPL2146","SPL2147","SPL2149","SPL2150","SPL2151","SPL2152","SPL2153","SPL2154","SPL2155","SPL2156","SPL2157","SPL2158","SPL2159","SPL2160","SPL2161","SPL2162","SPL2163","SPL2164","SPL2165","SPL2166","SPL2167","SPL2168","SPL2176","SPL2178","SPL2185","SPL2186","SPL2187","SPL2188","SPL2191","SPL2196","SPL2200","SPL2207","SPL2209","SPL2211","SPL2212","SPL2213","SPL2215","SPL2217","SPL2218","SPL2219","SPL2220","SPL2221","SPL2223","SPL2226","SPL2227","SPL2228","SPL2232","SPL2248","SPL2255","SPL2290","SPL2291","SPL2293","SPL2294","SPL2300","SPL2313","SPL2335","SPL2336","SPL2338","SPL2339","SPL2348","SPL2351","SPL2355","SPL2357","SPL2361","SPL2366","SPL2368","SPL2369","SPL2370","SPL2371","SPL2372","WD-BSC21","WD-BSC22","WD-FUR10","WD-FUR11","WD-FUR15","WD-FUR16","WD-FUR69","WD-HAT11GR","WD-HAT11LGR","WD-LIT10","WD-LIT20","WD-LIT22","WD-LIT24","WD-LIT36","WD-LIT38","WD-MAT13","WD-OTD11","WD-PWR10","WD-SLB10","WD-SLB11","WD-SLB12","WD-TNT11","WD-TVL15BK","WD-TVL15PI","WD-TVL16BK","WD-TVL16PI","WD-TVL16WH","WD-TVL17BU","WD-TVL18","WD-TVL19","WD-TVL21","30-1","30-2","30-3","30-4","30-5","30-6","30-7","30-8","30-9","30-10","30-11","30-12","30-13","30-14","30-15","30-16","30-17","30-19","30-30","30-33","30-34","30-35","30-36","30-38","30-39","30-43","30-44","30-45","30-46","30-47","30-48","30-49","30-50","30-51","30-53","30-54","30-57","30-58","30-59","30-62","30-63","30-64","30-65","30-66","30-67","30-68","30-69","30-70","30-72","30-74","30-78","30-79","30-80","30-81","30-82","30-84","30-85","30-86","30-87","30-88","30-89","30-92","30-93","30-94","30-98","30-99","30-101","30-102","30-103","30-104","30-107","30-108","30-109","30-110","30-111","30-112","30-116","30-117","30-118","30-119","30-120","30-121","30-122","30-123","30-124","30-125","30-126","30-128","30-130","30-131","30-132","30-133","30-134","30-135","30-136","30-137","30-138","30-139","30-140","30-141","30-142","30-143","30-144","30-145","30-146","30-147","30-148","30-149","30-150","30-151","30-152","30-153","30-155","30-156","30-157","30-158","30-159","30-161","30-162","30-163","30-164","30-165","30-166","30-167","30-168","30-169","30-170","30-171","30-172","30-173","30-174","30-175","30-176","30-178","30-180","30-181","30-183","30-185","30-186","30-187","30-188","30-189","30-190","30-191","30-192","30-193","30-194","30-195","30-196","30-197","30-198","30-199","30-200","30-201","30-202","30-203","30-204","30-205","30-206","30-207","30-208","30-209","30-210","30-211","30-212","30-213","30-214","30-215","30-216","30-217","30-218","30-219","30-220","30-221","30-222","30-223","30-224","30-225","30-226","30-227","30-228","30-229","30-230","30-231","30-232","30-233","30-234","30-235","30-236","30-237","30-238","30-239","30-240","30-241","30-242","30-243","30-244","30-245","30-246"]);
-
-const EXCLUDED_STORES = new Set([
-  'qaseem 4x', 'al ahsa 1', 'exit 15', 'al jouf', 'jeddah 1', 'al qods',
-  'shifa 4x', 'al ula', 'baljuraishi', 'damages & shortages ryd', 'exit 5 wh',
-  'exit 5 workshop', 'hafr al batin 1', 'hail 1', 'jeddah 4x', 'salbukh wh',
-  'damages & shortages abha', 'unaiza wh', 'tabuk 1',
-]);
-
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 480, &quot;height&quot;: 900}}">
 function naturalCompare(a, b) {
   const ax = [], bx = [];
   String(a).replace(/(\d+)|(\D+)/g, (_, d, s) => { ax.push([d ? parseInt(d, 10) : Infinity, s || '']); return ''; });
@@ -1256,6 +1309,18 @@ function naturalCompare(a, b) {
   }
   return ax.length - bx.length;
 }
+
+const STORE_STOCK_WH_LOCATIONS = ['Inspection & Review Warehouse', 'Damages & Shortages Warehouse - Riyadh', 'Sub Warehouse - Abha', 'Main Warehouse - Riyadh'];
+const STORE_STOCK_WH_LOCATIONS_LC = new Set(STORE_STOCK_WH_LOCATIONS.map(s => s.toLowerCase()));
+
+const ADDNL_1500_SET = new Set(["10-210","10-225","11-324","11-379","11-387","11-400","11-421","11-442","11-443","11-446","11-454","11-477","11-482","11-484","1-149","11-493","11-519","11-521","11-527","11-535","11-539","11-559","11-568","11-592","11-613","11-632","11-634","11-638","11-639","11-640","11-653","11-658","11-662","11-663","11-681","11-685","11-687","11-688","1-169","11-698","11-700","11-701","11-702","11-714","11-723","11-724","11-732","1-174","11-741","11-742","11-745","11-748","11-749","1-175","11-752","11-755","11-769","11-776","11-799","11-801","11-802","11-803","11-804","11-807","11-808","11-809","11-810","11-811","11-812","11-813","11-817","11-818","11-820","11-821","11-822","11-823","11-824","11-827","11-831","11-832","11-840","11-841","11-842","11-844","1-191","1-192","1-193","1-194","1-196","12-103","12-109","1-234","13-44","14-60","14-61","14-70","14-74","14-81","16-36","16-45","16-46","16-62","16-66","17-28","17-7","18-462","18-619","18-638","18-677","18-708","18-795","18-797","18-808","18-812","18-828","18-838","18-840","18-863","18-866","18-870","18-875","18-881","18-884","18-886","18-887","18-894","18-895","18-904","18-928","18-929","18-931","18-932","18-934","18-938","18-939","18-940","18-941","18-944","18-945","18-956","18-957","18-964","18-966","18-967","18-968","18-972","18-980","18-984","19-353","19-354","19-370","19-393","19-398","19-402","19-403","19-404","19-405","19-406","19-409","19-410","22-1018","22-1024","22-1027","22-1059","22-1069","22-1073","22-1102","22-1104","22-1114","22-1118","22-1121","22-1125","22-1126","22-1130","22-1175","22-1182","22-1192","22-1193","22-1211","22-1215","22-1308","22-1309","22-1312","22-1375","22-1383","22-1406","22-1435","22-1441","22-1444","22-1476","22-1485","22-1497","22-1500","22-1504","22-1513","22-1529","22-1557","22-1587","22-1592","22-1593","22-1611","22-1612","22-1613","22-1637","22-1643","22-1645","22-1666","22-1678","22-1696","22-1728","22-1743","22-1746","22-1762","22-1764","22-1781","22-1794","22-1800","22-1803","22-1805","22-1822","22-1846","22-1851","22-1878","22-1879","22-1883","22-1891","22-1894","22-1905","22-1955","22-1956","22-1967","22-1971","22-1973","22-1978","22-1993","22-2001","22-2017","22-2018","22-2035","22-2051","22-2075","22-2077","22-2079","22-208","22-2096","22-2109","22-2110","22-2111","22-2112","22-2114","22-2115","22-2116","22-2119","22-2122","22-2125","22-2128","22-2131","22-2138","22-2139","22-2140","22-2143","22-2162","22-2175","22-2177","22-2179","22-2211","22-2236","22-2238","22-2258","22-2261","22-2266","22-2271","22-2277","22-2279","22-2282","22-2294","22-2308","22-2323","22-2332","22-2334","22-2335","22-2339","22-2340","22-2342","22-2343","22-2353","22-2355","22-2368","22-2369","22-2370","22-2371","22-2384","22-2387","22-2396","22-2400","22-2401","22-2403","22-2419","22-2426","22-2429","22-2437","22-2452","22-2455","22-2460","22-2471","22-2476","22-2480","22-2481","22-2482","22-2485","22-2486","22-2487","22-2489","22-2495","22-2497","22-2519","22-2524","22-2525","22-2526","22-2527","22-2528","22-2529","22-2530","22-2531","22-2540","22-2545","22-2547","22-2548","22-2550","22-2552","22-2555","22-2559","22-2573","22-2576","22-2577","22-2579","22-2587","22-2597","22-2600","22-2601","22-2603","22-2604","22-2610","22-2612","22-2622","22-2623","22-2625","22-2627","22-2632","22-2659","22-2663","22-2664","22-2667","22-2669","22-2680","22-2687","22-2688","22-2692","22-2717","22-2718","22-2730","22-2742","22-2744","22-2753","22-2759","22-2763","22-2768","22-2771","22-2772","22-2773","22-2776","22-2788","22-2789","22-2790","22-2791","22-2793","22-2794","22-2798","22-2800","22-2802","22-2803","22-2804","22-2805","22-2811","22-2815","22-2822","22-2825","22-2829","22-2831","22-2836","22-2839","22-2851","22-2852","22-2853","22-2857","22-2858","22-2862","22-2864","22-2865","22-2869","22-2872","22-2877","22-2878","22-2879","22-2882","22-2887","22-2893","22-2901","22-2902","22-2903","22-2904","22-2905","22-2906","22-2908","22-2909","22-2912","22-2913","22-2917","22-2920","22-2932","22-2937","22-2959","22-2964","22-2966","22-2972","22-2974","22-2978","22-2979","22-2984","22-2987","22-2990","22-2992","22-2993","22-2994","22-2998","22-2999","22-3001","22-3003","22-3006","22-3008","22-3015","22-3019","22-3020","22-3022","22-3028","22-3032","22-3034","22-3035","22-3050","22-3052","22-3056","22-3057","22-3058","22-3061","22-3067","22-3068","22-3071","22-3072","22-3080","22-3081","22-3082","22-3092","22-3093","22-3105","22-3106","22-3108","22-3116","22-3117","22-3118","22-3124","22-3125","22-3127","22-3129","22-3130","22-3135","22-3138","22-3142","22-3145","22-3146","22-3153","22-3154","22-3158","22-3159","22-3160","22-3162","22-3164","22-3167","22-3168","22-3179","22-3194","22-3195","22-3201","22-3206","22-3207","22-3208","22-3217","22-3218","22-3221","22-3234","22-3268","22-3269","22-3270","22-3272","22-3273","22-3275","22-3290","22-3293","22-3301","22-3302","22-3303","22-3304","22-3306","22-3307","22-3308","22-3319","22-3334","22-3337","22-3338","22-3352","22-3362","22-3363","22-3365","22-3366","22-3367","22-3369","22-3377","22-3388","22-3389","22-3390","22-3403","22-3405","22-3423","22-3424","22-3426","22-3429","22-3431","22-3433","22-3437","22-3443","22-3445","22-3446","22-3447","22-3451","22-3459","22-3471","22-3475","22-3481","22-3482","22-3483","22-3486","22-3487","22-3489","22-3490","22-3491","22-3492","22-3507","22-3508","22-3523","22-3542","22-3546","22-3547","22-3558","22-3567","22-3568","22-3569","22-3570","22-3573","22-3574","22-3577","22-3583","22-3591","22-3592","22-3599","22-3600","22-3601","22-3605","22-3606","22-3607","22-3625","22-3639","22-3653","22-3659","22-3664","22-3666","22-3667","22-3690","22-3691","22-3692","22-3694","22-3695","22-3696","22-3705","22-3714","22-3722","22-3726","22-3737","22-374","22-3758","22-3759","22-3761","22-3764","22-3765","22-3769","22-3770","22-3771","22-3772","22-3788","22-3801","22-3804","22-3813","22-3820","22-3824","22-3825","22-3826","22-3827","22-3828","22-3829","22-3839","22-3841","22-3853","22-3855","22-3868","22-3874","22-3875","22-3880","22-3881","22-3886","22-3887","22-3894","22-3909","22-3913","22-3920","22-3921","22-3922","22-3923","22-3924","22-3925","22-3926","22-3927","22-3930","22-3931","22-3932","22-3937","22-3942","22-3946","22-3959","22-3960","22-3965","22-3975","22-3978","22-3993","22-4013","22-4035","22-4038","22-4039","22-4049","22-4050","22-4059","22-4063","22-4069","22-4085","22-4088","22-4089","22-4090","22-4113","22-4114","22-4118","22-4120","22-4122","22-4126","22-4127","22-4128","22-4129","22-4133","22-4144","22-4146","22-4147","22-4150","22-4151","22-4154","22-4155","22-4156","22-4157","22-4161","22-4176","22-4177","22-4181","22-4182","22-4183","22-4187","22-4188","22-4190","22-4195","22-4205","22-4207","22-4210","22-4216","22-4217","22-4218","22-4220","22-4221","22-4222","22-4225","22-4227","22-4232","22-4236","22-4237","22-424","22-4244","22-4245","22-4250","22-4251","22-4257","22-4260","22-4262","22-4265","22-4266","22-4267","22-4268","22-4273","22-4275","22-4276","22-4277","22-4279","22-4282","22-4284","22-4286","22-4295","22-4300","22-4301","22-4302","22-4303","22-4310","22-4314","22-4320","22-4323","22-4327","22-4328","22-4338","22-4339","22-4340","22-4341","22-4342","22-4343","22-4344","22-4345","22-4356","22-4359","22-4361","22-4362","22-4365","22-4370","22-4374","22-438","22-4380","22-4384","22-4387","22-4388","22-4410","22-4411","22-4413","22-4420","22-4425","22-4428","22-4432","22-4433","22-4434","22-4435","22-793","22-804","22-851","22-928","22-969","22-980","22-986","2-48","2-5","4-287","4-288","4-290","4-38","4-402","4-403","4-494","4-496","4-505","4-508","4-519","4-527","4-531","5-44","6-2","6-39","7-1010","7-1048","7-1050","7-1113","7-1127","7-1144","7-1146","7-1157","7-1161","7-1186","7-1196","7-1214","7-1240","7-1246","7-1249","7-1291","7-1292","7-1315","7-1322","7-1324","7-1325","7-1326","7-1327","7-1328","7-1336","7-1357","7-1359","7-1360","7-1361","7-1362","7-1364","7-1366","7-1389","7-1390","7-1392","7-1393","7-1395","7-1397","7-1398","7-1400","7-1419","7-1420","7-1421","7-1426","7-1435","7-1438","7-1453","7-1454","7-1466","7-1467","7-1476","7-1483","7-1486","7-1491","7-1498","7-1502","7-1520","7-1522","7-1531","7-1544","7-1551","7-1553","7-1554","7-1567","7-325","7-338","7-429","7-523","7-657","7-825","99-1001","99-1005","99-1008","99-1011","99-1012","99-1013","99-1016","99-1017","99-1035","99-285","99-307","99-347","99-348","99-355","99-356","99-376","99-391","99-392","99-393","99-394","99-442","99-443","99-444","99-474","99-514","99-518","99-519","99-539","99-548","99-558","99-566","99-611","99-614","99-622","99-623","99-647","99-649","99-658","99-781","99-793","99-797","99-807","99-839","99-847","99-853","99-857","99-880","99-883","99-897","99-921","99-946","99-949","99-950","99-951","99-952","99-953","99-979","AR-BAG13","AR-BAG23","AR-BAG24","AR-BAG25","AR-BAG26","AR-BAG27","AR-BAG36","AR-BAG37","AR-BAG41","AR-BAG42","AR-BAG44","AR-BAG45","AR-BAG46","AR-BAG55","AR-BOX21","AR-BOX22","AR-BSC10","AR-BSC11","AR-BSC12","AR-BSC13","AR-BSC14","AR-BSC15","AR-BSC16","AR-BSC17","AR-BSC18","AR-BSC19","AR-BSC24","AR-BSC25","AR-BSC26","AR-BSC27","AR-BSC28","AR-BSC33","AR-CAN11","AR-CAO11","AR-CAO14","AR-CAO17","AR-CAO18","AR-CMP20","AR-CMP30","AR-FIR12","AR-FIR13","AR-FIR15","AR-FUR10","AR-FUR11","AR-FUR12","AR-FUR13","AR-FUR14","AR-FUR15","AR-FUR16","AR-FUR17","AR-FUR18","AR-FUR19","AR-FUR24","AR-FUR35","AR-FUR36","AR-FUR48","AR-FUR53","AR-FUR57","AR-HAT12","AR-KNF17","AR-KNF19","AR-KNF20","AR-LIT17","AR-LIT27","AR-MAT10","AR-MAT11","AR-MAT12","AR-MAT13","AR-MAT14","AR-MAT15","AR-MAT16","AR-MAT19","AR-OCP25","AR-OCP34","AR-SLB19","AR-SLB20","AR-SLB21","AR-SPC10","AR-SPC11","AR-SPC12","AR-SPC13","AR-TNT10","AR-VAC16","AR-WST11","AR-WST12","AR-WST13","AR-WST14","AR-WST19","AR-WST21","BB8515","BB8516","BSS8376","ERS8539","HJS-2024","KOB8508","KOB8521","LCL-KIT01","LCL-WST26","NC-EC30","NC-EDC33","NC-LR70","NC-NU11","NC-P18","NC-SRT7I","NC-TIPSE","NC-TM06S","NC-TM12K","NT-NE0126","NT-NE20015","NT-NE20021","NT-NE20045","NT-NE20101","NT-NE20107","NT-NE20151","NT-NE20153","NT-NE20213","SLP1642","SLP1643","SLP1644","SLP1659","SLP1662","SLP1663","SLP1665","SLP1667","SPL0006","SPL0022","SPL0029","SPL0032","SPL0040","SPL0050","SPL0062","SPL0063","SPL0067","SPL0073","SPL0074","SPL0117","SPL0118","SPL0125","SPL0136","SPL0146","SPL0147","SPL0155","SPL0157","SPL0164","SPL0172","SPL0178","SPL0204","SPL0213","SPL0224","SPL0238","SPL0240","SPL0241","SPL0259","SPL0260","SPL0261","SPL0263","SPL0264","SPL0272","SPL0293","SPL0297","SPL0300","SPL0303","SPL0305","SPL0309","SPL0314","SPL0346","SPL0350","SPL0353","SPL0359","SPL0380","SPL0383","SPL0384","SPL0388","SPL0439","SPL0468","SPL0471","SPL0484","SPL0488","SPL0500","SPL0526","SPL0564","SPL0577","SPL0578","SPL0584","SPL0591","SPL0602","SPL0603","SPL0604","SPL0611","SPL0617","SPL0625","SPL0638","SPL0669","SPL0679","SPL0700","SPL0711","SPL0718","SPL0752","SPL0757","SPL0765","SPL0767","SPL0774","SPL0776","SPL0778","SPL0779","SPL0780","SPL0782","SPL0783","SPL0787","SPL0798","SPL0806","SPL0838","SPL0839","SPL0840","SPL0880","SPL0881","SPL0882","SPL0884","SPL0885","SPL0886","SPL0887","SPL0888","SPL0890","SPL0891","SPL0892","SPL0893","SPL0897","SPL0898","SPL0900","SPL0915","SPL0919","SPL0942","SPL0944","SPL0947","SPL0959","SPL0960","SPL0984","SPL1012","SPL1015","SPL1017","SPL1018","SPL1025","SPL1033","SPL1053","SPL1054","SPL1056","SPL1061","SPL1083","SPL1085","SPL1106","SPL1148","SPL1162","SPL1166","SPL1173","SPL1174","SPL1202","SPL1263","SPL1266","SPL1319","SPL1324","SPL1331","SPL1336","SPL1339","SPL1342","SPL1344","SPL1366","SPL1373","SPL1376","SPL1401","SPL1421","SPL1429","SPL1430","SPL1438","SPL1440","SPL1442","SPL1448","SPL1457","SPL1464","SPL1466","SPL1479","SPL1485","SPL1492","SPL1497","SPL1498","SPL1513","SPL1527","SPL1532","SPL1533","SPL1534","SPL1535","SPL1538","SPL1540","SPL1553","SPL1556","SPL1565","SPL1576","SPL1579","SPL1582","SPL1591","SPL1594","SPL1595","SPL1613","SPL1631","SPL1641","SPL1673","SPL1677","SPL1683","SPL1688","SPL1691","SPL1692","SPL1720","SPL1748","SPL1761","SPL1768","SPL1770","SPL1784","SPL1812","SPL1832","SPL1844","SPL1847","SPL1855","SPL1856","SPL1862","SPL1868","SPL1869","SPL1885","SPL1901","SPL1919","SPL1920","SPL1929","SPL1955","SPL1985","SPL1995","SPL2013","SPL2015","SPL2022","SPL2032","SPL2033","SPL2034","SPL2035","SPL2036","SPL2037","SPL2039","SPL2043","SPL2047","SPL2049","SPL2056","SPL2058","SPL2066","SPL2067","SPL2071","SPL2078","SPL2093","SPL2095","SPL2104","SPL2117","SPL2122","SPL2128","SPL2130","SPL2131","SPL2137","SPL2138","SPL2139","SPL2140","SPL2141","SPL2142","SPL2143","SPL2144","SPL2146","SPL2147","SPL2149","SPL2150","SPL2151","SPL2152","SPL2153","SPL2154","SPL2155","SPL2156","SPL2157","SPL2158","SPL2159","SPL2160","SPL2161","SPL2162","SPL2163","SPL2164","SPL2165","SPL2166","SPL2167","SPL2168","SPL2176","SPL2178","SPL2185","SPL2186","SPL2187","SPL2188","SPL2191","SPL2196","SPL2200","SPL2207","SPL2209","SPL2211","SPL2212","SPL2213","SPL2215","SPL2217","SPL2218","SPL2219","SPL2220","SPL2221","SPL2223","SPL2226","SPL2227","SPL2228","SPL2232","SPL2248","SPL2255","SPL2290","SPL2291","SPL2293","SPL2294","SPL2300","SPL2313","SPL2335","SPL2336","SPL2338","SPL2339","SPL2348","SPL2351","SPL2355","SPL2357","SPL2361","SPL2366","SPL2368","SPL2369","SPL2370","SPL2371","SPL2372","WD-BSC21","WD-BSC22","WD-FUR10","WD-FUR11","WD-FUR15","WD-FUR16","WD-FUR69","WD-HAT11GR","WD-HAT11LGR","WD-LIT10","WD-LIT20","WD-LIT22","WD-LIT24","WD-LIT36","WD-LIT38","WD-MAT13","WD-OTD11","WD-PWR10","WD-SLB10","WD-SLB11","WD-SLB12","WD-TNT11","WD-TVL15BK","WD-TVL15PI","WD-TVL16BK","WD-TVL16PI","WD-TVL16WH","WD-TVL17BU","WD-TVL18","WD-TVL19","WD-TVL21","30-1","30-2","30-3","30-4","30-5","30-6","30-7","30-8","30-9","30-10","30-11","30-12","30-13","30-14","30-15","30-16","30-17","30-19","30-30","30-33","30-34","30-35","30-36","30-38","30-39","30-43","30-44","30-45","30-46","30-47","30-48","30-49","30-50","30-51","30-53","30-54","30-57","30-58","30-59","30-62","30-63","30-64","30-65","30-66","30-67","30-68","30-69","30-70","30-72","30-74","30-78","30-79","30-80","30-81","30-82","30-84","30-85","30-86","30-87","30-88","30-89","30-92","30-93","30-94","30-98","30-99","30-101","30-102","30-103","30-104","30-107","30-108","30-109","30-110","30-111","30-112","30-116","30-117","30-118","30-119","30-120","30-121","30-122","30-123","30-124","30-125","30-126","30-128","30-130","30-131","30-132","30-133","30-134","30-135","30-136","30-137","30-138","30-139","30-140","30-141","30-142","30-143","30-144","30-145","30-146","30-147","30-148","30-149","30-150","30-151","30-152","30-153","30-155","30-156","30-157","30-158","30-159","30-161","30-162","30-163","30-164","30-165","30-166","30-167","30-168","30-169","30-170","30-171","30-172","30-173","30-174","30-175","30-176","30-178","30-180","30-181","30-183","30-185","30-186","30-187","30-188","30-189","30-190","30-191","30-192","30-193","30-194","30-195","30-196","30-197","30-198","30-199","30-200","30-201","30-202","30-203","30-204","30-205","30-206","30-207","30-208","30-209","30-210","30-211","30-212","30-213","30-214","30-215","30-216","30-217","30-218","30-219","30-220","30-221","30-222","30-223","30-224","30-225","30-226","30-227","30-228","30-229","30-230","30-231","30-232","30-233","30-234","30-235","30-236","30-237","30-238","30-239","30-240","30-241","30-242","30-243","30-244","30-245","30-246"]);
+
+const EXCLUDED_STORES = new Set([
+  'qaseem 4x', 'al ahsa 1', 'exit 15', 'al jouf', 'jeddah 1', 'al qods',
+  'shifa 4x', 'al ula', 'baljuraishi', 'damages & shortages ryd', 'exit 5 wh',
+  'exit 5 workshop', 'hafr al batin 1', 'hail 1', 'jeddah 4x', 'salbukh wh',
+  'damages & shortages abha', 'unaiza wh', 'tabuk 1',
+]);
 
 // ---- Embedded xlsx writer (no external module; works offline / on static hosts) ----
 // Minimal real .xlsx writer (no deps). Builds a ZIP with STORED (uncompressed) entries,
@@ -2218,12 +2283,27 @@ class Component extends DCLogic {
 
   state = {
     lang: (function () { try { return window.localStorage.getItem('inv-lang') === 'ar' ? 'ar' : 'en'; } catch (e) { return 'en'; } })(),
-    loading: true,
-    loadError: '',
-    screen: 'loading',
+    screen: 'upload',
+    costMap: null,
+    files: { matrix: null, stores: null, retail: null, purchase: null, discount: null, national: null },
+    storeStockShowDiscount: false,
+    storeStockAddnl1500: false,
+    storeStockNationalDay: false,
+    storeStockPctRange: '',
+    storeStockBrand: '',
+    storeStockCategory: '',
+    storeStockSubCategory: '',
+    mlLocations: [],
+    mlPriceSource: 'discount',
+    mlBrand: '',
+    mlCategory: '',
+    mlSubCategory: '',
+    mlPdfDownloading: false,
+    processing: false,
+    error: '',
     parsed: null,
-    storeInfoMap: null,
     storeOptions: [],
+    storeInfoMap: null,
     selectedStore: '',
     selectedQty: 1,
     results: null,
@@ -2233,6 +2313,7 @@ class Component extends DCLogic {
     stockFilter: 'all',
     lowStockFilter: 'all',
     skuQuery: '',
+    diagQuery: '',
     tagSkus: ['', '', '', '', '', ''],
     tagPriceSource: 'discount',
     tagLayout: 'four',
@@ -2250,35 +2331,9 @@ class Component extends DCLogic {
     whSubCategory: '',
     whStore: '',
     whPage: 1,
-    storeStockShowDiscount: false,
-    storeStockAddnl1500: false,
-    storeStockNationalDay: false,
-    storeStockPctRange: '',
-    storeStockBrand: '',
-    storeStockCategory: '',
-    storeStockSubCategory: '',
-    mlLocations: [],
-    mlPriceSource: 'discount',
-    mlBrand: '',
-    mlCategory: '',
-    mlSubCategory: '',
-    mlPdfDownloading: false,
-    storeStockSelected: '__ALL__',
-    negInvLocation: '__ALL__',
-    negInvModalOpen: false,
-    negInvPdfDownloading: false,
-    costMap: null,
-    isAdmin: false,
-    adminPromptOpen: false,
-    adminPw: '',
-    adminError: '',
   };
 
-  onAdminOpen() { this.setState({ adminPromptOpen: true, adminPw: '', adminError: '' }); }
-  onAdminPwChange(e) { this.setState({ adminPw: e.target.value, adminError: '' }); }
-  async loadCostMap() {
-    if (this._costLoading) return;
-    this._costLoading = true;
+  async componentDidMount() {
     try {
       const url = (window.__resources && window.__resources['cost-json']) || './cost-data.json';
       const res = await fetch(url);
@@ -2286,7 +2341,7 @@ class Component extends DCLogic {
     } catch (e) {}
   }
   costMetrics(itemNo, rsp, disc) {
-    const cm = this.state.isAdmin ? this.state.costMap : null;
+    const cm = this.state.costMap;
     const num = v => { const n = parseFloat(String(v ?? '').replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : 0; };
     const cost = cm ? num(cm[itemNo]) : 0;
     if (!cost) return { showCost: false };
@@ -2303,58 +2358,66 @@ class Component extends DCLogic {
       discMarginText: nowN ? line(nowN) : '',
     };
   }
-  onAdminPwKeyDown(e) { if (e.key === 'Enter') this.onAdminSubmit(); }
-  onAdminSubmit() {
-    if (this.state.adminPw.trim() === '30558') {
-      this.setState({ isAdmin: true, adminPromptOpen: false, adminPw: '', adminError: '' });
-      this.loadCostMap();
-      try { localStorage.setItem('inv-admin', '1'); } catch (e) {}
-    } else {
-      this.setState({ adminError: 'Incorrect password.' });
-    }
-  }
-  onAdminSignOut() {
-    this.setState({ isAdmin: false, adminPromptOpen: false, adminPw: '', adminError: '' });
-    try { localStorage.removeItem('inv-admin'); } catch (e) {}
-  }
+  onFileMatrix(e) { this.setState(s => ({ files: { ...s.files, matrix: e.target.files[0] || null } })); }
+  onFileStores(e) { this.setState(s => ({ files: { ...s.files, stores: e.target.files[0] || null } })); }
+  onFileRetail(e) { this.setState(s => ({ files: { ...s.files, retail: e.target.files[0] || null } })); }
+  onFilePurchase(e) { this.setState(s => ({ files: { ...s.files, purchase: e.target.files[0] || null } })); }
+  onFileDiscount(e) { this.setState(s => ({ files: { ...s.files, discount: e.target.files[0] || null } })); }
+  onFileNational(e) { this.setState(s => ({ files: { ...s.files, national: e.target.files[0] || null } })); }
 
-  async componentDidMount() {
+  async onProcess() {
+    const { matrix, stores, retail, purchase, discount, national } = this.state.files;
+    if (!matrix || !stores || !retail || !purchase) {
+      this.setState({ error: 'Please choose all 4 files before processing.' });
+      return;
+    }
+    this.setState({ processing: true, error: '' });
     try {
-      const dataUrl = (window.__resources && window.__resources['data-json']) || './inventory-data.json';
-      const res = await fetch(dataUrl);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const snap = await res.json();
-      const retailMap = new Map(snap.retailMap);
-      const openOrders = new Set(snap.openOrders);
-      const discountMap = new Map(snap.discountMap || []);
-      const nationalMap = new Map(snap.nationalMap || []);
-      const storeInfoMap = new Map(snap.storeInfoMap);
-      // Locations the store master mistypes but which hold sellable stock —
-      // without this they are dropped from every report.
-      for (const [key, info] of storeInfoMap) {
-        const n = String(key || '').trim().toLowerCase();
-        const sn = String((info && info.shortName) || '').trim().toLowerCase();
-        if (n === 'arb 4*4 workshop aqiq' || sn === 'arb 4*4 workshop aqiq') storeInfoMap.set(key, Object.assign({}, info, { storeType: 'Store' }));
+      const parserBase = (window.__resources && window.__resources['parser-js']) || './inventory-parser.js';
+      // Cache-bust so a freshly deployed parser is never served from the
+      // browser's module cache on reload.
+      const parserUrl = parserBase + (parserBase.includes('?') ? '&' : '?') + 'v=' + Date.now();
+      const mod = await import(parserUrl);
+      const retailIsXlsx = /\.xlsx$/i.test(retail.name);
+      const [matrixData, storeList, openOrders, retailMap, discountMap, nationalMap] = await Promise.all([
+        mod.parseItemsMatrixXlsx(await matrix.arrayBuffer()),
+        mod.parseStoreListXlsx(await stores.arrayBuffer()),
+        mod.parsePurchaseLinesXlsx(await purchase.arrayBuffer()),
+        retailIsXlsx ? mod.parseRetailItemsXlsx(await retail.arrayBuffer()) : retail.text().then(t => mod.parseRetailItemsCsv(t)),
+        discount ? mod.parseDiscountXlsx(await discount.arrayBuffer()) : Promise.resolve(new Map()),
+        national ? mod.parseDiscountXlsx(await national.arrayBuffer()) : Promise.resolve(new Map()),
+      ]);
+      const storeInfoMap = new Map(storeList.map(s => [s.name, s]));
+      const storeInfoMapCI = new Map(storeList.map(s => [s.name.toLowerCase(), s]));
+      const storeOptions = matrixData.storeNames
+        .map(name => {
+          const info = storeInfoMap.get(name) || storeInfoMapCI.get(name.toLowerCase());
+          if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return null;
+          const displayName = info.shortName || name;
+          if (EXCLUDED_STORES.has(displayName.trim().toLowerCase())) return null;
+          return { name, label: info.region ? displayName + ' — ' + info.region : displayName };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      if (!storeOptions.length) throw new Error('No matching stores found — check the files are the right ones.');
+      if (national && (!nationalMap || !nationalMap.size)) {
+        throw new Error('The National Day 2026 file produced no rows — its first table row needs an item-number column header (SKU, Item No., No. or Code).');
       }
-      const storeOptions = (snap.storeOptions || []).filter(opt => {
-        const info = storeInfoMap.get(opt.name);
-        const displayName = (info && (info.shortName || opt.name) || opt.name).trim().toLowerCase();
-        return !EXCLUDED_STORES.has(displayName);
-      });
-      let wasAdmin = false;
-      try { wasAdmin = localStorage.getItem('inv-admin') === '1'; } catch (e) {}
-      if (wasAdmin) this.loadCostMap();
+      if (discount && (!discountMap || !discountMap.size)) {
+        throw new Error('The Seasonal Discounts file produced no rows — its first table row needs an item-number column header (SKU, Item No., No. or Code).');
+      }
+
       this.setState({
-        loading: false,
-        isAdmin: wasAdmin,
-        parsed: { matrix: snap.matrix, retailMap, openOrders, discountMap, nationalMap },
+        processing: false,
+        parsed: { matrix: matrixData, retailMap, openOrders, discountMap, nationalMap },
         storeInfoMap,
         storeOptions,
-        selectedStore: storeOptions[0] ? storeOptions[0].name : '',
+        selectedStore: storeOptions[0].name,
         screen: 'menu',
       });
     } catch (err) {
-      this.setState({ loading: false, loadError: 'Could not load store data: ' + err.message, screen: 'error' });
+      this.setState({ processing: false, error: 'Could not read those files: ' + err.message });
     }
   }
 
@@ -2366,7 +2429,7 @@ class Component extends DCLogic {
   onBackFromSelect() { this.setState({ screen: 'menu' }); }
   onGoSkuLookup() { this.setState({ screen: 'skulookup' }); }
   onBackFromSku() { this.setState({ screen: 'menu' }); }
-  onGoStoreStock() { this.setState({ screen: 'storestock', storeStockSelected: this.state.isAdmin ? '__ALL__' : (this.state.storeOptions[0] ? this.state.storeOptions[0].name : '') }); }
+  onGoStoreStock() { this.setState({ screen: 'storestock', storeStockSelected: '__ALL__' }); }
   onBackFromStoreStock() { this.setState({ screen: 'menu' }); }
   onStoreStockChange(e) { this.setState({ storeStockSelected: e.target.value }); }
   onDiscountOn() { this.setState({ storeStockShowDiscount: true, storeStockAddnl1500: false, storeStockNationalDay: false }); }
@@ -2527,7 +2590,7 @@ class Component extends DCLogic {
         { v: r.image || '', t: 's' },
       ]);
     }
-    const cols = [{ width: 16 }, { width: 34 }, { width: 26 }, { width: 12 }, { width: 10 }, { width: 12 }, { width: 12 }, { width: 10 }, { width: 10 }, { width: 8 }, { width: 30 }];
+    const cols = [{ width: 16 }, { width: 34 }, { width: 26 }, { width: 12 }, { width: 9 }, { width: 12 }, { width: 12 }, { width: 10 }, { width: 10 }, { width: 8 }, { width: 30 }];
     const fileTitle = ('WH-vs-Stores-' + scope + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
     downloadXlsx(aoa, fileTitle, { sheetName: 'WH vs Stores', cols: cols });
   }
@@ -3558,6 +3621,235 @@ class Component extends DCLogic {
     return rows.map(r => (r.image ? Object.assign({}, r, { image: map.get(r.image) || '' }) : r));
   }
 
+  printHtmlInPage(styleCss, bodyHtml, fileTitle, onDone, orientation) {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) return this.printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone, orientation);
+    let frame = document.getElementById('pdf-print-frame');
+    if (!frame) {
+      frame = document.createElement('iframe');
+      frame.id = 'pdf-print-frame';
+      frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+      document.body.appendChild(frame);
+    }
+    const doc = frame.contentDocument;
+    doc.open();
+    doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + fileTitle + '</title><style>@page{margin:0;' + (orientation ? 'size:' + orientation + ';' : '') + '}body{margin:0.5in}' + styleCss + '</style></head><body>' + bodyHtml + '</body></html>');
+    doc.close();
+    const win = frame.contentWindow;
+    const doPrint = () => {
+      // Chrome names the saved PDF after the TOP document's title, not the
+      // printed iframe's — set it here and restore once the dialog closes.
+      const prevTitle = document.title;
+      document.title = fileTitle;
+      const restore = () => { document.title = prevTitle; };
+      setTimeout(restore, 3000);
+      window.addEventListener('focus', restore, { once: true });
+      try {
+        win.focus();
+        win.print();
+      } catch (e) {
+        this.setState({ error: 'Could not generate the PDF: ' + e.message });
+      }
+    };
+    const imgs = Array.from(doc.querySelectorAll('img'));
+    const pending = imgs.filter(img => !img.complete);
+    let printed = false;
+    const printOnce = () => { if (printed) return; printed = true; doPrint(); if (onDone) onDone(); };
+    if (!pending.length) { printOnce(); return; }
+    let settled = 0;
+    const done = () => { settled++; if (settled >= pending.length) printOnce(); };
+    pending.forEach(img => {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    });
+    setTimeout(() => {
+      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
+      printOnce();
+    }, 9000);
+  }
+
+  // iOS WebKit always prints the top-level document, never a hidden iframe's
+  // content — so on iOS we swap the report into a full-page overlay in the
+  // main document, hide everything else during print, then restore.
+  printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone, orientation) {
+    let overlay = document.getElementById('pdf-print-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'pdf-print-overlay';
+      document.body.appendChild(overlay);
+    }
+    let styleEl = document.getElementById('pdf-print-overlay-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'pdf-print-overlay-style';
+      document.head.appendChild(styleEl);
+    }
+    const scoped = styleCss.replace(/(^|\})\s*([^{}]+)\{/g, (m, brace, sel) =>
+      brace + sel.split(',').map(s => '#pdf-print-overlay ' + s.trim()).join(',') + '{');
+    styleEl.textContent = '#pdf-print-overlay{display:none;}'
+      + '@media print{@page{margin:0;' + (orientation ? 'size:' + orientation + ';' : '') + '}body>*:not(#pdf-print-overlay){display:none!important;}#pdf-print-overlay{display:block!important;padding:0.5in;}}'
+      + scoped;
+    overlay.innerHTML = bodyHtml;
+    const prevTitle = document.title;
+    document.title = fileTitle;
+    const cleanup = () => {
+      overlay.innerHTML = '';
+      document.title = prevTitle;
+      window.removeEventListener('afterprint', cleanup);
+      if (onDone) onDone();
+    };
+    window.addEventListener('afterprint', cleanup);
+    const doPrint = () => {
+      try { window.print(); } catch (e) {
+        this.setState({ error: 'Could not generate the PDF: ' + e.message });
+        cleanup();
+      }
+    };
+    const imgs = Array.from(overlay.querySelectorAll('img'));
+    const pending = imgs.filter(img => !img.complete);
+    let printed = false;
+    const printOnce = () => { if (printed) return; printed = true; doPrint(); };
+    if (!pending.length) { printOnce(); return; }
+    let settled = 0;
+    const done = () => { settled++; if (settled >= pending.length) printOnce(); };
+    pending.forEach(img => {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    });
+    setTimeout(() => {
+      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
+      printOnce();
+    }, 9000);
+  }
+
+  async onDownloadStoreStockPdf() {
+    this.setState({ storeStockPdfDownloading: true });
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const fmtNum = v => {
+      if (v === '' || v === null || v === undefined || isNaN(Number(v))) return esc(v);
+      return Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    };
+    const st = this.state;
+    const store = st.storeStockSelected;
+    const info = st.storeInfoMap && st.storeInfoMap.get(store);
+    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
+    const allRows = this.getStoreStockRows();
+    const showDiscount = true;
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    // A huge table (e.g. "All stores") with an <img> per row can overwhelm the
+    // print renderer and come out blank — cap rows for safety; the isolated
+    // print iframe waits for images to load, so we keep them for normal sizes.
+    const MAX_PDF_ROWS = 6000;
+    const noImages = allRows.length > 5000;
+    const truncated = allRows.length > MAX_PDF_ROWS;
+    const rows = truncated ? allRows.slice(0, MAX_PDF_ROWS) : allRows;
+    const scaledRows = noImages ? rows : await this.scaleRowImages(rows);
+
+    const rowsHtml = scaledRows.map(r => (
+      '<tr' + (r.highlight ? ' style="background:#fbe1de;"' : '') + '>'
+      + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" />' : '') + '</td>')
+      + '<td class="itemno">' + esc(r.itemNo) + '</td>'
+      + '<td class="desc">' + esc(r.description2) + '</td>'
+      + '<td class="ctr"' + (r.negQty ? ' style="color:#8b1a1a;"' : '') + '>' + (r.qtyText || fmtNum(r.qty)) + '</td>'
+      + '<td class="ctr">' + fmtNum(r.whStock) + '</td>'
+      + (showDiscount ? '<td class="ctr" style="' + (r.pct === 'Was/Now Just' ? 'font-weight:700;color:#8b1a1a;' : '') + '">' + fmtNum(r.was) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + fmtNum(r.now) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + esc(r.pct) + '</td>' : '')
+      + '</tr>'
+    )).join('');
+
+    const fileTitle = (storeLabel + '-' + this.storeStockModeName() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const extraCols = showDiscount ? '<col class="c-rsp"><col class="c-rsp"><col class="c-rsp">' : '';
+    const extraHead = showDiscount ? '<th>Was</th><th>Now</th><th>%</th>' : '';
+    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
+      + 'h1{font-size:20px;margin:0 0 4px;}'
+      + '.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
+      + 'table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;table-layout:fixed;}'
+      + 'tr{break-inside:avoid;}'
+      + 'tr.hdr th{border-bottom:2px solid #201e1d;}'
+      + 'col.c-img{width:11%}col.c-item{width:' + (noImages ? '16' : '14') + '%}col.c-desc{width:' + (noImages ? '32' : '25') + '%}col.c-qty{width:10%}col.c-wh{width:10%}col.c-rsp{width:9%}'
+      + 'th{text-align:center;font-size:11px;text-transform:uppercase;color:#6b6360;padding:6px;border-bottom:2px solid #201e1d;}'
+      + 'th:nth-child(' + (noImages ? 1 : 2) + '),th:nth-child(' + (noImages ? 2 : 3) + '){text-align:left;}'
+      + 'td{padding:6px;border-bottom:1px solid #e6ddd2;white-space:normal;overflow-wrap:break-word;word-break:break-word;text-wrap:pretty;vertical-align:middle;}'
+      + 'td.ctr{white-space:nowrap;}'
+      + 'td.ctr{text-align:center}'
+      + 'td.img-cell{overflow:hidden;}'
+      + 'td.img-cell img{width:100%;height:56px;object-fit:contain;display:block;}'
+      + 'tr.tot td{border-top:2px solid #201e1d;border-bottom:none;font-weight:700;font-size:13px;padding-top:8px;}';
+    const totalQty = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+    const totalWh = rows.reduce((s, r) => s + (Number(r.whStock) || 0), 0);
+    const bodyHtml = '<h1>' + esc(storeLabel) + '</h1>'
+      + '<div class="meta">' + this.storeStockModeName() + ' · ' + rows.length + (truncated ? ' of ' + allRows.length : '') + ' SKUs' + (truncated ? ' (showing first ' + MAX_PDF_ROWS + ' — use Excel for the full list)' : '') + ' · ' + today + '</div>'
+      + '<table><colgroup>' + (noImages ? '' : '<col class="c-img">') + '<col class="c-item"><col class="c-desc"><col class="c-qty"><col class="c-wh">' + extraCols + '</colgroup>'
+      + '<tbody><tr class="hdr">' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th>' + extraHead + '</tr>'
+      + rowsHtml
+      + '<tr class="tot"><td colspan="' + (noImages ? 2 : 3) + '">Total · ' + rows.length + ' SKUs</td>'
+      + '<td class="ctr">' + fmtNum(totalQty) + '</td><td class="ctr">' + fmtNum(totalWh) + '</td>'
+      + '<td></td><td></td><td></td></tr>'
+      + '</tbody></table>';
+
+    this.printHtmlInPage(styleCss, bodyHtml, fileTitle, () => this.setState({ storeStockPdfDownloading: false }));
+  }
+
+  async onDownloadStoreStockExcel() {
+    const st = this.state;
+    const store = st.storeStockSelected;
+    const info = st.storeInfoMap && st.storeInfoMap.get(store);
+    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const rows = this.getStoreStockRows();
+    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay;
+    const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
+
+    const header = ['Item No.', 'Description 2', 'Qty', 'Neg Qty', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
+    const aoa = [
+      [{ v: storeLabel, s: 1 }],
+      [this.storeStockModeName() + ' · ' + rows.length + ' SKUs · ' + today],
+      [],
+      header.map(h => ({ v: h, s: 5 })),
+    ];
+    for (const r of rows) {
+      const promo = r.pct === 'Was/Now Just';
+      const base = r.highlight ? 3 : 0;
+      const strong = promo ? (r.highlight ? 4 : 2) : base;
+      const line = [
+        { v: r.itemNo, t: 's', s: base },
+        { v: r.description2, t: 's', s: base },
+        { v: num(r.qty), s: base },
+        { v: r.negQty ? num(r.negQty) : '', s: base },
+        { v: num(r.whStock), s: base },
+      ];
+      if (showDiscount) line.push({ v: num(r.was), s: strong }, { v: num(r.now), s: strong }, { v: r.pct, t: 's', s: strong });
+      line.push({ v: r.image || '', t: 's', s: base });
+      aoa.push(line);
+    }
+    const cols = [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 9 }, { width: 11 }]
+      .concat(showDiscount ? [{ width: 10 }, { width: 10 }, { width: 14 }] : [])
+      .concat([{ width: 42 }]);
+    const fileTitle = (storeLabel + '-' + this.storeStockModeName() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    downloadXlsx(aoa, fileTitle, { sheetName: 'Stock', cols });
+  }
+  onExportSnapshot() {
+    const s = this.state;
+    if (!s.parsed) return;
+    const snapshot = {
+      generatedAt: new Date().toISOString(),
+      matrix: s.parsed.matrix,
+      retailMap: Array.from(s.parsed.retailMap.entries()),
+      openOrders: Array.from(s.parsed.openOrders),
+      discountMap: Array.from((s.parsed.discountMap || new Map()).entries()),
+      nationalMap: Array.from((s.parsed.nationalMap || new Map()).entries()),
+      storeInfoMap: Array.from(s.storeInfoMap.entries()),
+      storeOptions: s.storeOptions,
+    };
+    const blob = new Blob([JSON.stringify(snapshot)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'inventory-data.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  }
   onGoPriceTags() { this.setState({ screen: 'pricetags' }); }
   onBackFromPriceTags() { this.setState({ screen: 'menu' }); }
   onTagLayoutFour() { this.setState({ tagLayout: 'four' }); }
@@ -3820,208 +4112,85 @@ class Component extends DCLogic {
     const names = cards.map(c => c.itemNo).join('-');
     this.printHtmlInPage(styleCss, bodyHtml, ('Price-Tags-' + names).replace(/[^a-z0-9\-_.]+/gi, '-'), () => this.setState({ tagsPrinting: false }));
   }
-  printHtmlInPage(styleCss, bodyHtml, fileTitle, onDone, orientation) {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (isIOS) return this.printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone, orientation);
-    let frame = document.getElementById('pdf-print-frame');
-    if (!frame) {
-      frame = document.createElement('iframe');
-      frame.id = 'pdf-print-frame';
-      frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
-      document.body.appendChild(frame);
-    }
-    const doc = frame.contentDocument;
-    doc.open();
-    doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + fileTitle + '</title><style>@page{margin:0;' + (orientation ? 'size:' + orientation + ';' : '') + '}body{margin:0.5in}' + styleCss + '</style></head><body>' + bodyHtml + '</body></html>');
-    doc.close();
-    const win = frame.contentWindow;
-    const doPrint = () => {
-      // Chrome names the saved PDF after the TOP document's title, not the
-      // printed iframe's — set it here and restore once the dialog closes.
-      const prevTitle = document.title;
-      document.title = fileTitle;
-      const restore = () => { document.title = prevTitle; };
-      setTimeout(restore, 3000);
-      window.addEventListener('focus', restore, { once: true });
-      try {
-        win.focus();
-        win.print();
-      } catch (e) {
-        this.setState({ loadError: 'Could not generate the PDF: ' + e.message });
+  onGoDiag() { this.setState({ screen: 'diag' }); }
+  onBackFromDiag() { this.setState({ screen: 'menu' }); }
+  onDiagQueryChange(e) { this.setState({ diagQuery: e.target.value }); }
+  getDiagResults() {
+    const s = this.state;
+    const q = (s.diagQuery || '').trim();
+    if (!s.parsed || !q) return [];
+    const codes = q.split(/[\s,;]+/).map(c => c.trim()).filter(Boolean).slice(0, 10);
+    const { matrix, retailMap, discountMap, nationalMap } = s.parsed;
+    const ink = 'var(--color-text)', bad = '#8b1a1a', muted = 'var(--color-neutral-700)';
+    return codes.map(code => {
+      const lc = code.toLowerCase();
+      const it = matrix.items.find(x => String(x.itemNo).trim().toLowerCase() === lc);
+      const near = it ? [] : matrix.items.filter(x => String(x.itemNo).toLowerCase().includes(lc)).slice(0, 5).map(x => x.itemNo);
+      const r = retailMap.get(it ? it.itemNo : code);
+      const facts = [];
+      if (!it) {
+        facts.push({ k: 'Stock matrix', v: 'Not present — this SKU has no row in the uploaded stock sheet', color: bad });
+        facts.push({ k: 'Partial matches', v: near.length ? near.join(', ') : 'none', color: near.length ? ink : muted });
+        facts.push({ k: 'Item master', v: r ? 'Present (description: ' + (r.description2 || '—') + ')' : 'Not present', color: r ? ink : bad });
+        return { itemNo: code, status: 'Missing from stock matrix', statusTag: 'tag-outline', facts };
       }
-    };
-    const imgs = Array.from(doc.querySelectorAll('img'));
-    const pending = imgs.filter(img => !img.complete);
-    let printed = false;
-    const printOnce = () => { if (printed) return; printed = true; doPrint(); if (onDone) onDone(); };
-    if (!pending.length) { printOnce(); return; }
-    let settled = 0;
-    const done = () => { settled++; if (settled >= pending.length) printOnce(); };
-    pending.forEach(img => {
-      img.addEventListener('load', done, { once: true });
-      img.addEventListener('error', done, { once: true });
-    });
-    setTimeout(() => {
-      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
-      printOnce();
-    }, 9000);
-  }
-
-  printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone, orientation) {
-    let overlay = document.getElementById('pdf-print-overlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'pdf-print-overlay';
-      document.body.appendChild(overlay);
-    }
-    let styleEl = document.getElementById('pdf-print-overlay-style');
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = 'pdf-print-overlay-style';
-      document.head.appendChild(styleEl);
-    }
-    const scoped = styleCss.replace(/(^|\})\s*([^{}]+)\{/g, (m, brace, sel) =>
-      brace + sel.split(',').map(s => '#pdf-print-overlay ' + s.trim()).join(',') + '{');
-    styleEl.textContent = '#pdf-print-overlay{display:none;}'
-      + '@media print{@page{margin:0;' + (orientation ? 'size:' + orientation + ';' : '') + '}body>*:not(#pdf-print-overlay){display:none!important;}#pdf-print-overlay{display:block!important;padding:0.5in;}}'
-      + scoped;
-    overlay.innerHTML = bodyHtml;
-    const prevTitle = document.title;
-    document.title = fileTitle;
-    const cleanup = () => {
-      overlay.innerHTML = '';
-      document.title = prevTitle;
-      window.removeEventListener('afterprint', cleanup);
-      if (onDone) onDone();
-    };
-    window.addEventListener('afterprint', cleanup);
-    const doPrint = () => {
-      try { window.print(); } catch (e) {
-        this.setState({ loadError: 'Could not generate the PDF: ' + e.message });
-        cleanup();
+      const nonZero = [], zeros = [], blanks = [];
+      for (const name of matrix.storeNames) {
+        const raw = it.stores[name];
+        if (raw === undefined || raw === '') { blanks.push(name); continue; }
+        const n = Number(raw) || 0;
+        if (n === 0) zeros.push(name); else nonZero.push({ name, n });
       }
-    };
-    const imgs = Array.from(overlay.querySelectorAll('img'));
-    const pending = imgs.filter(img => !img.complete);
-    let printed = false;
-    const printOnce = () => { if (printed) return; printed = true; doPrint(); };
-    if (!pending.length) { printOnce(); return; }
-    let settled = 0;
-    const done = () => { settled++; if (settled >= pending.length) printOnce(); };
-    pending.forEach(img => {
-      img.addEventListener('load', done, { once: true });
-      img.addEventListener('error', done, { once: true });
+      const isWh = name => {
+        if (STORE_STOCK_WH_LOCATIONS_LC.has(name.trim().toLowerCase())) return true;
+        const info = s.storeInfoMap && s.storeInfoMap.get(name);
+        const disp = ((info && info.shortName) || name).trim().toLowerCase();
+        return STORE_STOCK_WH_LOCATIONS_LC.has(disp);
+      };
+      const known = nonZero.filter(x => s.storeInfoMap && s.storeInfoMap.get(x.name));
+      const unknown = nonZero.filter(x => !(s.storeInfoMap && s.storeInfoMap.get(x.name)));
+      const excluded = known.filter(x => {
+        const info = s.storeInfoMap.get(x.name);
+        const disp = (info.shortName || x.name).trim().toLowerCase();
+        return EXCLUDED_STORES.has(disp);
+      });
+      const wrongType = known.filter(x => {
+        const info = s.storeInfoMap.get(x.name);
+        return info.storeType !== 'Store' && info.storeType !== 'Warehouse';
+      });
+      const storePos = nonZero.filter(x => !isWh(x.name) && x.n > 0).reduce((a, x) => a + x.n, 0);
+      const storeNeg = nonZero.filter(x => !isWh(x.name) && x.n < 0).reduce((a, x) => a + x.n, 0);
+      const whTotal = nonZero.filter(x => isWh(x.name)).reduce((a, x) => a + x.n, 0);
+      const fmtList = arr => arr.map(x => ((s.storeInfoMap && s.storeInfoMap.get(x.name) && s.storeInfoMap.get(x.name).shortName) || x.name) + ': ' + x.n).join(' · ');
+      facts.push({ k: 'Stock matrix', v: 'Present · ' + matrix.storeNames.length + ' location columns', color: ink });
+      facts.push({ k: 'Item master', v: r ? (r.description2 || '(no description 2)') + (r.subCategory ? ' · sub-cat: ' + r.subCategory : ' · sub-cat: (blank)') : 'Not present — brand/category/sub-category filters will drop it', color: r ? ink : bad });
+      facts.push({ k: 'Non-zero lines', v: nonZero.length ? fmtList(nonZero) : 'none — every location is 0 or blank', color: nonZero.length ? ink : bad });
+      facts.push({ k: 'Store totals', v: storePos + ' positive · ' + storeNeg + ' negative', color: ink });
+      facts.push({ k: 'Warehouse total', v: String(whTotal), color: ink });
+      facts.push({ k: 'Zero / blank', v: zeros.length + ' zero · ' + blanks.length + ' blank', color: muted });
+      if (unknown.length) facts.push({ k: 'Unmapped columns', v: unknown.map(x => x.name).join(', ') + ' — no store-master row, so these are ignored by every report', color: bad });
+      if (excluded.length) facts.push({ k: 'Excluded stores', v: excluded.map(x => x.name).join(', '), color: bad });
+      if (wrongType.length) facts.push({ k: 'Wrong store type', v: wrongType.map(x => x.name).join(', '), color: bad });
+      // Mirror getStoreStockRows' eligibility exactly, so this line agrees with the report.
+      const eligible = new Set(matrix.storeNames.filter(name => {
+        if (STORE_STOCK_WH_LOCATIONS_LC.has(name.trim().toLowerCase())) return false;
+        const info = s.storeInfoMap && s.storeInfoMap.get(name);
+        if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return false;
+        const disp = (info.shortName || name).trim().toLowerCase();
+        if (STORE_STOCK_WH_LOCATIONS_LC.has(disp)) return false;
+        return !EXCLUDED_STORES.has(disp);
+      }).concat(matrix.storeNames.filter(isWh)));
+      const rpPos = nonZero.filter(x => eligible.has(x.name) && x.n > 0).reduce((a, x) => a + x.n, 0);
+      const rpNeg = nonZero.filter(x => eligible.has(x.name) && x.n < 0).reduce((a, x) => a + x.n, 0);
+      const ignored = nonZero.filter(x => !eligible.has(x.name));
+      facts.push({ k: 'Regular & Promo', v: (rpPos || rpNeg) ? 'Visible (all stores) · Qty ' + rpPos + (rpNeg ? ' (' + rpNeg + ')' : '') : 'Hidden — its only stock sits in location(s) no report counts: ' + (ignored.map(x => x.name).join(', ') || 'none'), color: (rpPos || rpNeg) ? ink : bad });
+      facts.push({ k: 'WH vs Stores', v: whTotal > 0 ? 'Visible · WH ' + whTotal : 'Hidden — needs warehouse stock above 0', color: whTotal > 0 ? ink : muted });
+      facts.push({ k: 'Promo data', v: (discountMap && discountMap.get(it.itemNo)) ? 'in discount sheet' : ((nationalMap && nationalMap.get(it.itemNo)) ? 'in national-day sheet only' : 'none — promo-filtered views will drop it'), color: (discountMap && discountMap.get(it.itemNo)) ? ink : muted });
+      facts.push({ k: 'Addnl-1500 list', v: ADDNL_1500_SET.has(it.itemNo) ? 'included' : 'not in list — dropped when that toggle is on', color: ADDNL_1500_SET.has(it.itemNo) ? ink : muted });
+      return { itemNo: it.itemNo, status: nonZero.length ? 'Found' : 'Found · no stock lines', statusTag: nonZero.length ? 'tag-accent' : 'tag-outline', facts };
     });
-    setTimeout(() => {
-      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
-      printOnce();
-    }, 9000);
   }
-
-  async onDownloadStoreStockPdf() {
-    this.setState({ storeStockPdfDownloading: true });
-    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    const fmtNum = v => {
-      if (v === '' || v === null || v === undefined || isNaN(Number(v))) return esc(v);
-      return Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
-    };
-    const st = this.state;
-    const store = st.storeStockSelected;
-    const info = st.storeInfoMap && st.storeInfoMap.get(store);
-    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
-    const allRows = this.getStoreStockRows();
-    const showDiscount = true;
-    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    const MAX_PDF_ROWS = 6000;
-    const noImages = allRows.length > 5000;
-    const truncated = allRows.length > MAX_PDF_ROWS;
-    const rows = truncated ? allRows.slice(0, MAX_PDF_ROWS) : allRows;
-
-    const rowsHtml = (noImages ? rows : await this.scaleRowImages(rows)).map(r => (
-      '<tr' + (r.highlight ? ' style="background:#fbe1de;"' : '') + '>'
-      + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" referrerpolicy="no-referrer" />' : '') + '</td>')
-      + '<td class="itemno">' + esc(r.itemNo) + '</td>'
-      + '<td class="desc">' + esc(r.description2) + '</td>'
-      + '<td class="ctr"' + (r.negQty ? ' style="color:#8b1a1a;"' : '') + '>' + (r.qtyText || fmtNum(r.qty)) + '</td>'
-      + '<td class="ctr">' + fmtNum(r.whStock) + '</td>'
-      + (showDiscount ? '<td class="ctr" style="' + (r.pct === 'Was/Now Just' ? 'font-weight:700;color:#8b1a1a;' : '') + '">' + fmtNum(r.was) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + fmtNum(r.now) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + esc(r.pct) + '</td>' : '')
-      + '</tr>'
-    )).join('');
-
-    const fileTitle = (storeLabel + '-' + this.storeStockModeName() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
-    const extraCols = showDiscount ? '<col class="c-rsp"><col class="c-rsp"><col class="c-rsp">' : '';
-    const extraHead = showDiscount ? '<th>Was</th><th>Now</th><th>%</th>' : '';
-    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
-      + 'h1{font-size:20px;margin:0 0 4px;}'
-      + '.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
-      + 'table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;table-layout:fixed;}'
-      + 'tr{break-inside:avoid;}'
-      + 'tr.hdr th{border-bottom:2px solid #201e1d;}'
-      + 'col.c-img{width:11%}col.c-item{width:' + (noImages ? '16' : '14') + '%}col.c-desc{width:' + (noImages ? '32' : '25') + '%}col.c-qty{width:10%}col.c-wh{width:10%}col.c-rsp{width:9%}'
-      + 'th{text-align:center;font-size:11px;text-transform:uppercase;color:#6b6360;padding:6px;border-bottom:2px solid #201e1d;}'
-      + 'th:nth-child(' + (noImages ? 1 : 2) + '),th:nth-child(' + (noImages ? 2 : 3) + '){text-align:left;}'
-      + 'td{padding:6px;border-bottom:1px solid #e6ddd2;white-space:normal;overflow-wrap:break-word;word-break:break-word;text-wrap:pretty;vertical-align:middle;}'
-      + 'td.ctr{white-space:nowrap;}'
-      + 'td.ctr{text-align:center}'
-      + 'td.img-cell{overflow:hidden;}'
-      + 'td.img-cell img{width:100%;height:56px;object-fit:contain;display:block;}'
-      + 'tr.tot td{border-top:2px solid #201e1d;border-bottom:none;font-weight:700;font-size:13px;padding-top:8px;}';
-    const totalQty = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
-    const totalWh = rows.reduce((s, r) => s + (Number(r.whStock) || 0), 0);
-    const bodyHtml = '<h1>' + esc(storeLabel) + '</h1>'
-      + '<div class="meta">' + this.storeStockModeName() + ' · ' + rows.length + (truncated ? ' of ' + allRows.length : '') + ' SKUs' + (truncated ? ' (showing first ' + MAX_PDF_ROWS + ' — use Excel for the full list)' : '') + ' · ' + today + '</div>'
-      + '<table><colgroup>' + (noImages ? '' : '<col class="c-img">') + '<col class="c-item"><col class="c-desc"><col class="c-qty"><col class="c-wh">' + extraCols + '</colgroup>'
-      + '<tbody><tr class="hdr">' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th>' + extraHead + '</tr>'
-      + rowsHtml
-      + '<tr class="tot"><td colspan="' + (noImages ? 2 : 3) + '">Total · ' + rows.length + ' SKUs</td>'
-      + '<td class="ctr">' + fmtNum(totalQty) + '</td><td class="ctr">' + fmtNum(totalWh) + '</td>'
-      + '<td></td><td></td><td></td></tr>'
-      + '</tbody></table>';
-
-    this.printHtmlInPage(styleCss, bodyHtml, fileTitle, () => this.setState({ storeStockPdfDownloading: false }));
-  }
-
-  async onDownloadStoreStockExcel() {
-    const st = this.state;
-    const store = st.storeStockSelected;
-    const info = st.storeInfoMap && st.storeInfoMap.get(store);
-    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
-    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    const rows = this.getStoreStockRows();
-    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay;
-    const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
-
-    const header = ['Item No.', 'Description 2', 'Qty', 'Neg Qty', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
-    const aoa = [
-      [{ v: storeLabel, s: 1 }],
-      [this.storeStockModeName() + ' · ' + rows.length + ' SKUs · ' + today],
-      [],
-      header.map(h => ({ v: h, s: 5 })),
-    ];
-    for (const r of rows) {
-      const promo = r.pct === 'Was/Now Just';
-      const base = r.highlight ? 3 : 0;
-      const strong = promo ? (r.highlight ? 4 : 2) : base;
-      const line = [
-        { v: r.itemNo, t: 's', s: base },
-        { v: r.description2, t: 's', s: base },
-        { v: num(r.qty), s: base },
-        { v: r.negQty ? num(r.negQty) : '', s: base },
-        { v: num(r.whStock), s: base },
-      ];
-      if (showDiscount) line.push({ v: num(r.was), s: strong }, { v: num(r.now), s: strong }, { v: r.pct, t: 's', s: strong });
-      line.push({ v: r.image || '', t: 's', s: base });
-      aoa.push(line);
-    }
-    const cols = [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 9 }, { width: 11 }]
-      .concat(showDiscount ? [{ width: 10 }, { width: 10 }, { width: 14 }] : [])
-      .concat([{ width: 42 }]);
-    const fileTitle = (storeLabel + '-' + this.storeStockModeName() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
-    downloadXlsx(aoa, fileTitle, { sheetName: 'Stock', cols });
-  }
-
   onSkuQueryChange(e) { this.setState({ skuQuery: e.target.value, skuExpanded: '' }); }
-
   async shareSkuImage(item) {
     const S = 2, W = 1080, PAD = 40;
     const BG = '#ffffff', INK = '#201e1d', MUTED = '#645c50', ACCENT = '#c67139', RED = '#8b1a1a', SAGE = '#eef3e6', LINE = '#e2dbcd', ROWTINT = '#faf6ee';
@@ -4237,13 +4406,11 @@ class Component extends DCLogic {
           image: r.image && r.image !== '(blank)' ? r.image : '',
           storeRows, totalQty,
         }),
-
         ...metrics,
         showCostPanel: exp && metrics.showCost,
       };
     });
   }
-
   onStatusFilter(val) { this.setState({ statusFilter: val }); }
   onStockFilter(val) { this.setState({ stockFilter: val }); }
   onLowStockFilter(val) { this.setState({ lowStockFilter: val }); }
@@ -4257,7 +4424,6 @@ class Component extends DCLogic {
       return true;
     });
   }
-
   async onDownloadPdf() {
     const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const st = this.state;
@@ -4269,8 +4435,9 @@ class Component extends DCLogic {
     const discontinuedCount = results.filter(r => r.discontinued).length;
     const inOrderCount = results.filter(r => r.inOrder).length;
 
+    const scaledResults = await this.scaleRowImages(results);
     const MAROON = '#643312', GREEN = '#3d472b', GREY = '#645c50';
-    const rowsHtml = (await this.scaleRowImages(results)).map(r => (
+    const rowsHtml = scaledResults.map(r => (
       '<tr>'
       + '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" />' : '') + '</td>'
       + '<td class="itemno">' + esc(r.itemNo) + '</td>'
@@ -4337,6 +4504,13 @@ class Component extends DCLogic {
     downloadXlsx(aoa, fileTitle, {
       sheetName: 'Report',
       cols: [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 11 }, { width: 14 }, { width: 12 }],
+    });
+  }
+
+  onResetUpload() {
+    this.setState({
+      screen: 'upload', files: { matrix: null, stores: null, retail: null, purchase: null },
+      error: '', parsed: null, storeOptions: [], results: null,
     });
   }
 
@@ -4413,8 +4587,7 @@ class Component extends DCLogic {
       langIsAr: langAr,
       onLangEn: () => this.setLang('en'),
       onLangAr: () => this.setLang('ar'),
-      isLoading: s.screen === 'loading',
-      loadError: s.loadError,
+      isUpload: s.screen === 'upload',
       isMenu: s.screen === 'menu',
       isPriceTags: s.screen === 'pricetags',
       tagCards: s.screen === 'pricetags' ? this.getTagCards() : [],
@@ -4453,7 +4626,12 @@ class Component extends DCLogic {
       onTagSku2: e => this.onTagSkuChange(2, e),
       onTagSku3: e => this.onTagSkuChange(3, e),
       onPrintPriceTags: () => this.onPrintPriceTags(),
-
+      isDiag: s.screen === 'diag',
+      diagQuery: s.diagQuery || '',
+      diagResults: s.screen === 'diag' ? this.getDiagResults() : [],
+      onGoDiag: () => this.onGoDiag(),
+      onBackFromDiag: () => this.onBackFromDiag(),
+      onDiagQueryChange: e => this.onDiagQueryChange(e),
       isWhStores: s.screen === 'whstores',
       onGoWhStores: () => this.onGoWhStores(),
       onBackFromWhStores: () => this.onBackFromWhStores(),
@@ -4476,7 +4654,6 @@ class Component extends DCLogic {
       whPdfDownloading: !!s.whPdfDownloading,
       whPdfLabel: s.whPdfDownloading ? 'Downloading…' : 'Download PDF',
       wh: s.screen === 'whstores' ? this.getWhView() : { rows: [], has: false, empty: false, summary: '', scopeName: '', pageLabel: '', showPager: false, prevDisabled: true, nextDisabled: true },
-
       isNegInv: s.screen === 'neginv',
       negInvByStore: negInvByStore,
       hasNegInvStores: negInvByStore.length > 0,
@@ -4501,17 +4678,6 @@ class Component extends DCLogic {
       onDownloadNegInvPdf: () => this.onDownloadNegInvPdf(),
       onDownloadNegInvExcel: () => this.onDownloadNegInvExcel(),
 
-      isAdmin: s.isAdmin,
-      adminSignedOut: !s.isAdmin,
-      adminPromptOpen: s.adminPromptOpen,
-      adminPromptClosed: !s.adminPromptOpen,
-      adminPw: s.adminPw,
-      adminError: s.adminError,
-      onAdminOpen: () => this.onAdminOpen(),
-      onAdminPwChange: e => this.onAdminPwChange(e),
-      onAdminPwKeyDown: e => this.onAdminPwKeyDown(e),
-      onAdminSubmit: () => this.onAdminSubmit(),
-      onAdminSignOut: () => this.onAdminSignOut(),
       isDistribution: s.screen === 'distribution',
       onGoDistribution: () => this.onGoDistribution(),
       onBackFromDistribution: () => this.onBackFromDistribution(),
@@ -4606,11 +4772,33 @@ class Component extends DCLogic {
       categoryOptions: (s.screen === 'storestock' || s.screen === 'select' || s.screen === 'distribution') ? this.getCategoryOptions() : [],
       subCategoryOptions: subCategoryOptions,
       hasSubCategoryOptions: subCategoryOptions.length > 0,
+      error: s.error,
+      processLabel: s.processing ? 'Processing…' : 'Process files',
+      processDisabled: s.processing,
+      storeOptions: s.storeOptions,
+      selectedStore: s.selectedStore,
+      qty1Checked: s.selectedQty === 1,
+      qty2Checked: s.selectedQty === 2,
+      onFileMatrix: e => this.onFileMatrix(e),
+      onFileStores: e => this.onFileStores(e),
+      onFileRetail: e => this.onFileRetail(e),
+      onFilePurchase: e => this.onFilePurchase(e),
+      onProcess: () => this.onProcess(),
+      onStoreChange: e => this.onStoreChange(e),
+      onQty1: () => this.onQty1(),
+      onQty2: () => this.onQty2(),
+      onGenerate: () => this.onGenerate(),
+      onResetUpload: () => this.onResetUpload(),
+      onBackToSelect: () => this.onBackToSelect(),
       onGoSelect: () => this.onGoSelect(),
       onBackFromSelect: () => this.onBackFromSelect(),
+      onGoSkuLookup: () => this.onGoSkuLookup(),
+      onBackFromSku: () => this.onBackFromSku(),
       onGoStoreStock: () => this.onGoStoreStock(),
       onBackFromStoreStock: () => this.onBackFromStoreStock(),
       onStoreStockChange: e => this.onStoreStockChange(e),
+      onFileDiscount: e => this.onFileDiscount(e),
+      onFileNational: e => this.onFileNational(e),
       onDiscountOn: () => this.onDiscountOn(),
       onDiscountOff: () => this.onDiscountOff(),
       onAddnl1500On: () => this.onAddnl1500On(),
@@ -4622,17 +4810,7 @@ class Component extends DCLogic {
       storeStockPdfDownloadLabel: s.storeStockPdfDownloading ? 'Downloading…' : 'Download PDF',
       onDownloadStoreStockPdf: () => this.onDownloadStoreStockPdf(),
       onDownloadStoreStockExcel: () => this.onDownloadStoreStockExcel(),
-      storeOptions: s.storeOptions,
-      selectedStore: s.selectedStore,
-      qty1Checked: s.selectedQty === 1,
-      qty2Checked: s.selectedQty === 2,
-      onStoreChange: e => this.onStoreChange(e),
-      onQty1: () => this.onQty1(),
-      onQty2: () => this.onQty2(),
-      onGenerate: () => this.onGenerate(),
-      onBackToSelect: () => this.onBackToSelect(),
-      onGoSkuLookup: () => this.onGoSkuLookup(),
-      onBackFromSku: () => this.onBackFromSku(),
+      onExportSnapshot: () => this.onExportSnapshot(),
       onSkuQueryChange: e => this.onSkuQueryChange(e),
       skuQuery: s.skuQuery,
       skuQueryTooShort: s.screen === 'skulookup' && s.skuQuery.trim().length > 0 && s.skuQuery.trim().length < 2,
