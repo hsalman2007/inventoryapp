@@ -874,12 +874,12 @@
                     <div style="width: 100%; height: 100%; border: {{c.shFrame}}; background: #fff; position: relative; display: flex; overflow: hidden; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a;">
                       <div style="width: 34%; flex: none; display: flex; flex-direction: column; justify-content: flex-start; padding: 0.5cqw 0.5cqw 0; min-width: 0;">
                         <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
-                          <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 127px; display: block; z-index: 0; align-self: auto; height: 36px">
+                          
                         </sc-if>
                         <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
                           <div style="height: 13.6cqw;"></div>
                         </sc-if>
-                      </div>
+                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 126px; display: block; z-index: 0; align-self: auto; height: 60px"></div>
                       <div style="position: absolute; left: 0; bottom: 0; width: 52%; padding: 0.5cqw 1cqw 0.6cqw; border-top: 0.25cqw solid #1a1a1a; font-family: Arial, sans-serif; font-weight: 700; font-size: 1.7cqw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.shLine}}</div>
                       <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
                         <div style="width: 18%; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3cqw; padding-bottom: 3cqw;">
