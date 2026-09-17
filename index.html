@@ -3,26 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="ext-resource-dependency" content="./doc-page.js" data-resource-id="docpage-js" />
-<meta name="ext-resource-dependency" content="./inventory-parser.js" data-resource-id="parser-js" />
-<meta name="ext-resource-dependency" content="./cost-data.json" data-resource-id="cost-json" />
 <script src="./support.js"></script>
 </head>
 <body>
-<template id="__bundler_thumbnail">
-  <svg viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg" data-bg-color="#f5ead8">
-    <rect width="200" height="140" fill="#f5ead8"/>
-    <rect x="60" y="35" width="80" height="70" rx="10" fill="none" stroke="#c67139" stroke-width="5"/>
-    <line x1="75" y1="55" x2="125" y2="55" stroke="#7a8a5e" stroke-width="5" stroke-linecap="round"/>
-    <line x1="75" y1="70" x2="125" y2="70" stroke="#7a8a5e" stroke-width="5" stroke-linecap="round"/>
-    <line x1="75" y1="85" x2="105" y2="85" stroke="#7a8a5e" stroke-width="5" stroke-linecap="round"/>
-  </svg>
-</template>
 <x-dc>
 <helmet>
   <link rel="stylesheet" href="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/styles.css">
   <script src="_ds/organic-4255859e-04f8-4658-ae00-e7115216c388/_ds_bundle.js"></script>
+  <meta name="ext-resource-dependency" content="./inventory-data.json" data-resource-id="data-json">
+  <meta name="ext-resource-dependency" content="./cost-data.json" data-resource-id="cost-json">
   <style>
+    #pdf-print-frame { position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; visibility: hidden; }
     /* White ground — only the light surface tokens are overridden;
        text and border ramp steps keep their natural values. */
     body { background: #ffffff; }
@@ -34,12 +25,9 @@
       --color-neutral-300: #e0e0dc;
     }
   </style>
-  <style>
-    #pdf-print-frame { position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; visibility: hidden; }
-  </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&amp;family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
   <style>
     .lang-ar, .lang-ar *:not(script):not(style) { font-family: 'IBM Plex Sans Arabic', var(--font-body) !important; }
     .app-shell.lang-ar p, .app-shell.lang-ar label, .app-shell.lang-ar .tag, .app-shell.lang-ar .btn { line-height: 1.45 !important; }
@@ -47,13 +35,13 @@
   </style>
 </helmet>
 
-<div class="page-shell" style="min-height: 100vh; background: var(--color-bg); display: flex; justify-content: center; flex-direction: row; align-items: stretch; gap: 0px">
+<div class="page-shell" style="min-height: 100vh; background: var(--color-bg); display: flex; justify-content: center;">
   <div class="app-shell" style="width: 100%; max-width: 480px; min-height: 100vh; background: var(--color-bg); display: flex; flex-direction: column; padding: var(--space-4) var(--space-4) var(--space-8); gap: var(--space-4); box-sizing: border-box;">
 
     <div class="no-print" style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3);">
       <div style="display: flex; flex: 1; min-width: 0; flex-direction: column; gap: var(--space-1);">
         <h1 style="font-family: var(--font-heading); font-size: 26px; margin: 0; color: var(--color-text);">Stock Lookup</h1>
-        <p style="font-family: var(--font-body); font-size: 14px; margin: 0; color: var(--color-neutral-700);">Upload your reports, pick a store, and pull a low-stock list in seconds.</p>
+        <p style="font-family: var(--font-body); font-size: 14px; margin: 0; color: var(--color-neutral-700);">Pick a store, and pull stock details.</p>
       </div>
       <div data-nolang="1" style="display: flex; flex: none; gap: 2px; padding: 3px; border-radius: 999px; background: var(--color-neutral-200); border: 1px solid var(--color-neutral-300);">
         <sc-if value="{{langIsEn}}" hint-placeholder-val="{{true}}">
@@ -67,307 +55,52 @@
       </div>
     </div>
 
-    <!-- UPLOAD SCREEN -->
-    <sc-if value="{{isUpload}}" hint-placeholder-val="{{true}}">
-      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
-        <div class="card-kicker">Step 1</div>
-        <div class="card-title" style="font-size: 18px;">Upload your data files</div>
-        <span style="font-size: 12px; color: var(--color-neutral-700); margin-top: -8px;">4 required, plus 2 optional</span>
+    <sc-if value="{{isLoading}}" hint-placeholder-val="{{true}}">
+      <div class="card elev-sm" style="padding: var(--space-4); text-align: center; color: var(--color-neutral-700);">Loading store data…</div>
+    </sc-if>
 
-        <label style="display: flex; flex-direction: column; gap: 6px;">
-          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">Items by Location Matrix (.xlsx)</span>
-          <span style="font-size: 12px; color: var(--color-neutral-700);">Per-store stock quantities</span>
-          <input type="file" accept=".xlsx" onChange="{{onFileMatrix}}" style="font-size: 13px;">
-        </label>
-
-        <label style="display: flex; flex-direction: column; gap: 6px;">
-          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">Store List (.xlsx)</span>
-          <span style="font-size: 12px; color: var(--color-neutral-700);">Sheet5 — store name &amp; region lookup</span>
-          <input type="file" accept=".xlsx" onChange="{{onFileStores}}" style="font-size: 13px;">
-        </label>
-
-        <label style="display: flex; flex-direction: column; gap: 6px;">
-          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">Retail Items (.csv or .xlsx)</span>
-          <span style="font-size: 12px; color: var(--color-neutral-700);">Descriptions, images &amp; discontinued flag</span>
-          <input type="file" accept=".csv,.xlsx" onChange="{{onFileRetail}}" style="font-size: 13px;">
-        </label>
-
-        <label style="display: flex; flex-direction: column; gap: 6px;">
-          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">Purchase Lines (.xlsx)</span>
-          <span style="font-size: 12px; color: var(--color-neutral-700);">Open orders — drives "In Order"</span>
-          <input type="file" accept=".xlsx" onChange="{{onFilePurchase}}" style="font-size: 13px;">
-        </label>
-
-        <label style="display: flex; flex-direction: column; gap: 6px;">
-          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">Seasonal Discounts (.xlsx) — optional</span>
-          <span style="font-size: 12px; color: var(--color-neutral-700);">Was/Now/% pricing for the store stock export</span>
-          <input type="file" accept=".xlsx" onChange="{{onFileDiscount}}" style="font-size: 13px;">
-        </label>
-
-        <label style="display: flex; flex-direction: column; gap: 6px;">
-          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">National Day 2026 (.xlsx) — optional</span>
-          <span style="font-size: 12px; color: var(--color-neutral-700);">Was/Now/% pricing for the National Day 2026 export</span>
-          <input type="file" accept=".xlsx" onChange="{{onFileNational}}" style="font-size: 13px;">
-        </label>
-
-        <sc-if value="{{error}}" hint-placeholder-val="{{false}}">
-          <div style="background: var(--color-accent-100); color: var(--color-accent-800); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-size: 13px;">{{error}}</div>
-        </sc-if>
-
-        <button class="btn btn-primary btn-block" onClick="{{onProcess}}" disabled="{{processDisabled}}">
-          {{processLabel}}
-        </button>
-      </div>
+    <sc-if value="{{loadError}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="padding: var(--space-4); color: var(--color-accent-800);">{{loadError}}</div>
     </sc-if>
 
     <!-- MENU SCREEN -->
     <sc-if value="{{isMenu}}" hint-placeholder-val="{{false}}">
       <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-        <button class="btn btn-secondary btn-block" onClick="{{onGoSelect}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Last Pieces</button>
-        <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Lookup SKU in All Stores</button>
-        <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stock</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoSelect}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Last Pcs Report</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Item Lookup in All Stores</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoMultiLoc}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Multi Locations</button>
-        <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inventory</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoDistribution}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Distribution</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoWhStores}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">WH vs Stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoPriceTags}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Price Tags</button>
-        <button class="btn btn-secondary btn-block" onClick="{{onGoDiag}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">SKU Diagnostics</button>
-        <button class="btn btn-ghost btn-block" onClick="{{onResetUpload}}">Upload different files</button>
-        <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: 6px;">
-          <button class="btn btn-ghost btn-block" onClick="{{onExportSnapshot}}">Export snapshot for public page</button>
-          <span style="font-size: 11px; color: var(--color-neutral-700);">Downloads inventory-data.json — replace the copy alongside the public page/repo to update it. Admin only, never shared with store users.</span>
-        </div>
-      </div>
-    </sc-if>
 
-    <!-- PRICE TAGS SCREEN -->
-    <sc-if value="{{isPriceTags}}" hint-placeholder-val="{{false}}">
-      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
-        <div style="display: flex; gap: 10px;">
-          <button class="btn btn-secondary" onClick="{{onBackFromPriceTags}}" style="flex: none;">← Back</button>
-          <div class="card-title" style="font-size: 18px; align-self: center;">Price tags</div>
-        </div>
-        <span style="font-size: 12px; color: var(--color-neutral-700);">{{tagIntro}}</span>
-
-        <div class="field" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
-          <label>Tags per sheet</label>
-          <div class="seg" role="radiogroup" aria-label="Tags per sheet">
-            <label class="seg-opt">
-              <input type="radio" name="tagLayout" checked="{{tagFourChecked}}" onChange="{{onTagLayoutFour}}">
-              4 per A4
-            </label>
-            <label class="seg-opt">
-              <input type="radio" name="tagLayout" checked="{{tagOneChecked}}" onChange="{{onTagLayoutOne}}">
-              1 per A4
-            </label>
-            <label class="seg-opt">
-              <input type="radio" name="tagLayout" checked="{{tagShelfChecked}}" onChange="{{onTagLayoutShelf}}">
-              Shelves (6)
-            </label>
-          </div>
-        </div>
-
-        <div class="field" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
-          <label>Discount type</label>
-          <div class="seg" role="radiogroup" aria-label="Discount type">
-            <label class="seg-opt">
-              <input type="radio" name="tagPriceSource" checked="{{tagSeasonalChecked}}" onChange="{{onTagSeasonal}}">
-              Seasonal Discounts
-            </label>
-            <label class="seg-opt">
-              <input type="radio" name="tagPriceSource" checked="{{tagNationalChecked}}" onChange="{{onTagNational}}">
-              National Day 2026
-            </label>
-          </div>
-          <span style="font-size: 11.5px; color: var(--color-neutral-700);">{{tagSourceNote}}</span>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-          <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="4">
-            <div class="field">
-              <label for="{{c.inputId}}">{{c.slotLabel}}</label>
-              <input id="{{c.inputId}}" class="input" type="text" placeholder="e.g. 26-720" value="{{c.value}}" onChange="{{c.onChange}}">
-              <sc-if value="{{c.note}}" hint-placeholder-val="{{false}}">
-                <span style="font-size: 11.5px; color: {{c.noteColor}};">{{c.note}}</span>
-              </sc-if>
-            </div>
-          </sc-for>
-        </div>
-
-        <button class="btn btn-primary btn-block" onClick="{{onPrintPriceTags}}" disabled="{{tagsPrinting}}">{{tagsPrintLabel}}</button>
-
-        <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: 6px;">
-          <span style="font-size: 12px; color: var(--color-neutral-700);">{{tagPreviewNote}}</span>
-
-          <sc-if value="{{isShelfLayout}}" hint-placeholder-val="{{false}}">
-            <div style="background: #fff; aspect-ratio: 210 / 297; padding: 2.02% 2.38%; display: flex; flex-direction: column; gap: 1.01%; border-radius: var(--radius-sm);">
-              <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="6">
-                <div style="flex: 1 1 0; min-height: 0; container-type: inline-size;">
-                  <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
-                    <div style="width: 100%; height: 100%; border: {{c.shFrame}}; background: #fff; position: relative; display: flex; overflow: hidden; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a;">
-                      <div style="width: 34%; flex: none; display: flex; flex-direction: column; justify-content: flex-start; padding: 0.5cqw 0.5cqw 0; min-width: 0;">
-                        <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
-                          
-                        </sc-if>
-                        <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
-                          <div style="height: 13.6cqw;"></div>
-                        </sc-if>
-                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 127px; display: block; z-index: 0; align-self: auto; height: 36px"></div>
-                      <div style="position: absolute; left: 0; bottom: 0; width: 52%; padding: 0.5cqw 1cqw 0.6cqw; border-top: 0.25cqw solid #1a1a1a; font-family: Arial, sans-serif; font-weight: 700; font-size: 1.7cqw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.shLine}}</div>
-                      <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
-                        <div style="width: 18%; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3cqw; padding-bottom: 3cqw;">
-                          <sc-if value="{{c.hasPct}}" hint-placeholder-val="{{true}}">
-                            <div style="width: 6cqw; height: 6cqw; flex: none; border-radius: 50%; border: 0.3cqw solid #1a1a1a; background: {{c.accent}}; color: #fff; font-size: 2.2cqw; font-weight: 900; font-style: italic; letter-spacing: -0.03em; display: flex; align-items: center; justify-content: center; margin-bottom: 0.4cqw;">{{c.pctText}}</div>
-                          </sc-if>
-                          <div style="display: flex; align-items: baseline; gap: 1cqw; direction: ltr;">
-                            <span style="font-size: 2.4cqw; font-weight: 900;">WAS</span>
-                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 2.6cqw; font-weight: 900; unicode-bidi: isolate;">قبل</span>
-                          </div>
-                          <div style="display: inline-flex; align-items: center; gap: 0.6cqw; font-size: {{c.shPvWasSize}}; font-weight: 900; text-decoration: line-through; text-decoration-thickness: 0.45cqw;">
-                            <img src="assets/riyal-black.png" alt="" style="height: {{c.shPvWasRy}}; display: block;">{{c.wasText}}
-                          </div>
-                        </div>
-                      </sc-if>
-                      <div style="position: absolute; top: 0; right: 0; bottom: 0; width: 48%; background: {{c.accent}}; clip-path: polygon(8% 0, 100% 0, 100% 100%, 8% 100%, 0 50%); display: flex; flex-direction: column; justify-content: flex-start; padding: 0.3cqw 2.5cqw 0.6cqw 5cqw; color: #fff;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex: none; direction: ltr;">
-                          <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
-                            <span style="font-size: 3.6cqw; font-weight: 900;">NOW</span>
-                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 3.8cqw; font-weight: 900; unicode-bidi: isolate;">بعد</span>
-                          </sc-if>
-                          <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
-                            <span style="font-size: 3.6cqw; font-weight: 900;">PRICE</span>
-                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 3.8cqw; font-weight: 900; unicode-bidi: isolate;">السعر</span>
-                          </sc-if>
-                        </div>
-                        <div style="flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 1cqw; font-size: {{c.shPvNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
-                          <img src="assets/riyal-white.png" alt="" style="height: {{c.shPvNowRy}}; display: block;">{{c.priceText}}
-                        </div>
-                      </div>
-                    </div>
-                  </sc-if>
-                  <sc-if value="{{c.empty}}" hint-placeholder-val="{{false}}">
-                    <div style="width: 100%; height: 100%; border: 1px dashed var(--color-neutral-400); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-neutral-700);">{{c.slotLabel}}</div>
-                  </sc-if>
-                  <sc-if value="{{c.unusable}}" hint-placeholder-val="{{false}}">
-                    <div style="width: 100%; height: 100%; border: 1px dashed #8b1a1a; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 11px; color: #8b1a1a;">{{c.note}}</div>
-                  </sc-if>
-                </div>
-              </sc-for>
+        <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2);">
+          <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
+            <div style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
+              <span class="tag tag-accent-2">Admin mode on</span>
+              <button class="btn btn-ghost" onClick="{{onAdminSignOut}}" style="font-size: 13px;">Sign out</button>
             </div>
           </sc-if>
 
-          <sc-if value="{{isCardLayout}}" hint-placeholder-val="{{true}}">
-          <div style="display: grid; grid-template-columns: {{tagGridCols}}; gap: 6px; background: var(--color-neutral-200); padding: 6px; border-radius: var(--radius-sm);">
-            <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="4">
-              <div style="background: #fff; aspect-ratio: {{tagCellRatio}}; padding: {{tagCellPad}}; display: flex; align-items: center; justify-content: center;">
-                <div style="width: 100%; aspect-ratio: 102 / 140.5; container-type: inline-size;">
-                <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
-                  <div style="width: 100%; height: 100%; border: {{c.frame}}; display: flex; flex-direction: column; align-items: center; padding: 2.94cqw 3.92cqw 3.92cqw; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a; overflow: hidden;">
-                    <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
-                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 86%; display: block; margin: 0.98cqw auto 1.96cqw;">
-                    </sc-if>
-                    <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
-                      <div style="width: 86%; height: 13.79cqw; margin: 0.98cqw auto 1.96cqw; flex: none;"></div>
-                    </sc-if>
-                    <div style="font-family: Arial, sans-serif; font-weight: 700; font-size: 5.1cqw; text-align: center; height: 5.89cqw; line-height: 5.89cqw; flex: none;">{{c.itemNo}}</div>
-                    <div style="font-family: Arial, sans-serif; font-size: 4.9cqw; line-height: 1.15; text-align: center; width: 100%; height: 10.78cqw; display: flex; align-items: center; justify-content: center; overflow: hidden; flex: none;">{{c.description}}</div>
-                    <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
-                      <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; flex: none;">
-                        <span style="font-size: 8.04cqw; font-weight: 900;">WAS</span>
-                        <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900;">قبل</span>
-                      </div>
-                      <div style="display: inline-flex; align-items: center; gap: 1.47cqw; font-size: 9.8cqw; font-weight: 900; text-decoration: line-through; text-decoration-thickness: 1.07cqw; height: 11.76cqw; flex: none;">
-                        <img src="assets/riyal-black.png" alt="SAR" style="height: 7.85cqw; display: block;">{{c.wasText}}
-                      </div>
-                    </sc-if>
-                    <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
-                      <div style="height: 21.57cqw; flex: none;"></div>
-                    </sc-if>
-                    <div style="position: relative; z-index: 2; width: calc(100% + 7.85cqw); margin: 11.28cqw -3.92cqw 0; border-top: 0.49cqw solid #1a1a1a; height: 0; display: flex; justify-content: center;">
-                      <sc-if value="{{c.hasPct}}" hint-placeholder-val="{{true}}">
-                        <span style="position: absolute; top: -10.29cqw; width: 20.59cqw; height: 20.59cqw; border: 0.49cqw solid #1a1a1a; border-radius: 50%; background: {{c.accent}}; color: #fff; font-size: 7.46cqw; font-weight: 900; font-style: italic; letter-spacing: -0.03em; text-shadow: 0.49cqw 0.49cqw 0 {{c.shade}}; display: flex; align-items: center; justify-content: center;">{{c.pctText}}</span>
-                      </sc-if>
-                    </div>
-                    <sc-if value="{{c.noBand}}" hint-placeholder-val="{{true}}">
-                      <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
-                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 3.92cqw; flex: none;">
-                          <span style="font-size: 8.04cqw; font-weight: 900; color: {{c.accent}};">NOW</span>
-                          <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; color: {{c.accent}};">بعد</span>
-                        </div>
-                      </sc-if>
-                      <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
-                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 3.92cqw; flex: none;">
-                          <span style="font-size: 8.04cqw; font-weight: 900; color: {{c.accent}};">PRICE</span>
-                          <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; color: {{c.accent}};">السعر</span>
-                        </div>
-                      </sc-if>
-                      <div style="display: flex; align-items: center; justify-content: center; gap: 1.96cqw; width: 100%; height: 21.07cqw; margin: 0; color: {{c.accent}}; font-size: {{c.pvNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
-                        <img src="{{c.rySrc}}" alt="" style="height: {{c.pvNowRy}}; display: block;">{{c.priceText}}
-                      </div>
-                    </sc-if>
-                    <sc-if value="{{c.band}}" hint-placeholder-val="{{false}}">
-                      <div style="width: calc(100% + 7.85cqw); margin: 0 -3.92cqw -3.92cqw; padding: 1.96cqw 3.92cqw 2.94cqw; background: {{c.accent}}; color: #fff; display: flex; flex-direction: column; align-items: center; flex: 1 1 auto; justify-content: flex-start;">
-                        <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
-                          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 8cqw; flex: none; direction: ltr;">
-                            <span style="font-size: 8.04cqw; font-weight: 900;">NOW</span>
-                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; unicode-bidi: isolate;">بعد</span>
-                          </div>
-                        </sc-if>
-                        <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
-                          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 8cqw; flex: none; direction: ltr;">
-                            <span style="font-size: 8.04cqw; font-weight: 900;">PRICE</span>
-                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; unicode-bidi: isolate;">السعر</span>
-                          </div>
-                        </sc-if>
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 1.96cqw; width: 100%; flex: 1 1 auto; margin: 0; font-size: {{c.pvBandNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
-                          <img src="assets/riyal-white.png" alt="" style="height: {{c.pvBandNowRy}}; display: block;">{{c.priceText}}
-                        </div>
-                      </div>
-                    </sc-if>
-                  </div>
-                </sc-if>
-                <sc-if value="{{c.empty}}" hint-placeholder-val="{{false}}">
-                  <div style="width: 100%; height: 100%; border: 1px dashed var(--color-neutral-400); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-neutral-700);">{{c.slotLabel}}</div>
-                </sc-if>
-                <sc-if value="{{c.unusable}}" hint-placeholder-val="{{false}}">
-                  <div style="width: 100%; height: 100%; border: 1px dashed #8b1a1a; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 11px; color: #8b1a1a;">{{c.note}}</div>
-                </sc-if>
+          <sc-if value="{{adminSignedOut}}" hint-placeholder-val="{{true}}">
+            <sc-if value="{{adminPromptOpen}}" hint-placeholder-val="{{false}}">
+              <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                <label for="admin-pw" style="font-size: 13px; font-weight: 600; color: var(--color-text);">Admin password</label>
+                <div style="display: flex; gap: 8px;">
+                  <input id="admin-pw" class="input" type="password" inputmode="numeric" value="{{adminPw}}" onChange="{{onAdminPwChange}}" onKeyDown="{{onAdminPwKeyDown}}" placeholder="••••" style="flex: 1;">
+                  <button class="btn btn-primary" onClick="{{onAdminSubmit}}" style="flex: none;">Unlock</button>
                 </div>
+                <sc-if value="{{adminError}}" hint-placeholder-val="{{false}}">
+                  <span style="font-size: 12px; color: var(--color-accent-800);">{{adminError}}</span>
+                </sc-if>
               </div>
-            </sc-for>
-          </div>
+            </sc-if>
+            <sc-if value="{{adminPromptClosed}}" hint-placeholder-val="{{true}}">
+              <button class="btn btn-ghost btn-block" onClick="{{onAdminOpen}}" style="font-size: 13px;">Admin sign in</button>
+            </sc-if>
           </sc-if>
         </div>
-      </div>
-    </sc-if>
-
-    <!-- SKU DIAGNOSTICS SCREEN -->
-    <sc-if value="{{isDiag}}" hint-placeholder-val="{{false}}">
-      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
-        <div style="display: flex; gap: 10px;">
-          <button class="btn btn-secondary" onClick="{{onBackFromDiag}}" style="flex: none;">← Back</button>
-          <div class="card-title" style="font-size: 18px; align-self: center;">SKU diagnostics</div>
-        </div>
-        <div class="field">
-          <label for="diag-query">Item numbers</label>
-          <input id="diag-query" class="input" type="text" placeholder="e.g. 26-1808, 26-1809" value="{{diagQuery}}" onChange="{{onDiagQueryChange}}">
-        </div>
-        <span style="font-size: 12px; color: var(--color-neutral-700);">Comma or space separated. Reports whether each SKU exists in the loaded stock matrix and item master, its raw per-location values, and which report filters would drop it.</span>
-
-        <sc-for list="{{diagResults}}" as="d" hint-placeholder-count="1">
-          <div style="display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); padding: var(--space-3);">
-            <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;">
-              <span style="font-family: var(--font-heading); font-size: 16px; color: var(--color-text);">{{d.itemNo}}</span>
-              <span class="tag {{d.statusTag}}">{{d.status}}</span>
-            </div>
-            <sc-for list="{{d.facts}}" as="f" hint-placeholder-count="3">
-              <div style="display: flex; gap: 10px; font-size: 12.5px;">
-                <span style="flex: none; width: 150px; color: var(--color-neutral-700);">{{f.k}}</span>
-                <span style="flex: 1; min-width: 0; font-weight: 600; color: {{f.color}}; overflow-wrap: break-word;">{{f.v}}</span>
-              </div>
-            </sc-for>
-          </div>
-        </sc-for>
       </div>
     </sc-if>
 
@@ -438,7 +171,7 @@
       </div>
     </sc-if>
 
-<!-- STORE STOCK SCREEN -->
+    <!-- STORE STOCK SCREEN -->
     <sc-if value="{{isStoreStock}}" hint-placeholder-val="{{false}}">
       <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
         <div class="card-kicker">Complete stock</div>
@@ -447,7 +180,9 @@
         <div class="field">
           <label for="storestock-select">Store</label>
           <select id="storestock-select" class="input" value="{{storeStockSelected}}" onChange="{{onStoreStockChange}}">
-            <option value="__ALL__">All stores</option>
+            <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
+              <option value="__ALL__">All stores</option>
+            </sc-if>
             <sc-for list="{{storeOptions}}" as="opt" hint-placeholder-count="5">
               <option value="{{opt.name}}">{{opt.label}}</option>
             </sc-for>
@@ -1072,6 +807,207 @@
       </sc-if>
     </sc-if>
 
+    <!-- PRICE TAGS SCREEN -->
+    <sc-if value="{{isPriceTags}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromPriceTags}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">Price tags</div>
+        </div>
+        <span style="font-size: 12px; color: var(--color-neutral-700);">{{tagIntro}}</span>
+
+        <div class="field" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
+          <label>Tags per sheet</label>
+          <div class="seg" role="radiogroup" aria-label="Tags per sheet">
+            <label class="seg-opt">
+              <input type="radio" name="tagLayout" checked="{{tagFourChecked}}" onChange="{{onTagLayoutFour}}">
+              4 per A4
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="tagLayout" checked="{{tagOneChecked}}" onChange="{{onTagLayoutOne}}">
+              1 per A4
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="tagLayout" checked="{{tagShelfChecked}}" onChange="{{onTagLayoutShelf}}">
+              Shelves (6)
+            </label>
+          </div>
+        </div>
+
+        <div class="field" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
+          <label>Discount type</label>
+          <div class="seg" role="radiogroup" aria-label="Discount type">
+            <label class="seg-opt">
+              <input type="radio" name="tagPriceSource" checked="{{tagSeasonalChecked}}" onChange="{{onTagSeasonal}}">
+              Seasonal Discounts
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="tagPriceSource" checked="{{tagNationalChecked}}" onChange="{{onTagNational}}">
+              National Day 2026
+            </label>
+          </div>
+          <span style="font-size: 11.5px; color: var(--color-neutral-700);">{{tagSourceNote}}</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+          <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="4">
+            <div class="field">
+              <label for="{{c.inputId}}">{{c.slotLabel}}</label>
+              <input id="{{c.inputId}}" class="input" type="text" placeholder="e.g. 26-720" value="{{c.value}}" onChange="{{c.onChange}}">
+              <sc-if value="{{c.note}}" hint-placeholder-val="{{false}}">
+                <span style="font-size: 11.5px; color: {{c.noteColor}};">{{c.note}}</span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <button class="btn btn-primary btn-block" onClick="{{onPrintPriceTags}}" disabled="{{tagsPrinting}}">{{tagsPrintLabel}}</button>
+
+        <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 12px; color: var(--color-neutral-700);">{{tagPreviewNote}}</span>
+
+          <sc-if value="{{isShelfLayout}}" hint-placeholder-val="{{false}}">
+            <div style="background: #fff; aspect-ratio: 210 / 297; padding: 2.02% 2.38%; display: flex; flex-direction: column; gap: 1.01%; border-radius: var(--radius-sm);">
+              <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="6">
+                <div style="flex: 1 1 0; min-height: 0; container-type: inline-size;">
+                  <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
+                    <div style="width: 100%; height: 100%; border: {{c.shFrame}}; background: #fff; position: relative; display: flex; overflow: hidden; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a;">
+                      <div style="width: 34%; flex: none; display: flex; flex-direction: column; justify-content: flex-start; padding: 0.5cqw 0.5cqw 0; min-width: 0;">
+                        <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
+                          <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 129px; display: block; height: 65px">
+                        </sc-if>
+                        <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
+                          <div style="height: 13.6cqw;"></div>
+                        </sc-if>
+                      </div>
+                      <div style="position: absolute; left: 0; bottom: 0; width: 52%; padding: 0.5cqw 1cqw 0.6cqw; border-top: 0.25cqw solid #1a1a1a; font-family: Arial, sans-serif; font-weight: 700; font-size: 1.7cqw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.shLine}}</div>
+                      <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
+                        <div style="width: 18%; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3cqw; padding-bottom: 3cqw;">
+                          <sc-if value="{{c.hasPct}}" hint-placeholder-val="{{true}}">
+                            <div style="width: 6cqw; height: 6cqw; flex: none; border-radius: 50%; border: 0.3cqw solid #1a1a1a; background: {{c.accent}}; color: #fff; font-size: 2.2cqw; font-weight: 900; font-style: italic; letter-spacing: -0.03em; display: flex; align-items: center; justify-content: center; margin-bottom: 0.4cqw;">{{c.pctText}}</div>
+                          </sc-if>
+                          <div style="display: flex; align-items: baseline; gap: 1cqw; direction: ltr;">
+                            <span style="font-size: 2.4cqw; font-weight: 900;">WAS</span>
+                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 2.6cqw; font-weight: 900; unicode-bidi: isolate;">قبل</span>
+                          </div>
+                          <div style="display: inline-flex; align-items: center; gap: 0.6cqw; font-size: {{c.shPvWasSize}}; font-weight: 900; text-decoration: line-through; text-decoration-thickness: 0.45cqw;">
+                            <img src="assets/riyal-black.png" alt="" style="height: {{c.shPvWasRy}}; display: block;">{{c.wasText}}
+                          </div>
+                        </div>
+                      </sc-if>
+                      <div style="position: absolute; top: 0; right: 0; bottom: 0; width: 48%; background: {{c.accent}}; clip-path: polygon(8% 0, 100% 0, 100% 100%, 8% 100%, 0 50%); display: flex; flex-direction: column; justify-content: flex-start; padding: 0.3cqw 2.5cqw 0.6cqw 5cqw; color: #fff;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex: none; direction: ltr;">
+                          <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
+                            <span style="font-size: 3.6cqw; font-weight: 900;">NOW</span>
+                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 3.8cqw; font-weight: 900; unicode-bidi: isolate;">بعد</span>
+                          </sc-if>
+                          <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
+                            <span style="font-size: 3.6cqw; font-weight: 900;">PRICE</span>
+                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 3.8cqw; font-weight: 900; unicode-bidi: isolate;">السعر</span>
+                          </sc-if>
+                        </div>
+                        <div style="flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 1cqw; font-size: {{c.shPvNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
+                          <img src="assets/riyal-white.png" alt="" style="height: {{c.shPvNowRy}}; display: block;">{{c.priceText}}
+                        </div>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{c.empty}}" hint-placeholder-val="{{false}}">
+                    <div style="width: 100%; height: 100%; border: 1px dashed var(--color-neutral-400); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-neutral-700);">{{c.slotLabel}}</div>
+                  </sc-if>
+                  <sc-if value="{{c.unusable}}" hint-placeholder-val="{{false}}">
+                    <div style="width: 100%; height: 100%; border: 1px dashed #8b1a1a; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 11px; color: #8b1a1a;">{{c.note}}</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{isCardLayout}}" hint-placeholder-val="{{true}}">
+          <div style="display: grid; grid-template-columns: {{tagGridCols}}; gap: 6px; background: var(--color-neutral-200); padding: 6px; border-radius: var(--radius-sm);">
+            <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="4">
+              <div style="background: #fff; aspect-ratio: {{tagCellRatio}}; padding: {{tagCellPad}}; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 100%; aspect-ratio: 102 / 140.5; container-type: inline-size;">
+                <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
+                  <div style="width: 100%; height: 100%; border: {{c.frame}}; display: flex; flex-direction: column; align-items: center; padding: 2.94cqw 3.92cqw 3.92cqw; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a; overflow: hidden;">
+                    <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
+                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 86%; display: block; margin: 0.98cqw auto 1.96cqw;">
+                    </sc-if>
+                    <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
+                      <div style="width: 86%; height: 13.79cqw; margin: 0.98cqw auto 1.96cqw; flex: none;"></div>
+                    </sc-if>
+                    <div style="font-family: Arial, sans-serif; font-weight: 700; font-size: 5.1cqw; text-align: center; height: 5.89cqw; line-height: 5.89cqw; flex: none;">{{c.itemNo}}</div>
+                    <div style="font-family: Arial, sans-serif; font-size: 4.9cqw; line-height: 1.15; text-align: center; width: 100%; height: 10.78cqw; display: flex; align-items: center; justify-content: center; overflow: hidden; flex: none;">{{c.description}}</div>
+                    <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
+                      <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; flex: none;">
+                        <span style="font-size: 8.04cqw; font-weight: 900;">WAS</span>
+                        <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900;">قبل</span>
+                      </div>
+                      <div style="display: inline-flex; align-items: center; gap: 1.47cqw; font-size: 9.8cqw; font-weight: 900; text-decoration: line-through; text-decoration-thickness: 1.07cqw; height: 11.76cqw; flex: none;">
+                        <img src="assets/riyal-black.png" alt="SAR" style="height: 7.85cqw; display: block;">{{c.wasText}}
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
+                      <div style="height: 21.57cqw; flex: none;"></div>
+                    </sc-if>
+                    <div style="position: relative; z-index: 2; width: calc(100% + 7.85cqw); margin: 11.28cqw -3.92cqw 0; border-top: 0.49cqw solid #1a1a1a; height: 0; display: flex; justify-content: center;">
+                      <sc-if value="{{c.hasPct}}" hint-placeholder-val="{{true}}">
+                        <span style="position: absolute; top: -10.29cqw; width: 20.59cqw; height: 20.59cqw; border: 0.49cqw solid #1a1a1a; border-radius: 50%; background: {{c.accent}}; color: #fff; font-size: 7.46cqw; font-weight: 900; font-style: italic; letter-spacing: -0.03em; text-shadow: 0.49cqw 0.49cqw 0 {{c.shade}}; display: flex; align-items: center; justify-content: center;">{{c.pctText}}</span>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{c.noBand}}" hint-placeholder-val="{{true}}">
+                      <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
+                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 3.92cqw; flex: none;">
+                          <span style="font-size: 8.04cqw; font-weight: 900; color: {{c.accent}};">NOW</span>
+                          <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; color: {{c.accent}};">بعد</span>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
+                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 3.92cqw; flex: none;">
+                          <span style="font-size: 8.04cqw; font-weight: 900; color: {{c.accent}};">PRICE</span>
+                          <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; color: {{c.accent}};">السعر</span>
+                        </div>
+                      </sc-if>
+                      <div style="display: flex; align-items: center; justify-content: center; gap: 1.96cqw; width: 100%; height: 21.07cqw; margin: 0; color: {{c.accent}}; font-size: {{c.pvNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
+                        <img src="{{c.rySrc}}" alt="" style="height: {{c.pvNowRy}}; display: block;">{{c.priceText}}
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{c.band}}" hint-placeholder-val="{{false}}">
+                      <div style="width: calc(100% + 7.85cqw); margin: 0 -3.92cqw -3.92cqw; padding: 1.96cqw 3.92cqw 2.94cqw; background: {{c.accent}}; color: #fff; display: flex; flex-direction: column; align-items: center; flex: 1 1 auto; justify-content: flex-start;">
+                        <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
+                          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 8cqw; flex: none; direction: ltr;">
+                            <span style="font-size: 8.04cqw; font-weight: 900;">NOW</span>
+                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; unicode-bidi: isolate;">بعد</span>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
+                          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 8cqw; flex: none; direction: ltr;">
+                            <span style="font-size: 8.04cqw; font-weight: 900;">PRICE</span>
+                            <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; unicode-bidi: isolate;">السعر</span>
+                          </div>
+                        </sc-if>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 1.96cqw; width: 100%; flex: 1 1 auto; margin: 0; font-size: {{c.pvBandNowSize}}; font-weight: 900; line-height: 1; white-space: nowrap;">
+                          <img src="assets/riyal-white.png" alt="" style="height: {{c.pvBandNowRy}}; display: block;">{{c.priceText}}
+                        </div>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{c.empty}}" hint-placeholder-val="{{false}}">
+                  <div style="width: 100%; height: 100%; border: 1px dashed var(--color-neutral-400); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-neutral-700);">{{c.slotLabel}}</div>
+                </sc-if>
+                <sc-if value="{{c.unusable}}" hint-placeholder-val="{{false}}">
+                  <div style="width: 100%; height: 100%; border: 1px dashed #8b1a1a; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 11px; color: #8b1a1a;">{{c.note}}</div>
+                </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
     <!-- RESULTS SCREEN -->
     <sc-if value="{{isResults}}" hint-placeholder-val="{{false}}">
       <div class="results-wrap" style="display: flex; flex-direction: column; gap: var(--space-4);">
@@ -1154,7 +1090,7 @@
                     <tr>
                       <td style="padding: 6px; line-height: 1.1;">
                         <sc-if value="{{row.image}}" hint-placeholder-val="{{false}}">
-                          <img src="{{row.image}}" loading="lazy" style="width: 46px; height: 46px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); display: block;">
+                          <img src="{{row.image}}" loading="lazy" referrerpolicy="no-referrer" style="width: 46px; height: 46px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); display: block;">
                         </sc-if>
                       </td>
                       <td style="font-weight: 600; white-space: nowrap; padding: 6px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis;">{{row.itemNo}}</td>
@@ -1201,7 +1137,7 @@
           <div style="display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-lg); padding: var(--space-3); background: #fff;">
             <div style="display: flex; gap: 10px; align-items: center;">
               <sc-if value="{{item.image}}" hint-placeholder-val="{{false}}">
-                <img src="{{item.image}}" style="width: 62px; height: 62px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); flex: none;">
+                <img src="{{item.image}}" referrerpolicy="no-referrer" style="width: 62px; height: 62px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); flex: none;">
               </sc-if>
               <div style="display: flex; flex-direction: column; gap: 2px;">
                 <div style="font-weight: 700; font-size: 13px; color: var(--color-text);">{{item.itemNo}}</div>
@@ -1295,21 +1231,8 @@
 
   </div>
 </div>
-
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 480, &quot;height&quot;: 900}}">
-function naturalCompare(a, b) {
-  const ax = [], bx = [];
-  String(a).replace(/(\d+)|(\D+)/g, (_, d, s) => { ax.push([d ? parseInt(d, 10) : Infinity, s || '']); return ''; });
-  String(b).replace(/(\d+)|(\D+)/g, (_, d, s) => { bx.push([d ? parseInt(d, 10) : Infinity, s || '']); return ''; });
-  while (ax.length && bx.length) {
-    const an = ax.shift(), bn = bx.shift();
-    const cmp = (an[0] - bn[0]) || an[1].localeCompare(bn[1]);
-    if (cmp) return cmp;
-  }
-  return ax.length - bx.length;
-}
-
+<script type="text/x-dc" data-dc-script>
 const STORE_STOCK_WH_LOCATIONS = ['Inspection & Review Warehouse', 'Damages & Shortages Warehouse - Riyadh', 'Sub Warehouse - Abha', 'Main Warehouse - Riyadh'];
 const STORE_STOCK_WH_LOCATIONS_LC = new Set(STORE_STOCK_WH_LOCATIONS.map(s => s.toLowerCase()));
 
@@ -1321,6 +1244,18 @@ const EXCLUDED_STORES = new Set([
   'exit 5 workshop', 'hafr al batin 1', 'hail 1', 'jeddah 4x', 'salbukh wh',
   'damages & shortages abha', 'unaiza wh', 'tabuk 1',
 ]);
+
+function naturalCompare(a, b) {
+  const ax = [], bx = [];
+  String(a).replace(/(\d+)|(\D+)/g, (_, d, s) => { ax.push([d ? parseInt(d, 10) : Infinity, s || '']); return ''; });
+  String(b).replace(/(\d+)|(\D+)/g, (_, d, s) => { bx.push([d ? parseInt(d, 10) : Infinity, s || '']); return ''; });
+  while (ax.length && bx.length) {
+    const an = ax.shift(), bn = bx.shift();
+    const cmp = (an[0] - bn[0]) || an[1].localeCompare(bn[1]);
+    if (cmp) return cmp;
+  }
+  return ax.length - bx.length;
+}
 
 // ---- Embedded xlsx writer (no external module; works offline / on static hosts) ----
 // Minimal real .xlsx writer (no deps). Builds a ZIP with STORED (uncompressed) entries,
@@ -2283,27 +2218,12 @@ class Component extends DCLogic {
 
   state = {
     lang: (function () { try { return window.localStorage.getItem('inv-lang') === 'ar' ? 'ar' : 'en'; } catch (e) { return 'en'; } })(),
-    screen: 'upload',
-    costMap: null,
-    files: { matrix: null, stores: null, retail: null, purchase: null, discount: null, national: null },
-    storeStockShowDiscount: false,
-    storeStockAddnl1500: false,
-    storeStockNationalDay: false,
-    storeStockPctRange: '',
-    storeStockBrand: '',
-    storeStockCategory: '',
-    storeStockSubCategory: '',
-    mlLocations: [],
-    mlPriceSource: 'discount',
-    mlBrand: '',
-    mlCategory: '',
-    mlSubCategory: '',
-    mlPdfDownloading: false,
-    processing: false,
-    error: '',
+    loading: true,
+    loadError: '',
+    screen: 'loading',
     parsed: null,
-    storeOptions: [],
     storeInfoMap: null,
+    storeOptions: [],
     selectedStore: '',
     selectedQty: 1,
     results: null,
@@ -2313,7 +2233,6 @@ class Component extends DCLogic {
     stockFilter: 'all',
     lowStockFilter: 'all',
     skuQuery: '',
-    diagQuery: '',
     tagSkus: ['', '', '', '', '', ''],
     tagPriceSource: 'discount',
     tagLayout: 'four',
@@ -2331,9 +2250,35 @@ class Component extends DCLogic {
     whSubCategory: '',
     whStore: '',
     whPage: 1,
+    storeStockShowDiscount: false,
+    storeStockAddnl1500: false,
+    storeStockNationalDay: false,
+    storeStockPctRange: '',
+    storeStockBrand: '',
+    storeStockCategory: '',
+    storeStockSubCategory: '',
+    mlLocations: [],
+    mlPriceSource: 'discount',
+    mlBrand: '',
+    mlCategory: '',
+    mlSubCategory: '',
+    mlPdfDownloading: false,
+    storeStockSelected: '__ALL__',
+    negInvLocation: '__ALL__',
+    negInvModalOpen: false,
+    negInvPdfDownloading: false,
+    costMap: null,
+    isAdmin: false,
+    adminPromptOpen: false,
+    adminPw: '',
+    adminError: '',
   };
 
-  async componentDidMount() {
+  onAdminOpen() { this.setState({ adminPromptOpen: true, adminPw: '', adminError: '' }); }
+  onAdminPwChange(e) { this.setState({ adminPw: e.target.value, adminError: '' }); }
+  async loadCostMap() {
+    if (this._costLoading) return;
+    this._costLoading = true;
     try {
       const url = (window.__resources && window.__resources['cost-json']) || './cost-data.json';
       const res = await fetch(url);
@@ -2341,7 +2286,7 @@ class Component extends DCLogic {
     } catch (e) {}
   }
   costMetrics(itemNo, rsp, disc) {
-    const cm = this.state.costMap;
+    const cm = this.state.isAdmin ? this.state.costMap : null;
     const num = v => { const n = parseFloat(String(v ?? '').replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : 0; };
     const cost = cm ? num(cm[itemNo]) : 0;
     if (!cost) return { showCost: false };
@@ -2358,66 +2303,58 @@ class Component extends DCLogic {
       discMarginText: nowN ? line(nowN) : '',
     };
   }
-  onFileMatrix(e) { this.setState(s => ({ files: { ...s.files, matrix: e.target.files[0] || null } })); }
-  onFileStores(e) { this.setState(s => ({ files: { ...s.files, stores: e.target.files[0] || null } })); }
-  onFileRetail(e) { this.setState(s => ({ files: { ...s.files, retail: e.target.files[0] || null } })); }
-  onFilePurchase(e) { this.setState(s => ({ files: { ...s.files, purchase: e.target.files[0] || null } })); }
-  onFileDiscount(e) { this.setState(s => ({ files: { ...s.files, discount: e.target.files[0] || null } })); }
-  onFileNational(e) { this.setState(s => ({ files: { ...s.files, national: e.target.files[0] || null } })); }
-
-  async onProcess() {
-    const { matrix, stores, retail, purchase, discount, national } = this.state.files;
-    if (!matrix || !stores || !retail || !purchase) {
-      this.setState({ error: 'Please choose all 4 files before processing.' });
-      return;
+  onAdminPwKeyDown(e) { if (e.key === 'Enter') this.onAdminSubmit(); }
+  onAdminSubmit() {
+    if (this.state.adminPw.trim() === '30558') {
+      this.setState({ isAdmin: true, adminPromptOpen: false, adminPw: '', adminError: '' });
+      this.loadCostMap();
+      try { localStorage.setItem('inv-admin', '1'); } catch (e) {}
+    } else {
+      this.setState({ adminError: 'Incorrect password.' });
     }
-    this.setState({ processing: true, error: '' });
+  }
+  onAdminSignOut() {
+    this.setState({ isAdmin: false, adminPromptOpen: false, adminPw: '', adminError: '' });
+    try { localStorage.removeItem('inv-admin'); } catch (e) {}
+  }
+
+  async componentDidMount() {
     try {
-      const parserBase = (window.__resources && window.__resources['parser-js']) || './inventory-parser.js';
-      // Cache-bust so a freshly deployed parser is never served from the
-      // browser's module cache on reload.
-      const parserUrl = parserBase + (parserBase.includes('?') ? '&' : '?') + 'v=' + Date.now();
-      const mod = await import(parserUrl);
-      const retailIsXlsx = /\.xlsx$/i.test(retail.name);
-      const [matrixData, storeList, openOrders, retailMap, discountMap, nationalMap] = await Promise.all([
-        mod.parseItemsMatrixXlsx(await matrix.arrayBuffer()),
-        mod.parseStoreListXlsx(await stores.arrayBuffer()),
-        mod.parsePurchaseLinesXlsx(await purchase.arrayBuffer()),
-        retailIsXlsx ? mod.parseRetailItemsXlsx(await retail.arrayBuffer()) : retail.text().then(t => mod.parseRetailItemsCsv(t)),
-        discount ? mod.parseDiscountXlsx(await discount.arrayBuffer()) : Promise.resolve(new Map()),
-        national ? mod.parseDiscountXlsx(await national.arrayBuffer()) : Promise.resolve(new Map()),
-      ]);
-      const storeInfoMap = new Map(storeList.map(s => [s.name, s]));
-      const storeInfoMapCI = new Map(storeList.map(s => [s.name.toLowerCase(), s]));
-      const storeOptions = matrixData.storeNames
-        .map(name => {
-          const info = storeInfoMap.get(name) || storeInfoMapCI.get(name.toLowerCase());
-          if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return null;
-          const displayName = info.shortName || name;
-          if (EXCLUDED_STORES.has(displayName.trim().toLowerCase())) return null;
-          return { name, label: info.region ? displayName + ' — ' + info.region : displayName };
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-      if (!storeOptions.length) throw new Error('No matching stores found — check the files are the right ones.');
-      if (national && (!nationalMap || !nationalMap.size)) {
-        throw new Error('The National Day 2026 file produced no rows — its first table row needs an item-number column header (SKU, Item No., No. or Code).');
+      const dataUrl = (window.__resources && window.__resources['data-json']) || './inventory-data.json';
+      const res = await fetch(dataUrl);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const snap = await res.json();
+      const retailMap = new Map(snap.retailMap);
+      const openOrders = new Set(snap.openOrders);
+      const discountMap = new Map(snap.discountMap || []);
+      const nationalMap = new Map(snap.nationalMap || []);
+      const storeInfoMap = new Map(snap.storeInfoMap);
+      // Locations the store master mistypes but which hold sellable stock —
+      // without this they are dropped from every report.
+      for (const [key, info] of storeInfoMap) {
+        const n = String(key || '').trim().toLowerCase();
+        const sn = String((info && info.shortName) || '').trim().toLowerCase();
+        if (n === 'arb 4*4 workshop aqiq' || sn === 'arb 4*4 workshop aqiq') storeInfoMap.set(key, Object.assign({}, info, { storeType: 'Store' }));
       }
-      if (discount && (!discountMap || !discountMap.size)) {
-        throw new Error('The Seasonal Discounts file produced no rows — its first table row needs an item-number column header (SKU, Item No., No. or Code).');
-      }
-
+      const storeOptions = (snap.storeOptions || []).filter(opt => {
+        const info = storeInfoMap.get(opt.name);
+        const displayName = (info && (info.shortName || opt.name) || opt.name).trim().toLowerCase();
+        return !EXCLUDED_STORES.has(displayName);
+      });
+      let wasAdmin = false;
+      try { wasAdmin = localStorage.getItem('inv-admin') === '1'; } catch (e) {}
+      if (wasAdmin) this.loadCostMap();
       this.setState({
-        processing: false,
-        parsed: { matrix: matrixData, retailMap, openOrders, discountMap, nationalMap },
+        loading: false,
+        isAdmin: wasAdmin,
+        parsed: { matrix: snap.matrix, retailMap, openOrders, discountMap, nationalMap },
         storeInfoMap,
         storeOptions,
-        selectedStore: storeOptions[0].name,
+        selectedStore: storeOptions[0] ? storeOptions[0].name : '',
         screen: 'menu',
       });
     } catch (err) {
-      this.setState({ processing: false, error: 'Could not read those files: ' + err.message });
+      this.setState({ loading: false, loadError: 'Could not load store data: ' + err.message, screen: 'error' });
     }
   }
 
@@ -2429,7 +2366,7 @@ class Component extends DCLogic {
   onBackFromSelect() { this.setState({ screen: 'menu' }); }
   onGoSkuLookup() { this.setState({ screen: 'skulookup' }); }
   onBackFromSku() { this.setState({ screen: 'menu' }); }
-  onGoStoreStock() { this.setState({ screen: 'storestock', storeStockSelected: '__ALL__' }); }
+  onGoStoreStock() { this.setState({ screen: 'storestock', storeStockSelected: this.state.isAdmin ? '__ALL__' : (this.state.storeOptions[0] ? this.state.storeOptions[0].name : '') }); }
   onBackFromStoreStock() { this.setState({ screen: 'menu' }); }
   onStoreStockChange(e) { this.setState({ storeStockSelected: e.target.value }); }
   onDiscountOn() { this.setState({ storeStockShowDiscount: true, storeStockAddnl1500: false, storeStockNationalDay: false }); }
@@ -2590,7 +2527,7 @@ class Component extends DCLogic {
         { v: r.image || '', t: 's' },
       ]);
     }
-    const cols = [{ width: 16 }, { width: 34 }, { width: 26 }, { width: 12 }, { width: 9 }, { width: 12 }, { width: 12 }, { width: 10 }, { width: 10 }, { width: 8 }, { width: 30 }];
+    const cols = [{ width: 16 }, { width: 34 }, { width: 26 }, { width: 12 }, { width: 10 }, { width: 12 }, { width: 12 }, { width: 10 }, { width: 10 }, { width: 8 }, { width: 30 }];
     const fileTitle = ('WH-vs-Stores-' + scope + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
     downloadXlsx(aoa, fileTitle, { sheetName: 'WH vs Stores', cols: cols });
   }
@@ -3621,235 +3558,6 @@ class Component extends DCLogic {
     return rows.map(r => (r.image ? Object.assign({}, r, { image: map.get(r.image) || '' }) : r));
   }
 
-  printHtmlInPage(styleCss, bodyHtml, fileTitle, onDone, orientation) {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (isIOS) return this.printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone, orientation);
-    let frame = document.getElementById('pdf-print-frame');
-    if (!frame) {
-      frame = document.createElement('iframe');
-      frame.id = 'pdf-print-frame';
-      frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
-      document.body.appendChild(frame);
-    }
-    const doc = frame.contentDocument;
-    doc.open();
-    doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + fileTitle + '</title><style>@page{margin:0;' + (orientation ? 'size:' + orientation + ';' : '') + '}body{margin:0.5in}' + styleCss + '</style></head><body>' + bodyHtml + '</body></html>');
-    doc.close();
-    const win = frame.contentWindow;
-    const doPrint = () => {
-      // Chrome names the saved PDF after the TOP document's title, not the
-      // printed iframe's — set it here and restore once the dialog closes.
-      const prevTitle = document.title;
-      document.title = fileTitle;
-      const restore = () => { document.title = prevTitle; };
-      setTimeout(restore, 3000);
-      window.addEventListener('focus', restore, { once: true });
-      try {
-        win.focus();
-        win.print();
-      } catch (e) {
-        this.setState({ error: 'Could not generate the PDF: ' + e.message });
-      }
-    };
-    const imgs = Array.from(doc.querySelectorAll('img'));
-    const pending = imgs.filter(img => !img.complete);
-    let printed = false;
-    const printOnce = () => { if (printed) return; printed = true; doPrint(); if (onDone) onDone(); };
-    if (!pending.length) { printOnce(); return; }
-    let settled = 0;
-    const done = () => { settled++; if (settled >= pending.length) printOnce(); };
-    pending.forEach(img => {
-      img.addEventListener('load', done, { once: true });
-      img.addEventListener('error', done, { once: true });
-    });
-    setTimeout(() => {
-      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
-      printOnce();
-    }, 9000);
-  }
-
-  // iOS WebKit always prints the top-level document, never a hidden iframe's
-  // content — so on iOS we swap the report into a full-page overlay in the
-  // main document, hide everything else during print, then restore.
-  printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone, orientation) {
-    let overlay = document.getElementById('pdf-print-overlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'pdf-print-overlay';
-      document.body.appendChild(overlay);
-    }
-    let styleEl = document.getElementById('pdf-print-overlay-style');
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = 'pdf-print-overlay-style';
-      document.head.appendChild(styleEl);
-    }
-    const scoped = styleCss.replace(/(^|\})\s*([^{}]+)\{/g, (m, brace, sel) =>
-      brace + sel.split(',').map(s => '#pdf-print-overlay ' + s.trim()).join(',') + '{');
-    styleEl.textContent = '#pdf-print-overlay{display:none;}'
-      + '@media print{@page{margin:0;' + (orientation ? 'size:' + orientation + ';' : '') + '}body>*:not(#pdf-print-overlay){display:none!important;}#pdf-print-overlay{display:block!important;padding:0.5in;}}'
-      + scoped;
-    overlay.innerHTML = bodyHtml;
-    const prevTitle = document.title;
-    document.title = fileTitle;
-    const cleanup = () => {
-      overlay.innerHTML = '';
-      document.title = prevTitle;
-      window.removeEventListener('afterprint', cleanup);
-      if (onDone) onDone();
-    };
-    window.addEventListener('afterprint', cleanup);
-    const doPrint = () => {
-      try { window.print(); } catch (e) {
-        this.setState({ error: 'Could not generate the PDF: ' + e.message });
-        cleanup();
-      }
-    };
-    const imgs = Array.from(overlay.querySelectorAll('img'));
-    const pending = imgs.filter(img => !img.complete);
-    let printed = false;
-    const printOnce = () => { if (printed) return; printed = true; doPrint(); };
-    if (!pending.length) { printOnce(); return; }
-    let settled = 0;
-    const done = () => { settled++; if (settled >= pending.length) printOnce(); };
-    pending.forEach(img => {
-      img.addEventListener('load', done, { once: true });
-      img.addEventListener('error', done, { once: true });
-    });
-    setTimeout(() => {
-      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
-      printOnce();
-    }, 9000);
-  }
-
-  async onDownloadStoreStockPdf() {
-    this.setState({ storeStockPdfDownloading: true });
-    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    const fmtNum = v => {
-      if (v === '' || v === null || v === undefined || isNaN(Number(v))) return esc(v);
-      return Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
-    };
-    const st = this.state;
-    const store = st.storeStockSelected;
-    const info = st.storeInfoMap && st.storeInfoMap.get(store);
-    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
-    const allRows = this.getStoreStockRows();
-    const showDiscount = true;
-    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    // A huge table (e.g. "All stores") with an <img> per row can overwhelm the
-    // print renderer and come out blank — cap rows for safety; the isolated
-    // print iframe waits for images to load, so we keep them for normal sizes.
-    const MAX_PDF_ROWS = 6000;
-    const noImages = allRows.length > 5000;
-    const truncated = allRows.length > MAX_PDF_ROWS;
-    const rows = truncated ? allRows.slice(0, MAX_PDF_ROWS) : allRows;
-    const scaledRows = noImages ? rows : await this.scaleRowImages(rows);
-
-    const rowsHtml = scaledRows.map(r => (
-      '<tr' + (r.highlight ? ' style="background:#fbe1de;"' : '') + '>'
-      + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" />' : '') + '</td>')
-      + '<td class="itemno">' + esc(r.itemNo) + '</td>'
-      + '<td class="desc">' + esc(r.description2) + '</td>'
-      + '<td class="ctr"' + (r.negQty ? ' style="color:#8b1a1a;"' : '') + '>' + (r.qtyText || fmtNum(r.qty)) + '</td>'
-      + '<td class="ctr">' + fmtNum(r.whStock) + '</td>'
-      + (showDiscount ? '<td class="ctr" style="' + (r.pct === 'Was/Now Just' ? 'font-weight:700;color:#8b1a1a;' : '') + '">' + fmtNum(r.was) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + fmtNum(r.now) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + esc(r.pct) + '</td>' : '')
-      + '</tr>'
-    )).join('');
-
-    const fileTitle = (storeLabel + '-' + this.storeStockModeName() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
-    const extraCols = showDiscount ? '<col class="c-rsp"><col class="c-rsp"><col class="c-rsp">' : '';
-    const extraHead = showDiscount ? '<th>Was</th><th>Now</th><th>%</th>' : '';
-    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
-      + 'h1{font-size:20px;margin:0 0 4px;}'
-      + '.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
-      + 'table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;table-layout:fixed;}'
-      + 'tr{break-inside:avoid;}'
-      + 'tr.hdr th{border-bottom:2px solid #201e1d;}'
-      + 'col.c-img{width:11%}col.c-item{width:' + (noImages ? '16' : '14') + '%}col.c-desc{width:' + (noImages ? '32' : '25') + '%}col.c-qty{width:10%}col.c-wh{width:10%}col.c-rsp{width:9%}'
-      + 'th{text-align:center;font-size:11px;text-transform:uppercase;color:#6b6360;padding:6px;border-bottom:2px solid #201e1d;}'
-      + 'th:nth-child(' + (noImages ? 1 : 2) + '),th:nth-child(' + (noImages ? 2 : 3) + '){text-align:left;}'
-      + 'td{padding:6px;border-bottom:1px solid #e6ddd2;white-space:normal;overflow-wrap:break-word;word-break:break-word;text-wrap:pretty;vertical-align:middle;}'
-      + 'td.ctr{white-space:nowrap;}'
-      + 'td.ctr{text-align:center}'
-      + 'td.img-cell{overflow:hidden;}'
-      + 'td.img-cell img{width:100%;height:56px;object-fit:contain;display:block;}'
-      + 'tr.tot td{border-top:2px solid #201e1d;border-bottom:none;font-weight:700;font-size:13px;padding-top:8px;}';
-    const totalQty = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
-    const totalWh = rows.reduce((s, r) => s + (Number(r.whStock) || 0), 0);
-    const bodyHtml = '<h1>' + esc(storeLabel) + '</h1>'
-      + '<div class="meta">' + this.storeStockModeName() + ' · ' + rows.length + (truncated ? ' of ' + allRows.length : '') + ' SKUs' + (truncated ? ' (showing first ' + MAX_PDF_ROWS + ' — use Excel for the full list)' : '') + ' · ' + today + '</div>'
-      + '<table><colgroup>' + (noImages ? '' : '<col class="c-img">') + '<col class="c-item"><col class="c-desc"><col class="c-qty"><col class="c-wh">' + extraCols + '</colgroup>'
-      + '<tbody><tr class="hdr">' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th>' + extraHead + '</tr>'
-      + rowsHtml
-      + '<tr class="tot"><td colspan="' + (noImages ? 2 : 3) + '">Total · ' + rows.length + ' SKUs</td>'
-      + '<td class="ctr">' + fmtNum(totalQty) + '</td><td class="ctr">' + fmtNum(totalWh) + '</td>'
-      + '<td></td><td></td><td></td></tr>'
-      + '</tbody></table>';
-
-    this.printHtmlInPage(styleCss, bodyHtml, fileTitle, () => this.setState({ storeStockPdfDownloading: false }));
-  }
-
-  async onDownloadStoreStockExcel() {
-    const st = this.state;
-    const store = st.storeStockSelected;
-    const info = st.storeInfoMap && st.storeInfoMap.get(store);
-    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
-    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    const rows = this.getStoreStockRows();
-    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay;
-    const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
-
-    const header = ['Item No.', 'Description 2', 'Qty', 'Neg Qty', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
-    const aoa = [
-      [{ v: storeLabel, s: 1 }],
-      [this.storeStockModeName() + ' · ' + rows.length + ' SKUs · ' + today],
-      [],
-      header.map(h => ({ v: h, s: 5 })),
-    ];
-    for (const r of rows) {
-      const promo = r.pct === 'Was/Now Just';
-      const base = r.highlight ? 3 : 0;
-      const strong = promo ? (r.highlight ? 4 : 2) : base;
-      const line = [
-        { v: r.itemNo, t: 's', s: base },
-        { v: r.description2, t: 's', s: base },
-        { v: num(r.qty), s: base },
-        { v: r.negQty ? num(r.negQty) : '', s: base },
-        { v: num(r.whStock), s: base },
-      ];
-      if (showDiscount) line.push({ v: num(r.was), s: strong }, { v: num(r.now), s: strong }, { v: r.pct, t: 's', s: strong });
-      line.push({ v: r.image || '', t: 's', s: base });
-      aoa.push(line);
-    }
-    const cols = [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 9 }, { width: 11 }]
-      .concat(showDiscount ? [{ width: 10 }, { width: 10 }, { width: 14 }] : [])
-      .concat([{ width: 42 }]);
-    const fileTitle = (storeLabel + '-' + this.storeStockModeName() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
-    downloadXlsx(aoa, fileTitle, { sheetName: 'Stock', cols });
-  }
-  onExportSnapshot() {
-    const s = this.state;
-    if (!s.parsed) return;
-    const snapshot = {
-      generatedAt: new Date().toISOString(),
-      matrix: s.parsed.matrix,
-      retailMap: Array.from(s.parsed.retailMap.entries()),
-      openOrders: Array.from(s.parsed.openOrders),
-      discountMap: Array.from((s.parsed.discountMap || new Map()).entries()),
-      nationalMap: Array.from((s.parsed.nationalMap || new Map()).entries()),
-      storeInfoMap: Array.from(s.storeInfoMap.entries()),
-      storeOptions: s.storeOptions,
-    };
-    const blob = new Blob([JSON.stringify(snapshot)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'inventory-data.json';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
-  }
   onGoPriceTags() { this.setState({ screen: 'pricetags' }); }
   onBackFromPriceTags() { this.setState({ screen: 'menu' }); }
   onTagLayoutFour() { this.setState({ tagLayout: 'four' }); }
@@ -4112,85 +3820,208 @@ class Component extends DCLogic {
     const names = cards.map(c => c.itemNo).join('-');
     this.printHtmlInPage(styleCss, bodyHtml, ('Price-Tags-' + names).replace(/[^a-z0-9\-_.]+/gi, '-'), () => this.setState({ tagsPrinting: false }));
   }
-  onGoDiag() { this.setState({ screen: 'diag' }); }
-  onBackFromDiag() { this.setState({ screen: 'menu' }); }
-  onDiagQueryChange(e) { this.setState({ diagQuery: e.target.value }); }
-  getDiagResults() {
-    const s = this.state;
-    const q = (s.diagQuery || '').trim();
-    if (!s.parsed || !q) return [];
-    const codes = q.split(/[\s,;]+/).map(c => c.trim()).filter(Boolean).slice(0, 10);
-    const { matrix, retailMap, discountMap, nationalMap } = s.parsed;
-    const ink = 'var(--color-text)', bad = '#8b1a1a', muted = 'var(--color-neutral-700)';
-    return codes.map(code => {
-      const lc = code.toLowerCase();
-      const it = matrix.items.find(x => String(x.itemNo).trim().toLowerCase() === lc);
-      const near = it ? [] : matrix.items.filter(x => String(x.itemNo).toLowerCase().includes(lc)).slice(0, 5).map(x => x.itemNo);
-      const r = retailMap.get(it ? it.itemNo : code);
-      const facts = [];
-      if (!it) {
-        facts.push({ k: 'Stock matrix', v: 'Not present — this SKU has no row in the uploaded stock sheet', color: bad });
-        facts.push({ k: 'Partial matches', v: near.length ? near.join(', ') : 'none', color: near.length ? ink : muted });
-        facts.push({ k: 'Item master', v: r ? 'Present (description: ' + (r.description2 || '—') + ')' : 'Not present', color: r ? ink : bad });
-        return { itemNo: code, status: 'Missing from stock matrix', statusTag: 'tag-outline', facts };
+  printHtmlInPage(styleCss, bodyHtml, fileTitle, onDone, orientation) {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) return this.printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone, orientation);
+    let frame = document.getElementById('pdf-print-frame');
+    if (!frame) {
+      frame = document.createElement('iframe');
+      frame.id = 'pdf-print-frame';
+      frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+      document.body.appendChild(frame);
+    }
+    const doc = frame.contentDocument;
+    doc.open();
+    doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + fileTitle + '</title><style>@page{margin:0;' + (orientation ? 'size:' + orientation + ';' : '') + '}body{margin:0.5in}' + styleCss + '</style></head><body>' + bodyHtml + '</body></html>');
+    doc.close();
+    const win = frame.contentWindow;
+    const doPrint = () => {
+      // Chrome names the saved PDF after the TOP document's title, not the
+      // printed iframe's — set it here and restore once the dialog closes.
+      const prevTitle = document.title;
+      document.title = fileTitle;
+      const restore = () => { document.title = prevTitle; };
+      setTimeout(restore, 3000);
+      window.addEventListener('focus', restore, { once: true });
+      try {
+        win.focus();
+        win.print();
+      } catch (e) {
+        this.setState({ loadError: 'Could not generate the PDF: ' + e.message });
       }
-      const nonZero = [], zeros = [], blanks = [];
-      for (const name of matrix.storeNames) {
-        const raw = it.stores[name];
-        if (raw === undefined || raw === '') { blanks.push(name); continue; }
-        const n = Number(raw) || 0;
-        if (n === 0) zeros.push(name); else nonZero.push({ name, n });
-      }
-      const isWh = name => {
-        if (STORE_STOCK_WH_LOCATIONS_LC.has(name.trim().toLowerCase())) return true;
-        const info = s.storeInfoMap && s.storeInfoMap.get(name);
-        const disp = ((info && info.shortName) || name).trim().toLowerCase();
-        return STORE_STOCK_WH_LOCATIONS_LC.has(disp);
-      };
-      const known = nonZero.filter(x => s.storeInfoMap && s.storeInfoMap.get(x.name));
-      const unknown = nonZero.filter(x => !(s.storeInfoMap && s.storeInfoMap.get(x.name)));
-      const excluded = known.filter(x => {
-        const info = s.storeInfoMap.get(x.name);
-        const disp = (info.shortName || x.name).trim().toLowerCase();
-        return EXCLUDED_STORES.has(disp);
-      });
-      const wrongType = known.filter(x => {
-        const info = s.storeInfoMap.get(x.name);
-        return info.storeType !== 'Store' && info.storeType !== 'Warehouse';
-      });
-      const storePos = nonZero.filter(x => !isWh(x.name) && x.n > 0).reduce((a, x) => a + x.n, 0);
-      const storeNeg = nonZero.filter(x => !isWh(x.name) && x.n < 0).reduce((a, x) => a + x.n, 0);
-      const whTotal = nonZero.filter(x => isWh(x.name)).reduce((a, x) => a + x.n, 0);
-      const fmtList = arr => arr.map(x => ((s.storeInfoMap && s.storeInfoMap.get(x.name) && s.storeInfoMap.get(x.name).shortName) || x.name) + ': ' + x.n).join(' · ');
-      facts.push({ k: 'Stock matrix', v: 'Present · ' + matrix.storeNames.length + ' location columns', color: ink });
-      facts.push({ k: 'Item master', v: r ? (r.description2 || '(no description 2)') + (r.subCategory ? ' · sub-cat: ' + r.subCategory : ' · sub-cat: (blank)') : 'Not present — brand/category/sub-category filters will drop it', color: r ? ink : bad });
-      facts.push({ k: 'Non-zero lines', v: nonZero.length ? fmtList(nonZero) : 'none — every location is 0 or blank', color: nonZero.length ? ink : bad });
-      facts.push({ k: 'Store totals', v: storePos + ' positive · ' + storeNeg + ' negative', color: ink });
-      facts.push({ k: 'Warehouse total', v: String(whTotal), color: ink });
-      facts.push({ k: 'Zero / blank', v: zeros.length + ' zero · ' + blanks.length + ' blank', color: muted });
-      if (unknown.length) facts.push({ k: 'Unmapped columns', v: unknown.map(x => x.name).join(', ') + ' — no store-master row, so these are ignored by every report', color: bad });
-      if (excluded.length) facts.push({ k: 'Excluded stores', v: excluded.map(x => x.name).join(', '), color: bad });
-      if (wrongType.length) facts.push({ k: 'Wrong store type', v: wrongType.map(x => x.name).join(', '), color: bad });
-      // Mirror getStoreStockRows' eligibility exactly, so this line agrees with the report.
-      const eligible = new Set(matrix.storeNames.filter(name => {
-        if (STORE_STOCK_WH_LOCATIONS_LC.has(name.trim().toLowerCase())) return false;
-        const info = s.storeInfoMap && s.storeInfoMap.get(name);
-        if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return false;
-        const disp = (info.shortName || name).trim().toLowerCase();
-        if (STORE_STOCK_WH_LOCATIONS_LC.has(disp)) return false;
-        return !EXCLUDED_STORES.has(disp);
-      }).concat(matrix.storeNames.filter(isWh)));
-      const rpPos = nonZero.filter(x => eligible.has(x.name) && x.n > 0).reduce((a, x) => a + x.n, 0);
-      const rpNeg = nonZero.filter(x => eligible.has(x.name) && x.n < 0).reduce((a, x) => a + x.n, 0);
-      const ignored = nonZero.filter(x => !eligible.has(x.name));
-      facts.push({ k: 'Regular & Promo', v: (rpPos || rpNeg) ? 'Visible (all stores) · Qty ' + rpPos + (rpNeg ? ' (' + rpNeg + ')' : '') : 'Hidden — its only stock sits in location(s) no report counts: ' + (ignored.map(x => x.name).join(', ') || 'none'), color: (rpPos || rpNeg) ? ink : bad });
-      facts.push({ k: 'WH vs Stores', v: whTotal > 0 ? 'Visible · WH ' + whTotal : 'Hidden — needs warehouse stock above 0', color: whTotal > 0 ? ink : muted });
-      facts.push({ k: 'Promo data', v: (discountMap && discountMap.get(it.itemNo)) ? 'in discount sheet' : ((nationalMap && nationalMap.get(it.itemNo)) ? 'in national-day sheet only' : 'none — promo-filtered views will drop it'), color: (discountMap && discountMap.get(it.itemNo)) ? ink : muted });
-      facts.push({ k: 'Addnl-1500 list', v: ADDNL_1500_SET.has(it.itemNo) ? 'included' : 'not in list — dropped when that toggle is on', color: ADDNL_1500_SET.has(it.itemNo) ? ink : muted });
-      return { itemNo: it.itemNo, status: nonZero.length ? 'Found' : 'Found · no stock lines', statusTag: nonZero.length ? 'tag-accent' : 'tag-outline', facts };
+    };
+    const imgs = Array.from(doc.querySelectorAll('img'));
+    const pending = imgs.filter(img => !img.complete);
+    let printed = false;
+    const printOnce = () => { if (printed) return; printed = true; doPrint(); if (onDone) onDone(); };
+    if (!pending.length) { printOnce(); return; }
+    let settled = 0;
+    const done = () => { settled++; if (settled >= pending.length) printOnce(); };
+    pending.forEach(img => {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
     });
+    setTimeout(() => {
+      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
+      printOnce();
+    }, 9000);
   }
+
+  printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone, orientation) {
+    let overlay = document.getElementById('pdf-print-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'pdf-print-overlay';
+      document.body.appendChild(overlay);
+    }
+    let styleEl = document.getElementById('pdf-print-overlay-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'pdf-print-overlay-style';
+      document.head.appendChild(styleEl);
+    }
+    const scoped = styleCss.replace(/(^|\})\s*([^{}]+)\{/g, (m, brace, sel) =>
+      brace + sel.split(',').map(s => '#pdf-print-overlay ' + s.trim()).join(',') + '{');
+    styleEl.textContent = '#pdf-print-overlay{display:none;}'
+      + '@media print{@page{margin:0;' + (orientation ? 'size:' + orientation + ';' : '') + '}body>*:not(#pdf-print-overlay){display:none!important;}#pdf-print-overlay{display:block!important;padding:0.5in;}}'
+      + scoped;
+    overlay.innerHTML = bodyHtml;
+    const prevTitle = document.title;
+    document.title = fileTitle;
+    const cleanup = () => {
+      overlay.innerHTML = '';
+      document.title = prevTitle;
+      window.removeEventListener('afterprint', cleanup);
+      if (onDone) onDone();
+    };
+    window.addEventListener('afterprint', cleanup);
+    const doPrint = () => {
+      try { window.print(); } catch (e) {
+        this.setState({ loadError: 'Could not generate the PDF: ' + e.message });
+        cleanup();
+      }
+    };
+    const imgs = Array.from(overlay.querySelectorAll('img'));
+    const pending = imgs.filter(img => !img.complete);
+    let printed = false;
+    const printOnce = () => { if (printed) return; printed = true; doPrint(); };
+    if (!pending.length) { printOnce(); return; }
+    let settled = 0;
+    const done = () => { settled++; if (settled >= pending.length) printOnce(); };
+    pending.forEach(img => {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    });
+    setTimeout(() => {
+      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
+      printOnce();
+    }, 9000);
+  }
+
+  async onDownloadStoreStockPdf() {
+    this.setState({ storeStockPdfDownloading: true });
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const fmtNum = v => {
+      if (v === '' || v === null || v === undefined || isNaN(Number(v))) return esc(v);
+      return Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    };
+    const st = this.state;
+    const store = st.storeStockSelected;
+    const info = st.storeInfoMap && st.storeInfoMap.get(store);
+    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
+    const allRows = this.getStoreStockRows();
+    const showDiscount = true;
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const MAX_PDF_ROWS = 6000;
+    const noImages = allRows.length > 5000;
+    const truncated = allRows.length > MAX_PDF_ROWS;
+    const rows = truncated ? allRows.slice(0, MAX_PDF_ROWS) : allRows;
+
+    const rowsHtml = (noImages ? rows : await this.scaleRowImages(rows)).map(r => (
+      '<tr' + (r.highlight ? ' style="background:#fbe1de;"' : '') + '>'
+      + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" referrerpolicy="no-referrer" />' : '') + '</td>')
+      + '<td class="itemno">' + esc(r.itemNo) + '</td>'
+      + '<td class="desc">' + esc(r.description2) + '</td>'
+      + '<td class="ctr"' + (r.negQty ? ' style="color:#8b1a1a;"' : '') + '>' + (r.qtyText || fmtNum(r.qty)) + '</td>'
+      + '<td class="ctr">' + fmtNum(r.whStock) + '</td>'
+      + (showDiscount ? '<td class="ctr" style="' + (r.pct === 'Was/Now Just' ? 'font-weight:700;color:#8b1a1a;' : '') + '">' + fmtNum(r.was) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + fmtNum(r.now) + '</td><td class="ctr" style="font-weight:700;' + (r.pct === 'Was/Now Just' ? 'color:#8b1a1a;' : '') + '">' + esc(r.pct) + '</td>' : '')
+      + '</tr>'
+    )).join('');
+
+    const fileTitle = (storeLabel + '-' + this.storeStockModeName() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const extraCols = showDiscount ? '<col class="c-rsp"><col class="c-rsp"><col class="c-rsp">' : '';
+    const extraHead = showDiscount ? '<th>Was</th><th>Now</th><th>%</th>' : '';
+    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
+      + 'h1{font-size:20px;margin:0 0 4px;}'
+      + '.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
+      + 'table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;table-layout:fixed;}'
+      + 'tr{break-inside:avoid;}'
+      + 'tr.hdr th{border-bottom:2px solid #201e1d;}'
+      + 'col.c-img{width:11%}col.c-item{width:' + (noImages ? '16' : '14') + '%}col.c-desc{width:' + (noImages ? '32' : '25') + '%}col.c-qty{width:10%}col.c-wh{width:10%}col.c-rsp{width:9%}'
+      + 'th{text-align:center;font-size:11px;text-transform:uppercase;color:#6b6360;padding:6px;border-bottom:2px solid #201e1d;}'
+      + 'th:nth-child(' + (noImages ? 1 : 2) + '),th:nth-child(' + (noImages ? 2 : 3) + '){text-align:left;}'
+      + 'td{padding:6px;border-bottom:1px solid #e6ddd2;white-space:normal;overflow-wrap:break-word;word-break:break-word;text-wrap:pretty;vertical-align:middle;}'
+      + 'td.ctr{white-space:nowrap;}'
+      + 'td.ctr{text-align:center}'
+      + 'td.img-cell{overflow:hidden;}'
+      + 'td.img-cell img{width:100%;height:56px;object-fit:contain;display:block;}'
+      + 'tr.tot td{border-top:2px solid #201e1d;border-bottom:none;font-weight:700;font-size:13px;padding-top:8px;}';
+    const totalQty = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+    const totalWh = rows.reduce((s, r) => s + (Number(r.whStock) || 0), 0);
+    const bodyHtml = '<h1>' + esc(storeLabel) + '</h1>'
+      + '<div class="meta">' + this.storeStockModeName() + ' · ' + rows.length + (truncated ? ' of ' + allRows.length : '') + ' SKUs' + (truncated ? ' (showing first ' + MAX_PDF_ROWS + ' — use Excel for the full list)' : '') + ' · ' + today + '</div>'
+      + '<table><colgroup>' + (noImages ? '' : '<col class="c-img">') + '<col class="c-item"><col class="c-desc"><col class="c-qty"><col class="c-wh">' + extraCols + '</colgroup>'
+      + '<tbody><tr class="hdr">' + (noImages ? '' : '<th></th>') + '<th>Item No.</th><th>Description 2</th><th>Qty</th><th>WH Stock</th>' + extraHead + '</tr>'
+      + rowsHtml
+      + '<tr class="tot"><td colspan="' + (noImages ? 2 : 3) + '">Total · ' + rows.length + ' SKUs</td>'
+      + '<td class="ctr">' + fmtNum(totalQty) + '</td><td class="ctr">' + fmtNum(totalWh) + '</td>'
+      + '<td></td><td></td><td></td></tr>'
+      + '</tbody></table>';
+
+    this.printHtmlInPage(styleCss, bodyHtml, fileTitle, () => this.setState({ storeStockPdfDownloading: false }));
+  }
+
+  async onDownloadStoreStockExcel() {
+    const st = this.state;
+    const store = st.storeStockSelected;
+    const info = st.storeInfoMap && st.storeInfoMap.get(store);
+    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const rows = this.getStoreStockRows();
+    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay;
+    const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
+
+    const header = ['Item No.', 'Description 2', 'Qty', 'Neg Qty', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
+    const aoa = [
+      [{ v: storeLabel, s: 1 }],
+      [this.storeStockModeName() + ' · ' + rows.length + ' SKUs · ' + today],
+      [],
+      header.map(h => ({ v: h, s: 5 })),
+    ];
+    for (const r of rows) {
+      const promo = r.pct === 'Was/Now Just';
+      const base = r.highlight ? 3 : 0;
+      const strong = promo ? (r.highlight ? 4 : 2) : base;
+      const line = [
+        { v: r.itemNo, t: 's', s: base },
+        { v: r.description2, t: 's', s: base },
+        { v: num(r.qty), s: base },
+        { v: r.negQty ? num(r.negQty) : '', s: base },
+        { v: num(r.whStock), s: base },
+      ];
+      if (showDiscount) line.push({ v: num(r.was), s: strong }, { v: num(r.now), s: strong }, { v: r.pct, t: 's', s: strong });
+      line.push({ v: r.image || '', t: 's', s: base });
+      aoa.push(line);
+    }
+    const cols = [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 9 }, { width: 11 }]
+      .concat(showDiscount ? [{ width: 10 }, { width: 10 }, { width: 14 }] : [])
+      .concat([{ width: 42 }]);
+    const fileTitle = (storeLabel + '-' + this.storeStockModeName() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    downloadXlsx(aoa, fileTitle, { sheetName: 'Stock', cols });
+  }
+
   onSkuQueryChange(e) { this.setState({ skuQuery: e.target.value, skuExpanded: '' }); }
+
   async shareSkuImage(item) {
     const S = 2, W = 1080, PAD = 40;
     const BG = '#ffffff', INK = '#201e1d', MUTED = '#645c50', ACCENT = '#c67139', RED = '#8b1a1a', SAGE = '#eef3e6', LINE = '#e2dbcd', ROWTINT = '#faf6ee';
@@ -4406,11 +4237,13 @@ class Component extends DCLogic {
           image: r.image && r.image !== '(blank)' ? r.image : '',
           storeRows, totalQty,
         }),
+
         ...metrics,
         showCostPanel: exp && metrics.showCost,
       };
     });
   }
+
   onStatusFilter(val) { this.setState({ statusFilter: val }); }
   onStockFilter(val) { this.setState({ stockFilter: val }); }
   onLowStockFilter(val) { this.setState({ lowStockFilter: val }); }
@@ -4424,6 +4257,7 @@ class Component extends DCLogic {
       return true;
     });
   }
+
   async onDownloadPdf() {
     const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const st = this.state;
@@ -4435,9 +4269,8 @@ class Component extends DCLogic {
     const discontinuedCount = results.filter(r => r.discontinued).length;
     const inOrderCount = results.filter(r => r.inOrder).length;
 
-    const scaledResults = await this.scaleRowImages(results);
     const MAROON = '#643312', GREEN = '#3d472b', GREY = '#645c50';
-    const rowsHtml = scaledResults.map(r => (
+    const rowsHtml = (await this.scaleRowImages(results)).map(r => (
       '<tr>'
       + '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" />' : '') + '</td>'
       + '<td class="itemno">' + esc(r.itemNo) + '</td>'
@@ -4504,13 +4337,6 @@ class Component extends DCLogic {
     downloadXlsx(aoa, fileTitle, {
       sheetName: 'Report',
       cols: [{ width: 16 }, { width: 48 }, { width: 8 }, { width: 11 }, { width: 14 }, { width: 12 }],
-    });
-  }
-
-  onResetUpload() {
-    this.setState({
-      screen: 'upload', files: { matrix: null, stores: null, retail: null, purchase: null },
-      error: '', parsed: null, storeOptions: [], results: null,
     });
   }
 
@@ -4587,7 +4413,8 @@ class Component extends DCLogic {
       langIsAr: langAr,
       onLangEn: () => this.setLang('en'),
       onLangAr: () => this.setLang('ar'),
-      isUpload: s.screen === 'upload',
+      isLoading: s.screen === 'loading',
+      loadError: s.loadError,
       isMenu: s.screen === 'menu',
       isPriceTags: s.screen === 'pricetags',
       tagCards: s.screen === 'pricetags' ? this.getTagCards() : [],
@@ -4626,12 +4453,7 @@ class Component extends DCLogic {
       onTagSku2: e => this.onTagSkuChange(2, e),
       onTagSku3: e => this.onTagSkuChange(3, e),
       onPrintPriceTags: () => this.onPrintPriceTags(),
-      isDiag: s.screen === 'diag',
-      diagQuery: s.diagQuery || '',
-      diagResults: s.screen === 'diag' ? this.getDiagResults() : [],
-      onGoDiag: () => this.onGoDiag(),
-      onBackFromDiag: () => this.onBackFromDiag(),
-      onDiagQueryChange: e => this.onDiagQueryChange(e),
+
       isWhStores: s.screen === 'whstores',
       onGoWhStores: () => this.onGoWhStores(),
       onBackFromWhStores: () => this.onBackFromWhStores(),
@@ -4654,6 +4476,7 @@ class Component extends DCLogic {
       whPdfDownloading: !!s.whPdfDownloading,
       whPdfLabel: s.whPdfDownloading ? 'Downloading…' : 'Download PDF',
       wh: s.screen === 'whstores' ? this.getWhView() : { rows: [], has: false, empty: false, summary: '', scopeName: '', pageLabel: '', showPager: false, prevDisabled: true, nextDisabled: true },
+
       isNegInv: s.screen === 'neginv',
       negInvByStore: negInvByStore,
       hasNegInvStores: negInvByStore.length > 0,
@@ -4678,6 +4501,17 @@ class Component extends DCLogic {
       onDownloadNegInvPdf: () => this.onDownloadNegInvPdf(),
       onDownloadNegInvExcel: () => this.onDownloadNegInvExcel(),
 
+      isAdmin: s.isAdmin,
+      adminSignedOut: !s.isAdmin,
+      adminPromptOpen: s.adminPromptOpen,
+      adminPromptClosed: !s.adminPromptOpen,
+      adminPw: s.adminPw,
+      adminError: s.adminError,
+      onAdminOpen: () => this.onAdminOpen(),
+      onAdminPwChange: e => this.onAdminPwChange(e),
+      onAdminPwKeyDown: e => this.onAdminPwKeyDown(e),
+      onAdminSubmit: () => this.onAdminSubmit(),
+      onAdminSignOut: () => this.onAdminSignOut(),
       isDistribution: s.screen === 'distribution',
       onGoDistribution: () => this.onGoDistribution(),
       onBackFromDistribution: () => this.onBackFromDistribution(),
@@ -4772,33 +4606,11 @@ class Component extends DCLogic {
       categoryOptions: (s.screen === 'storestock' || s.screen === 'select' || s.screen === 'distribution') ? this.getCategoryOptions() : [],
       subCategoryOptions: subCategoryOptions,
       hasSubCategoryOptions: subCategoryOptions.length > 0,
-      error: s.error,
-      processLabel: s.processing ? 'Processing…' : 'Process files',
-      processDisabled: s.processing,
-      storeOptions: s.storeOptions,
-      selectedStore: s.selectedStore,
-      qty1Checked: s.selectedQty === 1,
-      qty2Checked: s.selectedQty === 2,
-      onFileMatrix: e => this.onFileMatrix(e),
-      onFileStores: e => this.onFileStores(e),
-      onFileRetail: e => this.onFileRetail(e),
-      onFilePurchase: e => this.onFilePurchase(e),
-      onProcess: () => this.onProcess(),
-      onStoreChange: e => this.onStoreChange(e),
-      onQty1: () => this.onQty1(),
-      onQty2: () => this.onQty2(),
-      onGenerate: () => this.onGenerate(),
-      onResetUpload: () => this.onResetUpload(),
-      onBackToSelect: () => this.onBackToSelect(),
       onGoSelect: () => this.onGoSelect(),
       onBackFromSelect: () => this.onBackFromSelect(),
-      onGoSkuLookup: () => this.onGoSkuLookup(),
-      onBackFromSku: () => this.onBackFromSku(),
       onGoStoreStock: () => this.onGoStoreStock(),
       onBackFromStoreStock: () => this.onBackFromStoreStock(),
       onStoreStockChange: e => this.onStoreStockChange(e),
-      onFileDiscount: e => this.onFileDiscount(e),
-      onFileNational: e => this.onFileNational(e),
       onDiscountOn: () => this.onDiscountOn(),
       onDiscountOff: () => this.onDiscountOff(),
       onAddnl1500On: () => this.onAddnl1500On(),
@@ -4810,7 +4622,17 @@ class Component extends DCLogic {
       storeStockPdfDownloadLabel: s.storeStockPdfDownloading ? 'Downloading…' : 'Download PDF',
       onDownloadStoreStockPdf: () => this.onDownloadStoreStockPdf(),
       onDownloadStoreStockExcel: () => this.onDownloadStoreStockExcel(),
-      onExportSnapshot: () => this.onExportSnapshot(),
+      storeOptions: s.storeOptions,
+      selectedStore: s.selectedStore,
+      qty1Checked: s.selectedQty === 1,
+      qty2Checked: s.selectedQty === 2,
+      onStoreChange: e => this.onStoreChange(e),
+      onQty1: () => this.onQty1(),
+      onQty2: () => this.onQty2(),
+      onGenerate: () => this.onGenerate(),
+      onBackToSelect: () => this.onBackToSelect(),
+      onGoSkuLookup: () => this.onGoSkuLookup(),
+      onBackFromSku: () => this.onBackFromSku(),
       onSkuQueryChange: e => this.onSkuQueryChange(e),
       skuQuery: s.skuQuery,
       skuQueryTooShort: s.screen === 'skulookup' && s.skuQuery.trim().length > 0 && s.skuQuery.trim().length < 2,
