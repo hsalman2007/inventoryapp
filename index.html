@@ -872,14 +872,14 @@
                 <div style="flex: 1 1 0; min-height: 0; container-type: inline-size;">
                   <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
                     <div style="width: 100%; height: 100%; border: {{c.shFrame}}; background: #fff; position: relative; display: flex; overflow: hidden; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a;">
-                      <div style="width: 34%; flex: none; display: flex; flex-direction: column; justify-content: flex-start; padding: 0.5cqw 0.5cqw 0; min-width: 0;">
+                      <div style="width: 34%; flex: none; display: flex; flex-direction: column; justify-content: center; padding: 0.5cqw 0.5cqw 4cqw; min-width: 0;">
                         <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
-                          
+                          <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 100%; height: auto; max-height: {{c.logoMaxH}}; object-fit: contain; object-position: left center; display: block;">
                         </sc-if>
                         <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
                           <div style="height: 13.6cqw;"></div>
                         </sc-if>
-                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 126px; display: block; z-index: 0; align-self: auto; height: 60px"></div>
+                      </div>
                       <div style="position: absolute; left: 0; bottom: 0; width: 52%; padding: 0.5cqw 1cqw 0.6cqw; border-top: 0.25cqw solid #1a1a1a; font-family: Arial, sans-serif; font-weight: 700; font-size: 1.7cqw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.shLine}}</div>
                       <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
                         <div style="width: 18%; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3cqw; padding-bottom: 3cqw;">
@@ -931,7 +931,7 @@
                 <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
                   <div style="width: 100%; height: 100%; border: {{c.frame}}; display: flex; flex-direction: column; align-items: center; padding: 2.94cqw 3.92cqw 3.92cqw; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a; overflow: hidden;">
                     <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
-                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 86%; display: block; margin: 0.98cqw auto 1.96cqw;">
+                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 86%; height: auto; object-fit: contain; display: block; margin: 0.98cqw auto 1.96cqw;">
                     </sc-if>
                     <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
                       <div style="width: 86%; height: 13.79cqw; margin: 0.98cqw auto 1.96cqw; flex: none;"></div>
@@ -3585,8 +3585,8 @@ class Component extends DCLogic {
   tagBrandTheme(brand) {
     const key = String(brand || '').trim().toLowerCase();
     const themes = {
-      arb: { label: 'ARB', logo: 'assets/arb-tag-header.png', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-red.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' },
-      gamo: { label: 'GAMO', logo: 'assets/gamo-tag-header.png', accent: '#e31e24', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
+      arb: { label: 'ARB', logo: 'assets/arb-tag-header.png', logoMaxH: '16cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-red.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' },
+      gamo: { label: 'GAMO', logo: 'assets/gamo-tag-header.png', logoMaxH: '9cqw', accent: '#e31e24', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
     };
     // Exact match on the normalised name, plus explicit aliases — never a prefix match,
     // or brands like "Arbortech" would inherit the ARB template.
@@ -3636,6 +3636,7 @@ class Component extends DCLogic {
       card.brand = brand;
       card.brandLabel = theme.label || brand || 'No brand';
       card.logoSrc = theme.logo;
+      card.logoMaxH = theme.logoMaxH || '16cqw';
       card.hasLogo = !!theme.logo;
       card.noLogo = !theme.logo;
       card.accent = theme.accent;
@@ -3769,7 +3770,7 @@ class Component extends DCLogic {
       + '.tag{padding:4mm 1.5mm;}'
       + '.sheet.solo .tag{padding:0;width:102mm;height:140.5mm;flex:none;transform:scale(2.029);transform-origin:center center;}'
       + '.frame{width:100%;height:100%;overflow:hidden;background:#fff;display:flex;flex-direction:column;align-items:center;padding:3mm 4mm 4mm;font-family:Arial Black,Arial Bold,Arial,Helvetica,sans-serif;color:#1a1a1a;}'
-      + '.hdr{width:86%;display:block;margin:1mm auto 2mm;}'
+      + '.hdr{width:86%;height:auto;object-fit:contain;display:block;margin:1mm auto 2mm;}'
       + '.hdr.blanklogo{height:14mm;flex:none;}'
       + '.sku{font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:5.2mm;letter-spacing:0.02em;text-align:center;height:6mm;line-height:6mm;flex:none;}'
       + '.desc{font-family:Arial,Helvetica,sans-serif;font-weight:500;font-size:5mm;line-height:1.15;text-align:center;width:100%;height:11mm;display:flex;align-items:center;justify-content:center;overflow:hidden;text-wrap:pretty;flex:none;}'
@@ -3788,13 +3789,13 @@ class Component extends DCLogic {
       + '.nowrow{margin-top:4mm;direction:ltr;}'
       + '.band{width:calc(100% + 8mm);margin:0 -4mm -4mm;padding:2mm 4mm 3mm;color:#fff;display:flex;flex-direction:column;align-items:center;flex:1 1 auto;justify-content:flex-start;}'
       + '.band .nowrow{margin-top:0;height:8mm;}'
-      + '.band .nowprice{height:auto;flex:1 1 auto;}'
+      + '.band .nowprice{height:auto;flex:1 1 auto;color:#fff;}'
       + '.gap{height:22mm;flex:none;}'
       + '.blank{}'
       + '.sheet.shelf{display:flex;flex-direction:column;gap:3mm;padding:6mm 5mm;}'
       + '.sht{width:200mm;height:45mm;flex:none;position:relative;display:flex;overflow:hidden;background:#fff;font-family:Arial Black,Arial Bold,Arial,Helvetica,sans-serif;color:#1a1a1a;}'
-      + '.shL{width:34%;flex:none;display:flex;flex-direction:column;justify-content:flex-start;padding:1mm 1mm 0;min-width:0;}'
-      + '.shL img{width:100%;display:block;}'
+      + '.shL{width:34%;flex:none;display:flex;flex-direction:column;justify-content:center;padding:1mm 1mm 9mm;min-width:0;}'
+      + '.shL img{width:100%;height:auto;object-fit:contain;object-position:left center;display:block;}'
       + '.shLine{position:absolute;left:0;bottom:0;width:52%;padding:1mm 2mm 1.2mm;border-top:0.5mm solid #1a1a1a;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:3.4mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
       + '.shM{width:18%;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.6mm;padding-bottom:6mm;}'
       + '.shWrow{display:flex;align-items:baseline;gap:2mm;direction:ltr;}'
