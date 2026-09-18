@@ -950,9 +950,9 @@
                     <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
                       <div style="height: 21.57cqw; flex: none;"></div>
                     </sc-if>
-                    <div style="position: relative; z-index: 2; width: calc(100% + 7.85cqw); margin: 11.28cqw -3.92cqw 0; border-top: 0.49cqw solid #1a1a1a; height: 0; display: flex; justify-content: center;">
+                    <div style="position: relative; z-index: 2; width: calc(100% + 7.85cqw); margin: 15.2cqw -3.92cqw 0; border-top: 0.49cqw solid #1a1a1a; height: 0; display: flex; justify-content: center;">
                       <sc-if value="{{c.hasPct}}" hint-placeholder-val="{{true}}">
-                        <span style="position: absolute; top: -10.29cqw; width: 20.59cqw; height: 20.59cqw; border: 0.49cqw solid #1a1a1a; border-radius: 50%; background: {{c.accent}}; color: #fff; font-size: 7.46cqw; font-weight: 900; font-style: italic; letter-spacing: -0.03em; text-shadow: 0.49cqw 0.49cqw 0 {{c.shade}}; display: flex; align-items: center; justify-content: center;">{{c.pctText}}</span>
+                        <span style="position: absolute; top: -15.44cqw; width: 30.88cqw; height: 30.88cqw; border: 0.69cqw solid #1a1a1a; border-radius: 50%; background: {{c.accent}}; color: #fff; font-size: 11.18cqw; font-weight: 900; font-style: italic; letter-spacing: -0.03em; text-shadow: 0.74cqw 0.74cqw 0 {{c.shade}}; display: flex; align-items: center; justify-content: center;">{{c.pctText}}</span>
                       </sc-if>
                     </div>
                     <sc-if value="{{c.noBand}}" hint-placeholder-val="{{true}}">
@@ -975,13 +975,13 @@
                     <sc-if value="{{c.band}}" hint-placeholder-val="{{false}}">
                       <div style="width: calc(100% + 7.85cqw); margin: 0 -3.92cqw -3.92cqw; padding: 1.96cqw 3.92cqw 2.94cqw; background: {{c.accent}}; color: #fff; display: flex; flex-direction: column; align-items: center; flex: 1 1 auto; justify-content: flex-start;">
                         <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
-                          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 8cqw; flex: none; direction: ltr;">
+                          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 13.73cqw; flex: none; direction: ltr;">
                             <span style="font-size: 8.04cqw; font-weight: 900;">NOW</span>
                             <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; unicode-bidi: isolate;">بعد</span>
                           </div>
                         </sc-if>
                         <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
-                          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 8cqw; flex: none; direction: ltr;">
+                          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 13.73cqw; flex: none; direction: ltr;">
                             <span style="font-size: 8.04cqw; font-weight: 900;">PRICE</span>
                             <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; unicode-bidi: isolate;">السعر</span>
                           </div>
@@ -3587,10 +3587,11 @@ class Component extends DCLogic {
     const themes = {
       arb: { label: 'ARB', logo: 'assets/arb-tag-header.png', logoMaxH: '16cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-red.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' },
       gamo: { label: 'GAMO', logo: 'assets/gamo-tag-header.png', logoMaxH: '9cqw', accent: '#e31e24', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
+      wander: { label: 'WANDER', logo: 'assets/wander-tag-header.png', logoMaxH: '13cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
     };
     // Exact match on the normalised name, plus explicit aliases — never a prefix match,
     // or brands like "Arbortech" would inherit the ARB template.
-    const aliases = { 'arb': 'arb', 'arb 4x4': 'arb', 'arb 4x4 accessories': 'arb', 'arb accessories': 'arb', 'gamo': 'gamo', 'gamo outdoor': 'gamo', 'gamo outdoor usa': 'gamo', 'gamo usa': 'gamo' };
+    const aliases = { 'arb': 'arb', 'arb 4x4': 'arb', 'arb 4x4 accessories': 'arb', 'arb accessories': 'arb', 'gamo': 'gamo', 'gamo outdoor': 'gamo', 'gamo outdoor usa': 'gamo', 'gamo usa': 'gamo', 'wander': 'wander', 'wander camping': 'wander', 'wander camping equipment': 'wander', 'wander outdoor': 'wander' };
     const hit = themes[key] || themes[aliases[key]];
     if (hit) return hit;
     return { label: String(brand || '').trim(), logo: '', accent: '#1a1a1a', shade: '#5a5a5a', ry: 'assets/riyal-black.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' };
@@ -3748,7 +3749,7 @@ class Component extends DCLogic {
         + (c.nowText
           ? '<div class="wasrow"><span class="lbl">WAS</span><span class="lbl ar">\u0642\u0628\u0644</span></div>'
             + '<div class="wasprice"><span class="strike"><img class="ry blk" src="' + riyalBlack + '" alt="" />' + esc(c.wasText) + '</span></div>'
-            + '<div class="rule">' + (c.hasPct ? '<span class="badge" style="background:' + ac + ';text-shadow:0.5mm 0.5mm 0 ' + c.shade + '">' + esc(c.pctText) + '</span>' : '') + '</div>'
+            + '<div class="rule">' + (c.hasPct ? '<span class="badge" style="background:' + ac + ';text-shadow:0.75mm 0.75mm 0 ' + c.shade + '">' + esc(c.pctText) + '</span>' : '') + '</div>'
           : '<div class="gap"></div><div class="rule"></div>')
         + bottom
         + '</div></div>';
@@ -3773,12 +3774,12 @@ class Component extends DCLogic {
       + '.ry{display:block;}'
       + '.ry.blk{height:8mm;}'
       + '.ry.big{height:20mm;}'
-      + '.rule{position:relative;z-index:2;width:calc(100% + 8mm);margin:11.5mm -4mm 0;border-top:0.5mm solid #1a1a1a;height:0;display:flex;justify-content:center;}'
-      + '.badge{position:absolute;top:-10.5mm;width:21mm;height:21mm;border:0.5mm solid #1a1a1a;border-radius:50%;background:#e1261c;color:#fff;font-size:7.6mm;font-weight:900;font-style:italic;letter-spacing:-0.03em;text-shadow:0.5mm 0.5mm 0 #8f120c;display:flex;align-items:center;justify-content:center;}'
+      + '.rule{position:relative;z-index:2;width:calc(100% + 8mm);margin:15.5mm -4mm 0;border-top:0.5mm solid #1a1a1a;height:0;display:flex;justify-content:center;}'
+      + '.badge{position:absolute;top:-15.75mm;width:31.5mm;height:31.5mm;border:0.7mm solid #1a1a1a;border-radius:50%;background:#e1261c;color:#fff;font-size:11.4mm;font-weight:900;font-style:italic;letter-spacing:-0.03em;text-shadow:0.75mm 0.75mm 0 #8f120c;display:flex;align-items:center;justify-content:center;}'
       + '.nowprice{display:flex;align-items:center;justify-content:center;gap:2mm;width:100%;max-width:100%;height:21.5mm;margin:0;color:#e1261c;font-weight:900;line-height:1;white-space:nowrap;flex:none;}'
       + '.nowrow{margin-top:4mm;direction:ltr;}'
       + '.band{width:calc(100% + 8mm);margin:0 -4mm -4mm;padding:2mm 4mm 3mm;color:#fff;display:flex;flex-direction:column;align-items:center;flex:1 1 auto;justify-content:flex-start;}'
-      + '.band .nowrow{margin-top:0;height:8mm;}'
+      + '.band .nowrow{margin-top:0;height:14mm;}'
       + '.band .nowprice{height:auto;flex:1 1 auto;color:#fff;}'
       + '.gap{height:22mm;flex:none;}'
       + '.blank{}'
