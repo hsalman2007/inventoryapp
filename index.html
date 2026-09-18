@@ -931,7 +931,7 @@
                 <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
                   <div style="width: 100%; height: 100%; border: {{c.frame}}; display: flex; flex-direction: column; align-items: center; padding: 2.94cqw 3.92cqw 3.92cqw; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a; overflow: hidden;">
                     <sc-if value="{{c.hasLogo}}" hint-placeholder-val="{{true}}">
-                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 86%; height: auto; object-fit: contain; display: block; margin: 0.98cqw auto 1.96cqw;">
+                      <img src="{{c.logoSrc}}" alt="{{c.brandLabel}}" style="width: 86%; height: auto; max-height: 27.45cqw; object-fit: contain; display: block; margin: 0.98cqw auto 1.96cqw;">
                     </sc-if>
                     <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
                       <div style="width: 86%; height: 13.79cqw; margin: 0.98cqw auto 1.96cqw; flex: none;"></div>
@@ -3589,10 +3589,11 @@ class Component extends DCLogic {
       gamo: { label: 'GAMO', logo: 'assets/gamo-tag-header.png', logoMaxH: '9cqw', accent: '#e31e24', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
       wander: { label: 'WANDER', logo: 'assets/wander-tag-header.png', logoMaxH: '13cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
       stanley: { label: 'STANLEY', logo: 'assets/stanley-tag-header.png', logoMaxH: '14cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
+      nitecore: { label: 'NITECORE', logo: 'assets/nitecore-tag-header.png', logoMaxH: '12cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
     };
     // Exact match on the normalised name, plus explicit aliases — never a prefix match,
     // or brands like "Arbortech" would inherit the ARB template.
-    const aliases = { 'arb': 'arb', 'arb 4x4': 'arb', 'arb 4x4 accessories': 'arb', 'arb accessories': 'arb', 'gamo': 'gamo', 'gamo outdoor': 'gamo', 'gamo outdoor usa': 'gamo', 'gamo usa': 'gamo', 'wander': 'wander', 'wander camping': 'wander', 'wander camping equipment': 'wander', 'wander outdoor': 'wander', 'stanley': 'stanley', 'stanley 1913': 'stanley', 'stanley pmi': 'stanley' };
+    const aliases = { 'arb': 'arb', 'arb 4x4': 'arb', 'arb 4x4 accessories': 'arb', 'arb accessories': 'arb', 'gamo': 'gamo', 'gamo outdoor': 'gamo', 'gamo outdoor usa': 'gamo', 'gamo usa': 'gamo', 'wander': 'wander', 'wander camping': 'wander', 'wander camping equipment': 'wander', 'wander outdoor': 'wander', 'stanley': 'stanley', 'stanley 1913': 'stanley', 'stanley pmi': 'stanley', 'nitecore': 'nitecore', 'nitecore systems': 'nitecore' };
     const hit = themes[key] || themes[aliases[key]];
     if (hit) return hit;
     return { label: String(brand || '').trim(), logo: '', accent: '#1a1a1a', shade: '#5a5a5a', ry: 'assets/riyal-black.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' };
@@ -3762,7 +3763,7 @@ class Component extends DCLogic {
       + '.tag{padding:4mm 1.5mm;}'
       + '.sheet.solo .tag{padding:0;width:102mm;height:140.5mm;flex:none;transform:scale(2.029);transform-origin:center center;}'
       + '.frame{width:100%;height:100%;overflow:hidden;background:#fff;display:flex;flex-direction:column;align-items:center;padding:3mm 4mm 4mm;font-family:Arial Black,Arial Bold,Arial,Helvetica,sans-serif;color:#1a1a1a;}'
-      + '.hdr{width:86%;height:auto;object-fit:contain;display:block;margin:1mm auto 2mm;}'
+      + '.hdr{width:86%;height:auto;max-height:28mm;object-fit:contain;display:block;margin:1mm auto 2mm;}'
       + '.hdr.blanklogo{height:14mm;flex:none;}'
       + '.sku{margin-top:3.5mm;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:5.2mm;letter-spacing:0.02em;text-align:center;height:6mm;line-height:6mm;flex:none;}'
       + '.desc{font-family:Arial,Helvetica,sans-serif;font-weight:500;font-size:5mm;line-height:1.15;text-align:center;width:100%;height:11mm;display:flex;align-items:center;justify-content:center;overflow:hidden;text-wrap:pretty;flex:none;}'
