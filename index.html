@@ -3623,18 +3623,6 @@ class Component extends DCLogic {
       card.itemNo = itemNo;
       const brand = ((r && r.brand) || (it && it.brand) || '').trim();
       const theme = this.tagBrandTheme(brand);
-      // GAMO tag printing is hidden from public view for now — re-enable by deleting this block.
-      if (theme.label === 'GAMO') {
-        card.found = false;
-        card.unusable = true;
-        card.brand = brand;
-        card.brandLabel = 'GAMO';
-        card.empty = true;
-        card.unusable = false;
-        card.note = '';
-        card.noteColor = 'var(--color-neutral-700)';
-        return card;
-      }
       card.brand = brand;
       card.brandLabel = theme.label || brand || 'No brand';
       card.logoSrc = theme.logo;
