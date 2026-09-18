@@ -924,9 +924,9 @@
           </sc-if>
 
           <sc-if value="{{isCardLayout}}" hint-placeholder-val="{{true}}">
-          <div style="display: grid; grid-template-columns: {{tagGridCols}}; gap: 6px; background: var(--color-neutral-200); padding: 6px; border-radius: var(--radius-sm);">
+          <div style="display: grid; grid-template-columns: {{tagGridCols}}; min-width: 0; gap: 6px; background: var(--color-neutral-200); padding: 6px; border-radius: var(--radius-sm);">
             <sc-for list="{{tagCards}}" as="c" hint-placeholder-count="4">
-              <div style="background: #fff; aspect-ratio: {{tagCellRatio}}; padding: {{tagCellPad}}; display: flex; align-items: center; justify-content: center;">
+              <div style="background: #fff; aspect-ratio: {{tagCellRatio}}; padding: {{tagCellPad}}; display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden;">
                 <div style="width: 100%; aspect-ratio: 102 / 140.5; container-type: inline-size;">
                 <sc-if value="{{c.found}}" hint-placeholder-val="{{true}}">
                   <div style="width: 100%; height: 100%; border: {{c.frame}}; display: flex; flex-direction: column; align-items: center; padding: 2.94cqw 3.92cqw 3.92cqw; font-family: Arial Black, Arial, sans-serif; color: #1a1a1a; overflow: hidden;">
@@ -3630,6 +3630,7 @@ class Component extends DCLogic {
         card.brand = brand;
         card.brandLabel = 'GAMO';
         card.empty = true;
+        card.unusable = false;
         card.note = '';
         card.noteColor = 'var(--color-neutral-700)';
         return card;
@@ -4452,7 +4453,7 @@ class Component extends DCLogic {
         : s.tagLayout === 'one'
         ? 'Preview — printed output is one tag filling an A4 sheet.'
         : 'Preview — printed output is A4, four tags per sheet.',
-      tagGridCols: s.tagLayout === 'one' ? '1fr' : '1fr 1fr',
+      tagGridCols: s.tagLayout === 'one' ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(0, 1fr)',
       tagCellRatio: s.tagLayout === 'one' ? '210 / 297' : '105 / 148.5',
       tagCellPad: s.tagLayout === 'one' ? '1.35% 0.71%' : '3.81% 1.43%',
       tagSeasonalChecked: s.tagPriceSource !== 'national',
