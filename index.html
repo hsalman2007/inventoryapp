@@ -936,7 +936,7 @@
                     <sc-if value="{{c.noLogo}}" hint-placeholder-val="{{false}}">
                       <div style="width: 86%; height: 13.79cqw; margin: 0.98cqw auto 1.96cqw; flex: none;"></div>
                     </sc-if>
-                    <div style="font-family: Arial, sans-serif; font-weight: 700; font-size: 5.1cqw; text-align: center; height: 5.89cqw; line-height: 5.89cqw; flex: none;">{{c.itemNo}}</div>
+                    <div style="margin-top: 3.43cqw; font-family: Arial, sans-serif; font-weight: 700; font-size: 5.1cqw; text-align: center; height: 5.89cqw; line-height: 5.89cqw; flex: none;">{{c.itemNo}}</div>
                     <div style="font-family: Arial, sans-serif; font-size: 4.9cqw; line-height: 1.15; text-align: center; width: 100%; height: 10.78cqw; display: flex; align-items: center; justify-content: center; overflow: hidden; flex: none;">{{c.description}}</div>
                     <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
                       <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; flex: none;">
@@ -957,13 +957,13 @@
                     </div>
                     <sc-if value="{{c.noBand}}" hint-placeholder-val="{{true}}">
                       <sc-if value="{{c.hasPromo}}" hint-placeholder-val="{{true}}">
-                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 3.92cqw; flex: none;">
+                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 7.84cqw; flex: none;">
                           <span style="font-size: 8.04cqw; font-weight: 900; color: {{c.accent}};">NOW</span>
                           <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; color: {{c.accent}};">بعد</span>
                         </div>
                       </sc-if>
                       <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
-                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 3.92cqw; flex: none;">
+                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; height: 9.8cqw; margin-top: 7.84cqw; flex: none;">
                           <span style="font-size: 8.04cqw; font-weight: 900; color: {{c.accent}};">PRICE</span>
                           <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900; color: {{c.accent}};">السعر</span>
                         </div>
@@ -3588,10 +3588,11 @@ class Component extends DCLogic {
       arb: { label: 'ARB', logo: 'assets/arb-tag-header.png', logoMaxH: '16cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-red.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' },
       gamo: { label: 'GAMO', logo: 'assets/gamo-tag-header.png', logoMaxH: '9cqw', accent: '#e31e24', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
       wander: { label: 'WANDER', logo: 'assets/wander-tag-header.png', logoMaxH: '13cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
+      stanley: { label: 'STANLEY', logo: 'assets/stanley-tag-header.png', logoMaxH: '14cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
     };
     // Exact match on the normalised name, plus explicit aliases — never a prefix match,
     // or brands like "Arbortech" would inherit the ARB template.
-    const aliases = { 'arb': 'arb', 'arb 4x4': 'arb', 'arb 4x4 accessories': 'arb', 'arb accessories': 'arb', 'gamo': 'gamo', 'gamo outdoor': 'gamo', 'gamo outdoor usa': 'gamo', 'gamo usa': 'gamo', 'wander': 'wander', 'wander camping': 'wander', 'wander camping equipment': 'wander', 'wander outdoor': 'wander' };
+    const aliases = { 'arb': 'arb', 'arb 4x4': 'arb', 'arb 4x4 accessories': 'arb', 'arb accessories': 'arb', 'gamo': 'gamo', 'gamo outdoor': 'gamo', 'gamo outdoor usa': 'gamo', 'gamo usa': 'gamo', 'wander': 'wander', 'wander camping': 'wander', 'wander camping equipment': 'wander', 'wander outdoor': 'wander', 'stanley': 'stanley', 'stanley 1913': 'stanley', 'stanley pmi': 'stanley' };
     const hit = themes[key] || themes[aliases[key]];
     if (hit) return hit;
     return { label: String(brand || '').trim(), logo: '', accent: '#1a1a1a', shade: '#5a5a5a', ry: 'assets/riyal-black.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' };
@@ -3763,7 +3764,7 @@ class Component extends DCLogic {
       + '.frame{width:100%;height:100%;overflow:hidden;background:#fff;display:flex;flex-direction:column;align-items:center;padding:3mm 4mm 4mm;font-family:Arial Black,Arial Bold,Arial,Helvetica,sans-serif;color:#1a1a1a;}'
       + '.hdr{width:86%;height:auto;object-fit:contain;display:block;margin:1mm auto 2mm;}'
       + '.hdr.blanklogo{height:14mm;flex:none;}'
-      + '.sku{font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:5.2mm;letter-spacing:0.02em;text-align:center;height:6mm;line-height:6mm;flex:none;}'
+      + '.sku{margin-top:3.5mm;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:5.2mm;letter-spacing:0.02em;text-align:center;height:6mm;line-height:6mm;flex:none;}'
       + '.desc{font-family:Arial,Helvetica,sans-serif;font-weight:500;font-size:5mm;line-height:1.15;text-align:center;width:100%;height:11mm;display:flex;align-items:center;justify-content:center;overflow:hidden;text-wrap:pretty;flex:none;}'
       + '.wasrow,.nowrow{width:100%;display:flex;justify-content:space-between;align-items:center;height:10mm;flex:none;}'
       + '.lbl{font-size:8.2mm;font-weight:900;letter-spacing:0.01em;}'
@@ -3777,7 +3778,7 @@ class Component extends DCLogic {
       + '.rule{position:relative;z-index:2;width:calc(100% + 8mm);margin:15.5mm -4mm 0;border-top:0.5mm solid #1a1a1a;height:0;display:flex;justify-content:center;}'
       + '.badge{position:absolute;top:-15.75mm;width:31.5mm;height:31.5mm;border:0.7mm solid #1a1a1a;border-radius:50%;background:#e1261c;color:#fff;font-size:11.4mm;font-weight:900;font-style:italic;letter-spacing:-0.03em;text-shadow:0.75mm 0.75mm 0 #8f120c;display:flex;align-items:center;justify-content:center;}'
       + '.nowprice{display:flex;align-items:center;justify-content:center;gap:2mm;width:100%;max-width:100%;height:21.5mm;margin:0;color:#e1261c;font-weight:900;line-height:1;white-space:nowrap;flex:none;}'
-      + '.nowrow{margin-top:4mm;direction:ltr;}'
+      + '.nowrow{margin-top:8mm;direction:ltr;}'
       + '.band{width:calc(100% + 8mm);margin:0 -4mm -4mm;padding:2mm 4mm 3mm;color:#fff;display:flex;flex-direction:column;align-items:center;flex:1 1 auto;justify-content:flex-start;}'
       + '.band .nowrow{margin-top:0;height:14mm;}'
       + '.band .nowprice{height:auto;flex:1 1 auto;color:#fff;}'
