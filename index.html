@@ -3590,11 +3590,12 @@ class Component extends DCLogic {
       gamo: { label: 'GAMO', logo: 'assets/gamo-tag-header.png', logoMaxH: '9cqw', accent: '#e31e24', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
       wander: { label: 'WANDER', logo: 'assets/wander-tag-header.png', logoMaxH: '13cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
       stanley: { label: 'STANLEY', logo: 'assets/stanley-tag-header.png', logoMaxH: '14cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
+      alrimaya: { label: 'AL RIMAYA', logo: 'assets/alrimaya-tag-header.png', logoMaxH: '11cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-red.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' },
       nitecore: { label: 'NITECORE', logo: 'assets/nitecore-tag-header.png', logoMaxH: '12cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
     };
     // Exact match on the normalised name, plus explicit aliases — never a prefix match,
     // or brands like "Arbortech" would inherit the ARB template.
-    const aliases = { 'arb': 'arb', 'arb 4x4': 'arb', 'arb 4x4 accessories': 'arb', 'arb accessories': 'arb', 'gamo': 'gamo', 'gamo outdoor': 'gamo', 'gamo outdoor usa': 'gamo', 'gamo usa': 'gamo', 'wander': 'wander', 'wander camping': 'wander', 'wander camping equipment': 'wander', 'wander outdoor': 'wander', 'stanley': 'stanley', 'stanley 1913': 'stanley', 'stanley pmi': 'stanley', 'nitecore': 'nitecore', 'nitecore systems': 'nitecore' };
+    const aliases = { 'arb': 'arb', 'arb 4x4': 'arb', 'arb 4x4 accessories': 'arb', 'arb accessories': 'arb', 'gamo': 'gamo', 'gamo outdoor': 'gamo', 'gamo outdoor usa': 'gamo', 'gamo usa': 'gamo', 'wander': 'wander', 'wander camping': 'wander', 'wander camping equipment': 'wander', 'wander outdoor': 'wander', 'stanley': 'stanley', 'stanley 1913': 'stanley', 'stanley pmi': 'stanley', 'nitecore': 'nitecore', 'nitecore systems': 'nitecore', 'al rimaya': 'alrimaya', 'alrimaya': 'alrimaya', 'al-rimaya': 'alrimaya', 'al rimaya camping': 'alrimaya', 'al rimaya camping & outdoor equipment': 'alrimaya', 'الرماية': 'alrimaya' };
     const hit = themes[key] || themes[aliases[key]];
     if (hit) return hit;
     return { label: String(brand || '').trim(), logo: '', accent: '#1a1a1a', shade: '#5a5a5a', ry: 'assets/riyal-black.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' };
