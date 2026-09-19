@@ -3527,6 +3527,7 @@ class Component extends DCLogic {
   }
 
   scaleImage(url) {
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return Promise.resolve(url);
     this._imgCache = this._imgCache || new Map();
     if (this._imgCache.has(url)) return this._imgCache.get(url);
     const p = new Promise(resolve => {
@@ -3872,6 +3873,11 @@ class Component extends DCLogic {
   }
 
   printHtmlIOS(styleCss, bodyHtml, fileTitle, onDone, orientation) {
+    // iOS WebKit ignores window.print() that is not called directly from a user
+    // gesture (ours happens after async image work, so it is silently dropped),
+    // and the canvas-heavy off-screen render can make Safari discard + reload
+    // the tab — which is the "falls back to the main page" symptom. So on iOS
+    // we present the report full-screen and let the user tap Print themselves.
     let overlay = document.getElementById('pdf-print-overlay');
     if (!overlay) {
       overlay = document.createElement('div');
@@ -3884,42 +3890,67 @@ class Component extends DCLogic {
       styleEl.id = 'pdf-print-overlay-style';
       document.head.appendChild(styleEl);
     }
-    const scoped = styleCss.replace(/(^|\})\s*([^{}]+)\{/g, (m, brace, sel) =>
-      brace + sel.split(',').map(s => '#pdf-print-overlay ' + s.trim()).join(',') + '{');
-    styleEl.textContent = '#pdf-print-overlay{display:none;}'
-      + '@media print{@page{margin:0;' + (orientation ? 'size:' + orientation + ';' : '') + '}body>*:not(#pdf-print-overlay){display:none!important;}#pdf-print-overlay{display:block!important;padding:0.5in;}}'
+    // Scope the caller's rules to the sheet: 'body'/'html' become the sheet
+    // itself, at-rules (@page/@media/@font-face/@keyframes) pass through
+    // unprefixed — prefixing them makes the parser drop the whole block.
+    const SHEET = '#pdf-print-overlay #pdf-print-sheet';
+    let atRules = '';
+    let scoped = '';
+    let i = 0;
+    while (i < styleCss.length) {
+      const brace = styleCss.indexOf('{', i);
+      if (brace < 0) break;
+      const sel = styleCss.slice(i, brace).trim();
+      let depth = 1, j = brace + 1;
+      while (j < styleCss.length && depth > 0) {
+        if (styleCss[j] === '{') depth++;
+        else if (styleCss[j] === '}') depth--;
+        j++;
+      }
+      const block = styleCss.slice(brace, j);
+      if (sel.charAt(0) === '@') {
+        atRules += sel + block + '\n';
+      } else if (sel) {
+        scoped += sel.split(',').map(s => {
+          const p = s.trim();
+          return /^(html|body|html\s*,\s*body|:root)$/i.test(p) ? SHEET : SHEET + ' ' + p;
+        }).join(',') + block + '\n';
+      }
+      i = j;
+    }
+    styleEl.textContent = atRules
+      + '#pdf-print-overlay{position:fixed;inset:0;z-index:2147483000;background:#fff;overflow:auto;-webkit-overflow-scrolling:touch;}'
+      + '#pdf-print-bar{position:sticky;top:0;z-index:2;display:flex;gap:10px;align-items:center;padding:10px 12px;background:#1a1a1a;color:#fff;font:600 15px/1.2 -apple-system,system-ui,sans-serif;}'
+      + '#pdf-print-bar .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}'
+      + '#pdf-print-bar button{font:600 15px/1 -apple-system,system-ui,sans-serif;padding:10px 14px;min-height:44px;border-radius:8px;border:1px solid #fff;background:transparent;color:#fff;}'
+      + '#pdf-print-bar button.go{background:#e1261c;border-color:#e1261c;}'
+      + '#pdf-print-sheet{padding:12px;}'
+      + '@media print{@page{margin:0;' + (orientation ? 'size:' + orientation + ';' : '') + '}'
+      + 'body>*:not(#pdf-print-overlay){display:none!important;}'
+      + '#pdf-print-overlay{position:static!important;overflow:visible!important;}'
+      + '#pdf-print-bar{display:none!important;}#pdf-print-sheet{padding:0.5in!important;}}'
       + scoped;
-    overlay.innerHTML = bodyHtml;
+    overlay.innerHTML =
+      '<div id="pdf-print-bar"><button type="button" id="pdf-print-close">Close</button>'
+      + '<span class="t"></span>'
+      + '<button type="button" class="go" id="pdf-print-go">Print / Save PDF</button></div>'
+      + '<div id="pdf-print-sheet"></div>';
+    overlay.querySelector('#pdf-print-bar .t').textContent = fileTitle;
+    overlay.querySelector('#pdf-print-sheet').innerHTML = bodyHtml;
     const prevTitle = document.title;
     document.title = fileTitle;
-    const cleanup = () => {
+    const close = () => {
       overlay.innerHTML = '';
+      overlay.style.display = 'none';
       document.title = prevTitle;
-      window.removeEventListener('afterprint', cleanup);
-      if (onDone) onDone();
     };
-    window.addEventListener('afterprint', cleanup);
-    const doPrint = () => {
-      try { window.print(); } catch (e) {
-        this.setState({ loadError: 'Could not generate the PDF: ' + e.message });
-        cleanup();
-      }
-    };
-    const imgs = Array.from(overlay.querySelectorAll('img'));
-    const pending = imgs.filter(img => !img.complete);
-    let printed = false;
-    const printOnce = () => { if (printed) return; printed = true; doPrint(); };
-    if (!pending.length) { printOnce(); return; }
-    let settled = 0;
-    const done = () => { settled++; if (settled >= pending.length) printOnce(); };
-    pending.forEach(img => {
-      img.addEventListener('load', done, { once: true });
-      img.addEventListener('error', done, { once: true });
+    overlay.style.display = '';
+    overlay.scrollTop = 0;
+    overlay.querySelector('#pdf-print-close').addEventListener('click', close);
+    overlay.querySelector('#pdf-print-go').addEventListener('click', () => {
+      try { window.print(); } catch (e) { this.setState({ error: 'Could not open the print dialog: ' + e.message }); }
     });
-    setTimeout(() => {
-      pending.forEach(img => { if (!img.complete) img.removeAttribute('src'); });
-      printOnce();
-    }, 9000);
+    if (onDone) onDone();
   }
 
   async onDownloadStoreStockPdf() {
