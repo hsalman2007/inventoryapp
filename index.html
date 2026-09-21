@@ -74,6 +74,9 @@
         <button class="btn btn-secondary btn-block" onClick="{{onGoDistribution}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Distribution</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoWhStores}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">WH vs Stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoPriceTags}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Price Tags</button>
+        <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
+          <button class="btn btn-secondary btn-block" onClick="{{onGoMarkup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Markup Calculator</button>
+        </sc-if>
 
         <div style="border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2);">
           <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
@@ -1112,6 +1115,120 @@
       </div>
     </sc-if>
 
+    <!-- MARKUP CALCULATOR SCREEN -->
+    <sc-if value="{{isMarkup}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromMarkup}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">Markup calculator</div>
+        </div>
+        <span style="font-size: 12px; color: var(--color-neutral-700);">Add one or more SKUs to compare cost price against RSP. Totals below combine every SKU added.</span>
+
+        <div class="field">
+          <label for="mk-search">Add SKU</label>
+          <input id="mk-search" class="input" type="text" placeholder="Type a SKU or description…" value="{{mkQuery}}" onChange="{{onMkQueryChange}}">
+        </div>
+
+        <sc-for list="{{mkSuggestions}}" as="sug" hint-placeholder-count="0">
+          <button class="btn btn-ghost btn-block" onClick="{{sug.onAdd}}" style="justify-content: space-between; text-align: left; gap: 10px; padding: 8px 10px; border: 1px solid var(--color-neutral-300);">
+            <span style="display: flex; flex-direction: column; align-items: flex-start; min-width: 0;">
+              <span style="font-weight: 700; font-size: 13px;">{{sug.itemNo}}</span>
+              <span style="font-size: 11px; color: var(--color-neutral-700);">{{sug.description2}}</span>
+            </span>
+            <span style="font-size: 12px; font-weight: 700; color: var(--color-accent-700); flex: none;">RSP {{sug.rspText}}</span>
+          </button>
+        </sc-for>
+
+        <sc-if value="{{mk.empty}}" hint-placeholder-val="{{true}}">
+          <div class="card" style="padding: var(--space-4); text-align: center; color: var(--color-neutral-700); font-size: 13px;">No SKUs added yet — search above and tap a result.</div>
+        </sc-if>
+
+        <sc-if value="{{mk.has}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+            <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-neutral-700);">{{mk.countLabel}}</span>
+            <button class="btn btn-ghost" onClick="{{onMkClear}}" style="font-size: 12px; padding: 4px 10px;">Clear all</button>
+          </div>
+        </sc-if>
+
+        <sc-for list="{{mk.rows}}" as="row" hint-placeholder-count="0">
+          <div style="display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-lg); padding: var(--space-3); background: #fff;">
+            <div style="display: flex; gap: 10px; align-items: flex-start; justify-content: space-between;">
+              <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                <div style="font-weight: 700; font-size: 13px; color: var(--color-text);">{{row.itemNo}}</div>
+                <div style="font-size: 12px; color: var(--color-neutral-700);">{{row.description2}}</div>
+              </div>
+              <button class="btn btn-ghost" onClick="{{row.onRemove}}" style="flex: none; font-size: 12px; padding: 4px 10px;">Remove</button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; background: var(--color-accent-2-100); border: 1px solid var(--color-accent-2-300); border-radius: var(--radius-md); padding: 8px 10px;">
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Cost incl. VAT</span>
+                <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{row.costText}}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">RSP (editable)</span>
+                <input class="input" type="number" inputmode="decimal" step="0.01" value="{{row.rspInput}}" onChange="{{row.onRspChange}}" style="font-size: 13px; font-weight: 700; padding: 3px 6px; height: auto; background: #fff;">
+                <sc-if value="{{row.rspEdited}}" hint-placeholder-val="{{false}}">
+                  <button class="btn btn-ghost" onClick="{{row.onRspReset}}" style="font-size: 10px; padding: 0; justify-content: flex-start; color: var(--color-neutral-700);">Reset to {{row.baseRspText}}</button>
+                </sc-if>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Discount %</span>
+                <input class="input" type="number" inputmode="decimal" step="1" min="0" max="100" placeholder="0" value="{{row.discInput}}" onChange="{{row.onDiscChange}}" style="font-size: 13px; font-weight: 700; padding: 3px 6px; height: auto; background: #fff;">
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #8b1a1a;">Price after disc.</span>
+                <span style="font-size: 13px; font-weight: 700; color: #8b1a1a;">{{row.netText}}</span>
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Difference</span>
+                <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{row.diffText}}</span>
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Markup %</span>
+                <span style="font-size: 13px; font-weight: 700; color: var(--color-accent-800);">{{row.pctText}}</span>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+
+        <sc-if value="{{mk.has}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--color-accent-700); border-radius: var(--radius-lg); padding: var(--space-3); background: var(--color-accent-100);">
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">Combined totals</div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-neutral-700);">Total cost</span>
+                <span style="font-size: 16px; font-weight: 800; color: var(--color-text);">{{mk.totalCost}}</span>
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-neutral-700);">Total RSP</span>
+                <span style="font-size: 16px; font-weight: 800; color: var(--color-text);">{{mk.totalRsp}}</span>
+              </div>
+              <sc-if value="{{mk.hasTotalDisc}}" hint-placeholder-val="{{false}}">
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #8b1a1a;">Total after disc.</span>
+                  <span style="font-size: 16px; font-weight: 800; color: #8b1a1a;">{{mk.totalNet}}</span>
+                </div>
+              </sc-if>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-neutral-700);">Total difference</span>
+                <span style="font-size: 16px; font-weight: 800; color: var(--color-text);">{{mk.totalDiff}}</span>
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-neutral-700);">Blended markup</span>
+                <span style="font-size: 16px; font-weight: 800; color: var(--color-accent-800);">{{mk.totalPct}}</span>
+              </div>
+            </div>
+            <sc-if value="{{mk.hasFree}}" hint-placeholder-val="{{false}}">
+              <div style="font-size: 11px; font-weight: 600; color: #8b1a1a;">{{mk.freeNote}}</div>
+            </sc-if>
+            <sc-if value="{{mk.missingCost}}" hint-placeholder-val="{{false}}">
+              <div style="font-size: 11px; color: #8b1a1a;">{{mk.missingCostNote}}</div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
     <!-- SKU LOOKUP SCREEN -->
     <sc-if value="{{isSkuLookup}}" hint-placeholder-val="{{false}}">
       <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
@@ -1578,6 +1695,25 @@ class Component extends DCLogic {
     "SKU or description": "رقم الصنف أو الوصف",
     "Type a SKU or description…": "اكتب رقم الصنف أو الوصف…",
     "Type at least 2 characters to search.": "اكتب حرفين على الأقل للبحث.",
+    "Markup Calculator": "حاسبة هامش الربح",
+    "Markup calculator": "حاسبة هامش الربح",
+    "Add one or more SKUs to compare cost price against RSP. Totals below combine every SKU added.": "أضف صنفًا أو أكثر لمقارنة سعر التكلفة بسعر البيع. المجاميع بالأسفل تجمع كل الأصناف المضافة.",
+    "Add SKU": "إضافة صنف",
+    "No SKUs added yet — search above and tap a result.": "لم تتم إضافة أي صنف بعد — ابحث بالأعلى واختر نتيجة.",
+    "Clear all": "مسح الكل",
+    "Remove": "إزالة",
+    "Difference": "الفرق",
+    "Markup %": "نسبة هامش الربح",
+    "Combined totals": "الإجماليات المجمّعة",
+    "Total cost": "إجمالي التكلفة",
+    "Total RSP": "إجمالي سعر البيع",
+    "Total difference": "إجمالي الفرق",
+    "Blended markup": "هامش الربح المجمّع",
+    "RSP (editable)": "سعر البيع (قابل للتعديل)",
+    "Reset to": "إرجاع إلى",
+    "Discount %": "نسبة الخصم",
+    "Price after disc.": "السعر بعد الخصم",
+    "Total after disc.": "الإجمالي بعد الخصم",
     "Cost incl. VAT": "التكلفة مع الضريبة",
     "Markup vs RSP": "هامش الربح مقابل سعر البيع",
     "Now price": "السعر الحالي",
@@ -2275,6 +2411,10 @@ class Component extends DCLogic {
     negInvModalOpen: false,
     negInvPdfDownloading: false,
     costMap: null,
+    mkQuery: '',
+    mkItems: [],
+    mkRsp: {},
+    mkDisc: {},
     isAdmin: false,
     adminPromptOpen: false,
     adminPw: '',
@@ -2321,7 +2461,8 @@ class Component extends DCLogic {
     }
   }
   onAdminSignOut() {
-    this.setState({ isAdmin: false, adminPromptOpen: false, adminPw: '', adminError: '' });
+    this.setState({ isAdmin: false, adminPromptOpen: false, adminPw: '', adminError: '', mkItems: [], mkRsp: {}, mkDisc: {}, mkQuery: '' });
+    if (this.state.screen === 'markup') this.setState({ screen: 'menu' });
     try { localStorage.removeItem('inv-admin'); } catch (e) {}
   }
 
@@ -2371,6 +2512,127 @@ class Component extends DCLogic {
   onBackToSelect() { this.setState({ screen: 'select' }); }
   onGoSelect() { this.setState({ screen: 'select' }); }
   onBackFromSelect() { this.setState({ screen: 'menu' }); }
+  onGoMarkup() { this.setState({ screen: 'markup' }); }
+  onBackFromMarkup() { this.setState({ screen: 'menu' }); }
+  onMkQueryChange(e) { this.setState({ mkQuery: e.target.value }); }
+  onMkAdd(itemNo) {
+    const list = this.state.mkItems || [];
+    if (list.indexOf(itemNo) >= 0) { this.setState({ mkQuery: '' }); return; }
+    this.setState({ mkItems: list.concat([itemNo]), mkQuery: '' });
+  }
+  onMkRemove(itemNo) {
+    const over = Object.assign({}, this.state.mkRsp || {});
+    const dis = Object.assign({}, this.state.mkDisc || {});
+    delete over[itemNo];
+    delete dis[itemNo];
+    this.setState({ mkItems: (this.state.mkItems || []).filter(x => x !== itemNo), mkRsp: over, mkDisc: dis });
+  }
+  onMkClear() { this.setState({ mkItems: [], mkQuery: '', mkRsp: {}, mkDisc: {} }); }
+  onMkDiscChange(itemNo, e) {
+    const dis = Object.assign({}, this.state.mkDisc || {});
+    dis[itemNo] = e.target.value;
+    this.setState({ mkDisc: dis });
+  }
+  onMkRspChange(itemNo, e) {
+    const over = Object.assign({}, this.state.mkRsp || {});
+    over[itemNo] = e.target.value;
+    this.setState({ mkRsp: over });
+  }
+  onMkRspReset(itemNo) {
+    const over = Object.assign({}, this.state.mkRsp || {});
+    delete over[itemNo];
+    this.setState({ mkRsp: over });
+  }
+  mkNum(v) { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : 0; }
+  mkMoney(n) { return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  getMkSuggestions() {
+    const s = this.state;
+    const q = (s.mkQuery || '').trim().toLowerCase();
+    if (!s.parsed || q.length < 2) return [];
+    const { matrix, retailMap } = s.parsed;
+    const chosen = s.mkItems || [];
+    const out = [];
+    for (const it of matrix.items) {
+      if (chosen.indexOf(it.itemNo) >= 0) continue;
+      const r = retailMap.get(it.itemNo) || {};
+      const desc = r.description2 || it.description2 || '';
+      if (it.itemNo.toLowerCase().indexOf(q) >= 0 || desc.toLowerCase().indexOf(q) >= 0) {
+        const rsp = this.mkNum(it.rsp);
+        out.push({ itemNo: it.itemNo, description2: desc, rspText: rsp ? this.mkMoney(rsp) : '—', onAdd: () => this.onMkAdd(it.itemNo) });
+        if (out.length >= 12) break;
+      }
+    }
+    return out;
+  }
+  getMarkupView() {
+    const s = this.state;
+    const list = s.mkItems || [];
+    const rows = [];
+    let totCost = 0, totRsp = 0, totNet = 0, missing = 0, freeCount = 0, freeCost = 0;
+    if (s.parsed) {
+      const { matrix, retailMap } = s.parsed;
+      if (!this._mkIndex || this._mkIndexSrc !== matrix) {
+        this._mkIndex = new Map(matrix.items.map(it => [it.itemNo, it]));
+        this._mkIndexSrc = matrix;
+      }
+      for (const itemNo of list) {
+        const it = this._mkIndex.get(itemNo);
+        const r = retailMap.get(itemNo) || {};
+        const cm = s.isAdmin ? s.costMap : null;
+        const cost = cm ? this.mkNum(cm[itemNo]) : 0;
+        const baseRsp = this.mkNum(it && it.rsp);
+        const over = (s.mkRsp || {})[itemNo];
+        const hasOver = over != null && String(over).trim() !== '';
+        const rsp = over != null ? (hasOver ? this.mkNum(over) : 0) : baseRsp;
+        const discRaw = (s.mkDisc || {})[itemNo];
+        const discPct = Math.max(0, Math.min(100, this.mkNum(discRaw)));
+        const net = discPct ? rsp * (1 - discPct / 100) : rsp;
+        const both = cost > 0 && rsp > 0;
+        const isFree = rsp > 0 && net === 0;
+        if (isFree) { freeCount += 1; freeCost += cost; }
+        if (!cost) missing += 1;
+        const diff = net - cost;
+        totCost += cost;
+        totRsp += rsp;
+        totNet += net;
+        rows.push({
+          itemNo,
+          description2: r.description2 || (it && it.description2) || '',
+          costText: cost ? this.mkMoney(cost) : '—',
+          rspInput: over != null ? String(over) : (baseRsp ? String(baseRsp) : ''),
+          rspEdited: hasOver && this.mkNum(over) !== baseRsp,
+          baseRspText: baseRsp ? this.mkMoney(baseRsp) : '—',
+          onRspChange: e => this.onMkRspChange(itemNo, e),
+          onRspReset: () => this.onMkRspReset(itemNo),
+          discInput: discRaw == null ? '' : String(discRaw),
+          onDiscChange: e => this.onMkDiscChange(itemNo, e),
+          hasDisc: discPct > 0,
+          isFree: isFree,
+          netText: rsp ? this.mkMoney(net) : '—',
+          diffText: both ? this.mkMoney(diff) : '—',
+          pctText: both ? ((diff / cost) * 100).toFixed(1) + '%' : '—',
+          onRemove: () => this.onMkRemove(itemNo),
+        });
+      }
+    }
+    const totDiff = totNet - totCost;
+    return {
+      rows,
+      has: rows.length > 0,
+      empty: rows.length === 0,
+      countLabel: rows.length + (rows.length === 1 ? ' SKU added' : ' SKUs added'),
+      totalCost: this.mkMoney(totCost),
+      totalRsp: this.mkMoney(totRsp),
+      totalNet: this.mkMoney(totNet),
+      hasTotalDisc: totNet !== totRsp,
+      hasFree: freeCount > 0,
+      freeNote: freeCount + (freeCount === 1 ? ' item given free' : ' items given free') + ' — ' + this.mkMoney(freeCost) + ' of cost absorbed. Blended markup below covers the whole bundle.',
+      totalDiff: this.mkMoney(totDiff),
+      totalPct: totCost ? ((totDiff / totCost) * 100).toFixed(1) + '%' : '—',
+      missingCost: missing > 0,
+      missingCostNote: missing + ' of these SKUs have no cost on file — totals exclude their cost.',
+    };
+  }
   onGoSkuLookup() { this.setState({ screen: 'skulookup' }); }
   onBackFromSku() { this.setState({ screen: 'menu' }); }
   onGoStoreStock() { this.setState({ screen: 'storestock', storeStockSelected: this.state.isAdmin ? '__ALL__' : (this.state.storeOptions[0] ? this.state.storeOptions[0].name : '') }); }
@@ -3772,7 +4034,8 @@ class Component extends DCLogic {
     };
     const styleCss = '@page{size:A4;margin:0}html,body{margin:0!important;padding:0!important;}'
       + '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
-      + '.sheet{width:210mm;height:297mm;display:grid;grid-template-columns:105mm 105mm;grid-template-rows:148.5mm 148.5mm;}'
+      + '@media print{#pdf-print-sheet{padding:0!important;}html,body{margin:0!important;padding:0!important;}}'
+      + '.sheet{width:210mm;height:296.6mm;overflow:hidden;break-inside:avoid;page-break-inside:avoid;break-after:avoid;page-break-after:avoid;display:grid;grid-template-columns:105mm 105mm;grid-template-rows:148.3mm 148.3mm;}'
       + '.sheet.solo{display:flex;align-items:center;justify-content:center;}'
       + '.tag{padding:4mm 1.5mm;}'
       + '.sheet.solo .tag{padding:0;width:102mm;height:140.5mm;flex:none;transform:scale(2.029);transform-origin:center center;}'
@@ -4600,6 +4863,14 @@ class Component extends DCLogic {
 
       isSelect: s.screen === 'select',
       isResults: s.screen === 'results',
+      isMarkup: s.screen === 'markup' && s.isAdmin,
+      onGoMarkup: () => this.onGoMarkup(),
+      onBackFromMarkup: () => this.onBackFromMarkup(),
+      mkQuery: s.mkQuery || '',
+      onMkQueryChange: e => this.onMkQueryChange(e),
+      onMkClear: () => this.onMkClear(),
+      mkSuggestions: s.screen === 'markup' ? this.getMkSuggestions() : [],
+      mk: s.screen === 'markup' ? this.getMarkupView() : { rows: [], has: false, empty: true, countLabel: '', totalCost: '', totalRsp: '', totalNet: '', hasTotalDisc: false, totalDiff: '', totalPct: '', missingCost: false, missingCostNote: '' },
       isSkuLookup: s.screen === 'skulookup',
       isMultiLoc: s.screen === 'multiloc',
       onGoMultiLoc: () => this.onGoMultiLoc(),
