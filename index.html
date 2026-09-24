@@ -848,6 +848,10 @@
               <input type="radio" name="tagPriceSource" checked="{{tagNationalChecked}}" onChange="{{onTagNational}}">
               National Day 2026
             </label>
+            <label class="seg-opt">
+              <input type="radio" name="tagPriceSource" checked="{{tagRspChecked}}" onChange="{{onTagRsp}}">
+              Original RSP only
+            </label>
           </div>
           <span style="font-size: 11.5px; color: var(--color-neutral-700);">{{tagSourceNote}}</span>
         </div>
@@ -3835,8 +3839,10 @@ class Component extends DCLogic {
   onTagLayoutShelf() { this.setState({ tagLayout: 'shelf' }); }
   onTagSeasonal() { this.setState({ tagPriceSource: 'discount' }); }
   onTagNational() { this.setState({ tagPriceSource: 'national' }); }
+  onTagRsp() { this.setState({ tagPriceSource: 'rsp' }); }
   tagSourceNote() {
     const s = this.state;
+    if (s.tagPriceSource === 'rsp') return 'Tags show the original RSP only — no discounts applied.';
     const nat = s.tagPriceSource === 'national';
     const map = s.parsed && (nat ? s.parsed.nationalMap : s.parsed.discountMap);
     if (!map || !map.size) return (nat ? 'National Day 2026' : 'Seasonal Discounts') + ' file not loaded — tags print the current price only.';
@@ -3886,7 +3892,7 @@ class Component extends DCLogic {
       if (!it && !r) { card.note = 'SKU not found'; return card; }
       const itemNo = it ? it.itemNo : q;
       const nat = s.tagPriceSource === 'national';
-      const primary = nat ? parsed.nationalMap : parsed.discountMap;
+      const primary = s.tagPriceSource === 'rsp' ? null : (nat ? parsed.nationalMap : parsed.discountMap);
       const disc = (primary && primary.get(itemNo)) || null;
       const was = disc && disc.was ? disc.was : ((it && it.rsp) || (r && r.rsp) || '');
       const now = disc && disc.now ? disc.now : '';
@@ -4754,7 +4760,9 @@ class Component extends DCLogic {
       tagGridCols: s.tagLayout === 'one' ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(0, 1fr)',
       tagCellRatio: s.tagLayout === 'one' ? '210 / 297' : '105 / 148.5',
       tagCellPad: s.tagLayout === 'one' ? '1.35% 0.71%' : '3.81% 1.43%',
-      tagSeasonalChecked: s.tagPriceSource !== 'national',
+      tagSeasonalChecked: s.tagPriceSource === 'discount',
+      tagRspChecked: s.tagPriceSource === 'rsp',
+      onTagRsp: () => this.onTagRsp(),
       tagNationalChecked: s.tagPriceSource === 'national',
       tagSourceNote: s.screen === 'pricetags' ? this.tagSourceNote() : '',
       onTagSeasonal: () => this.onTagSeasonal(),
