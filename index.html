@@ -1191,6 +1191,14 @@
                 <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Markup %</span>
                 <span style="font-size: 13px; font-weight: 700; color: var(--color-accent-800);">{{row.pctText}}</span>
               </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Qty</span>
+                <input class="input" type="number" inputmode="numeric" step="1" min="1" placeholder="1" value="{{row.qtyInput}}" onChange="{{row.onQtyChange}}" style="font-size: 13px; font-weight: 700; padding: 3px 6px; height: auto; background: #fff;">
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Line total</span>
+                <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{row.lineText}}</span>
+              </div>
             </div>
           </div>
         </sc-for>
@@ -1708,6 +1716,8 @@ class Component extends DCLogic {
     "Remove": "إزالة",
     "Difference": "الفرق",
     "Markup %": "نسبة هامش الربح",
+    "Qty": "الكمية",
+    "Line total": "إجمالي السطر",
     "Combined totals": "الإجماليات المجمّعة",
     "Total cost": "إجمالي التكلفة",
     "Total RSP": "إجمالي سعر البيع",
@@ -2529,9 +2539,16 @@ class Component extends DCLogic {
     const dis = Object.assign({}, this.state.mkDisc || {});
     delete over[itemNo];
     delete dis[itemNo];
-    this.setState({ mkItems: (this.state.mkItems || []).filter(x => x !== itemNo), mkRsp: over, mkDisc: dis });
+    const qty = Object.assign({}, this.state.mkQty || {});
+    delete qty[itemNo];
+    this.setState({ mkItems: (this.state.mkItems || []).filter(x => x !== itemNo), mkRsp: over, mkDisc: dis, mkQty: qty });
   }
-  onMkClear() { this.setState({ mkItems: [], mkQuery: '', mkRsp: {}, mkDisc: {} }); }
+  onMkClear() { this.setState({ mkItems: [], mkQuery: '', mkRsp: {}, mkDisc: {}, mkQty: {} }); }
+  onMkQtyChange(itemNo, e) {
+    const qty = Object.assign({}, this.state.mkQty || {});
+    qty[itemNo] = e.target.value;
+    this.setState({ mkQty: qty });
+  }
   onMkDiscChange(itemNo, e) {
     const dis = Object.assign({}, this.state.mkDisc || {});
     dis[itemNo] = e.target.value;
@@ -2593,12 +2610,14 @@ class Component extends DCLogic {
         const net = discPct ? rsp * (1 - discPct / 100) : rsp;
         const both = cost > 0 && rsp > 0;
         const isFree = rsp > 0 && net === 0;
-        if (isFree) { freeCount += 1; freeCost += cost; }
+        const qtyRaw = (s.mkQty || {})[itemNo];
+        const qty = Math.max(1, Math.round(this.mkNum(qtyRaw)) || 1);
+        if (isFree) { freeCount += qty; freeCost += cost * qty; }
         if (!cost) missing += 1;
         const diff = net - cost;
-        totCost += cost;
-        totRsp += rsp;
-        totNet += net;
+        totCost += cost * qty;
+        totRsp += rsp * qty;
+        totNet += net * qty;
         rows.push({
           itemNo,
           description2: r.description2 || (it && it.description2) || '',
@@ -2610,6 +2629,9 @@ class Component extends DCLogic {
           onRspReset: () => this.onMkRspReset(itemNo),
           discInput: discRaw == null ? '' : String(discRaw),
           onDiscChange: e => this.onMkDiscChange(itemNo, e),
+          qtyInput: qtyRaw == null ? '' : String(qtyRaw),
+          onQtyChange: e => this.onMkQtyChange(itemNo, e),
+          lineText: rsp ? this.mkMoney(net * qty) + (qty > 1 ? ' (' + qty + ' × ' + this.mkMoney(net) + ')' : '') : '—',
           hasDisc: discPct > 0,
           isFree: isFree,
           netText: rsp ? this.mkMoney(net) : '—',
