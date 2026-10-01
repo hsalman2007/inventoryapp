@@ -70,6 +70,7 @@
         <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Item Lookup in All Stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoMultiLoc}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Multi Locations</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoFalcon}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Falcon Disc.</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoDistribution}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Distribution</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoWhStores}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">WH vs Stores</button>
@@ -177,8 +178,24 @@
     <!-- STORE STOCK SCREEN -->
     <sc-if value="{{isStoreStock}}" hint-placeholder-val="{{false}}">
       <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
-        <div class="card-kicker">Complete stock</div>
-        <div class="card-title" style="font-size: 18px;">Download a store's complete stock</div>
+        <sc-if value="{{isFalconMode}}" hint-placeholder-val="{{false}}">
+          <div class="card-kicker">Falcon Disc.</div>
+          <div class="seg" role="radiogroup" aria-label="Falcon Disc. view">
+            <label class="seg-opt">
+              <input type="radio" name="falconView" checked="{{true}}">
+              Store stock
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="falconView" checked="{{false}}" onChange="{{onGoFalconLookup}}">
+              Item lookup
+            </label>
+          </div>
+          <div class="card-title" style="font-size: 18px;">Falcon discount stock</div>
+        </sc-if>
+        <sc-if value="{{notFalconMode}}" hint-placeholder-val="{{true}}">
+          <div class="card-kicker">Complete stock</div>
+          <div class="card-title" style="font-size: 18px;">Download a store's complete stock</div>
+        </sc-if>
 
         <div class="field">
           <label for="storestock-select">Store</label>
@@ -276,7 +293,7 @@
         <div class="card-title" style="font-size: 18px;">Multi locations</div>
         <span style="font-size: 12px; color: var(--color-neutral-700);">Pick two or more locations — the export puts one quantity column per location side by side, with Was / Now / % pricing.</span>
 
-        <sc-if value="{{mlHasNational}}" hint-placeholder-val="{{false}}">
+        <sc-if value="{{mlHasAlt}}" hint-placeholder-val="{{false}}">
           <div class="seg" role="radiogroup" aria-label="Pricing source">
             <label class="seg-opt">
               <input type="radio" name="mlPriceSource" checked="{{mlSeasonalChecked}}" onChange="{{onMlSeasonal}}">
@@ -285,6 +302,10 @@
             <label class="seg-opt">
               <input type="radio" name="mlPriceSource" checked="{{mlNationalChecked}}" onChange="{{onMlNational}}">
               National Day 2026
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="mlPriceSource" checked="{{mlFalconChecked}}" onChange="{{onMlFalcon}}">
+              Falcon Disc.
             </label>
           </div>
         </sc-if>
@@ -849,6 +870,10 @@
               National Day 2026
             </label>
             <label class="seg-opt">
+              <input type="radio" name="tagPriceSource" checked="{{tagFalconChecked}}" onChange="{{onTagFalcon}}">
+              Falcon Disc.
+            </label>
+            <label class="seg-opt">
               <input type="radio" name="tagPriceSource" checked="{{tagRspChecked}}" onChange="{{onTagRsp}}">
               Original RSP only
             </label>
@@ -1246,12 +1271,24 @@
       <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
         <div style="display: flex; gap: 10px;">
           <button class="btn btn-secondary" onClick="{{onBackFromSku}}" style="flex: none;">← Back</button>
-          <div class="card-title" style="font-size: 18px; align-self: center;">SKU stock across stores</div>
+          <div class="card-title" style="font-size: 18px; align-self: center;">{{skuTitle}}</div>
         </div>
+        <sc-if value="{{skuFalcon}}" hint-placeholder-val="{{false}}">
+          <div class="seg" role="radiogroup" aria-label="Falcon Disc. view">
+            <label class="seg-opt">
+              <input type="radio" name="falconView2" checked="{{false}}" onChange="{{onGoFalcon}}">
+              Store stock
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="falconView2" checked="{{true}}">
+              Item lookup
+            </label>
+          </div>
+        </sc-if>
 
         <div class="field">
-          <label for="sku-search">SKU or description</label>
-          <input id="sku-search" class="input" type="text" placeholder="Type a SKU or description…" value="{{skuQuery}}" onChange="{{onSkuQueryChange}}">
+          <label for="sku-search">SKU, part number or description</label>
+          <input id="sku-search" class="input" type="text" placeholder="Type a SKU, part number or description…" value="{{skuQuery}}" onChange="{{onSkuQueryChange}}">
         </div>
 
         <sc-if value="{{skuQueryTooShort}}" hint-placeholder-val="{{false}}">
@@ -1289,7 +1326,18 @@
                     <div style="font-size: 11px; font-weight: 700; color: #fff; background: var(--color-accent-800); border-radius: 999px; padding: 1px 7px;">{{item.natPct}}</div>
                   </div>
                 </sc-if>
+                <sc-if value="{{item.hasFalcon}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                    <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">Falcon Disc.</div>
+                    <div style="font-size: 12px; color: var(--color-neutral-700);">Was {{item.falWas}}</div>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Now {{item.falNow}}</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #fff; background: var(--color-accent-800); border-radius: 999px; padding: 1px 7px;">{{item.falPct}}</div>
+                  </div>
+                </sc-if>
                 <div style="font-size: 12px; color: var(--color-neutral-700);">{{item.description2}}</div>
+                <sc-if value="{{item.partNo}}" hint-placeholder-val="{{false}}">
+                  <div style="font-size: 11.5px; color: var(--color-neutral-700);">Part No. {{item.partNo}}</div>
+                </sc-if>
               </div>
             </div>
             <sc-if value="{{item.showCostPanel}}" hint-placeholder-val="{{false}}">
@@ -1615,6 +1663,7 @@ class Component extends DCLogic {
     "Include discount pricing": "إضافة أسعار الخصم",
     "Addnl. 1500": "1500 صنف إضافي",
     "National Day 2026": "اليوم الوطني 2026",
+    "Falcon Disc.": "خصم فالكون",
     "Discount range": "نطاق الخصم",
     "All discounts": "جميع الخصومات",
     "10% to 20%": "من 10% إلى 20%",
@@ -1716,6 +1765,8 @@ class Component extends DCLogic {
     "Remove": "إزالة",
     "Difference": "الفرق",
     "Markup %": "نسبة هامش الربح",
+    "SKU, part number or description": "رمز الصنف أو رقم القطعة أو الوصف",
+    "Part No.": "رقم القطعة",
     "Qty": "الكمية",
     "Line total": "إجمالي السطر",
     "Combined totals": "الإجماليات المجمّعة",
@@ -2409,7 +2460,7 @@ class Component extends DCLogic {
     whPage: 1,
     storeStockShowDiscount: false,
     storeStockAddnl1500: false,
-    storeStockNationalDay: false,
+    storeStockNationalDay: false, storeStockFalcon: false,
     storeStockPctRange: '',
     storeStockBrand: '',
     storeStockCategory: '',
@@ -2490,6 +2541,8 @@ class Component extends DCLogic {
       const openOrders = new Set(snap.openOrders);
       const discountMap = new Map(snap.discountMap || []);
       const nationalMap = new Map(snap.nationalMap || []);
+      const falconMap = new Map(snap.falconMap || []);
+      if (!falconMap.size) this.loadFalconMap();
       const storeInfoMap = new Map(snap.storeInfoMap);
       // Locations the store master mistypes but which hold sellable stock —
       // without this they are dropped from every report.
@@ -2509,7 +2562,7 @@ class Component extends DCLogic {
       this.setState({
         loading: false,
         isAdmin: wasAdmin,
-        parsed: { matrix: snap.matrix, retailMap, openOrders, discountMap, nationalMap },
+        parsed: { matrix: snap.matrix, retailMap, openOrders, discountMap, nationalMap, falconMap },
         storeInfoMap,
         storeOptions,
         selectedStore: storeOptions[0] ? storeOptions[0].name : '',
@@ -2659,14 +2712,32 @@ class Component extends DCLogic {
       missingCostNote: missing + ' of these SKUs have no cost on file — totals exclude their cost.',
     };
   }
-  onGoSkuLookup() { this.setState({ screen: 'skulookup' }); }
-  onBackFromSku() { this.setState({ screen: 'menu' }); }
-  onGoStoreStock() { this.setState({ screen: 'storestock', storeStockSelected: this.state.isAdmin ? '__ALL__' : (this.state.storeOptions[0] ? this.state.storeOptions[0].name : '') }); }
-  onBackFromStoreStock() { this.setState({ screen: 'menu' }); }
+  onGoSkuLookup() { this.setState({ screen: 'skulookup', skuFalcon: false }); }
+  onGoFalconLookup() { this.setState({ screen: 'skulookup', skuFalcon: true, skuExpanded: '' }); }
+  onBackFromSku() { this.setState({ screen: 'menu', skuFalcon: false }); }
+  onGoStoreStock() { this.setState({ screen: 'storestock', storeStockFalcon: false, storeStockSelected: this.state.isAdmin ? '__ALL__' : (this.state.storeOptions[0] ? this.state.storeOptions[0].name : '') }); }
+  onBackFromStoreStock() { this.setState({ screen: 'menu', storeStockFalcon: false }); }
+  onGoFalcon() {
+    this.onGoStoreStock();
+    this.setState({ storeStockFalcon: true, storeStockNationalDay: false, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' });
+  }
   onStoreStockChange(e) { this.setState({ storeStockSelected: e.target.value }); }
-  onDiscountOn() { this.setState({ storeStockShowDiscount: true, storeStockAddnl1500: false, storeStockNationalDay: false }); }
-  onDiscountOff() { this.setState({ storeStockShowDiscount: false, storeStockAddnl1500: false, storeStockNationalDay: false, storeStockPctRange: '' }); }
-  onAddnl1500On() { this.setState({ storeStockAddnl1500: true, storeStockShowDiscount: false, storeStockNationalDay: false, storeStockPctRange: '' }); }
+  onDiscountOn() { this.setState({ storeStockShowDiscount: true, storeStockAddnl1500: false, storeStockNationalDay: false, storeStockFalcon: false }); }
+  onDiscountOff() { this.setState({ storeStockShowDiscount: false, storeStockAddnl1500: false, storeStockNationalDay: false, storeStockFalcon: false, storeStockPctRange: '' }); }
+  onAddnl1500On() { this.setState({ storeStockAddnl1500: true, storeStockShowDiscount: false, storeStockNationalDay: false, storeStockFalcon: false, storeStockPctRange: '' }); }
+  onFalconOn() { this.setState({ storeStockFalcon: true, storeStockNationalDay: false, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' }); }
+  getFalconMap() {
+    const s = this.state;
+    if (s.parsed && s.parsed.falconMap && s.parsed.falconMap.size) return s.parsed.falconMap;
+    return s.falconMap || new Map();
+  }
+  async loadFalconMap() {
+    try {
+      const url = (window.__resources && window.__resources['falcon-json']) || './falcon-discounts.json';
+      const res = await fetch(url);
+      if (res.ok) this.setState({ falconMap: new Map(await res.json()) });
+    } catch (e) {}
+  }
   onNationalDayOn() { this.setState({ storeStockNationalDay: true, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' }); }
   onPctRangeChange(e) { this.setState({ storeStockPctRange: e.target.value }); }
   onBrandChange(e) { this.setState({ storeStockBrand: e.target.value }); }
@@ -3514,6 +3585,7 @@ class Component extends DCLogic {
   onMlBrandChange(e) { this.setState({ mlBrand: e.target.value }); }
   onMlSeasonal() { this.setState({ mlPriceSource: 'discount' }); }
   onMlNational() { this.setState({ mlPriceSource: 'national' }); }
+  onMlFalcon() { this.setState({ mlPriceSource: 'falcon' }); }
   onMlCategoryChange(e) { this.setState({ mlCategory: e.target.value, mlSubCategory: '' }); }
   onMlSubCategoryChange(e) { this.setState({ mlSubCategory: e.target.value }); }
   onMlSortChange(e) { this.setState({ mlSortBy: e.target.value }); }
@@ -3569,7 +3641,7 @@ class Component extends DCLogic {
     const st = this.state;
     if (!st.parsed) return { locations: [], rows: [] };
     const { matrix, retailMap, discountMap, nationalMap } = st.parsed;
-    const priceMap = st.mlPriceSource === 'national' ? (nationalMap || new Map()) : discountMap;
+    const priceMap = st.mlPriceSource === 'falcon' ? this.getFalconMap() : st.mlPriceSource === 'national' ? (nationalMap || new Map()) : discountMap;
     const sel = st.mlLocations || [];
     const locations = this.getMlLocationOptions().filter(o => sel.indexOf(o.name) >= 0);
     if (!locations.length) return { locations: [], rows: [] };
@@ -3617,7 +3689,7 @@ class Component extends DCLogic {
     if (st.mlBrand) bits.push(st.mlBrand);
     if (st.mlCategory) bits.push(st.mlCategory);
     if (st.mlSubCategory) bits.push(st.mlSubCategory);
-    bits.push(st.mlPriceSource === 'national' ? 'National Day 2026' : 'Seasonal discounts');
+    bits.push(st.mlPriceSource === 'falcon' ? 'Falcon Disc.' : st.mlPriceSource === 'national' ? 'National Day 2026' : 'Seasonal discounts');
     return bits.join(' · ');
   }
 
@@ -3729,12 +3801,13 @@ class Component extends DCLogic {
     const cols = [{ width: 16 }, { width: 44 }]
       .concat(locations.map(() => ({ width: 12 })))
       .concat([{ width: 10 }, { width: 10 }, { width: 14 }, { width: 42 }]);
-    const fileTitle = ('Multi-Locations-' + locations.length + '-' + (this.state.mlPriceSource === 'national' ? 'National-Day-2026-' : '') + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const fileTitle = ('Multi-Locations-' + locations.length + '-' + (this.state.mlPriceSource === 'falcon' ? 'Falcon-Disc-' : this.state.mlPriceSource === 'national' ? 'National-Day-2026-' : '') + today).replace(/[^a-z0-9\-_.]+/gi, '-');
     downloadXlsx(aoa, fileTitle, { sheetName: 'Multi Locations', cols });
   }
 
   storeStockModeName() {
     const s = this.state;
+    if (s.storeStockFalcon) return 'Falcon Disc';
     if (s.storeStockNationalDay) return 'National Day 2026';
     if (s.storeStockAddnl1500) return 'Addnl 1500';
     if (s.storeStockShowDiscount) return 'Promo Stocks';
@@ -3745,8 +3818,8 @@ class Component extends DCLogic {
     const st = this.state;
     const store = st.storeStockSelected;
     const { matrix, retailMap, discountMap, nationalMap } = st.parsed;
-    const priceMap = st.storeStockNationalDay ? (nationalMap || new Map()) : discountMap;
-    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay;
+    const priceMap = st.storeStockFalcon ? this.getFalconMap() : st.storeStockNationalDay ? (nationalMap || new Map()) : discountMap;
+    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay || st.storeStockFalcon;
     const allStores = store === '__ALL__';
     const eligibleStores = matrix.storeNames.filter(name => {
           if (STORE_STOCK_WH_LOCATIONS_LC.has(name.trim().toLowerCase())) return false;
@@ -3862,13 +3935,16 @@ class Component extends DCLogic {
   onTagSeasonal() { this.setState({ tagPriceSource: 'discount' }); }
   onTagNational() { this.setState({ tagPriceSource: 'national' }); }
   onTagRsp() { this.setState({ tagPriceSource: 'rsp' }); }
+  onTagFalcon() { this.setState({ tagPriceSource: 'falcon' }); }
   tagSourceNote() {
     const s = this.state;
     if (s.tagPriceSource === 'rsp') return 'Tags show the original RSP only — no discounts applied.';
     const nat = s.tagPriceSource === 'national';
-    const map = s.parsed && (nat ? s.parsed.nationalMap : s.parsed.discountMap);
-    if (!map || !map.size) return (nat ? 'National Day 2026' : 'Seasonal Discounts') + ' file not loaded — tags print the current price only.';
-    return 'Was / now / % taken from ' + (nat ? 'National Day 2026' : 'Seasonal Discounts') + '.';
+    const fal = s.tagPriceSource === 'falcon';
+    const name = fal ? 'Falcon Disc.' : nat ? 'National Day 2026' : 'Seasonal Discounts';
+    const map = fal ? this.getFalconMap() : s.parsed && (nat ? s.parsed.nationalMap : s.parsed.discountMap);
+    if (!map || !map.size) return name + ' file not loaded — tags print the current price only.';
+    return 'Was / now / % taken from ' + name + '.';
   }
   onTagSkuChange(i, e) {
     const v = e.target.value;
@@ -3914,7 +3990,7 @@ class Component extends DCLogic {
       if (!it && !r) { card.note = 'SKU not found'; return card; }
       const itemNo = it ? it.itemNo : q;
       const nat = s.tagPriceSource === 'national';
-      const primary = s.tagPriceSource === 'rsp' ? null : (nat ? parsed.nationalMap : parsed.discountMap);
+      const primary = s.tagPriceSource === 'rsp' ? null : s.tagPriceSource === 'falcon' ? this.getFalconMap() : (nat ? parsed.nationalMap : parsed.discountMap);
       const disc = (primary && primary.get(itemNo)) || null;
       const was = disc && disc.was ? disc.was : ((it && it.rsp) || (r && r.rsp) || '');
       const now = disc && disc.now ? disc.now : '';
@@ -4327,7 +4403,7 @@ class Component extends DCLogic {
     const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
     const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     const rows = this.getStoreStockRows();
-    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay;
+    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay || st.storeStockFalcon;
     const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
 
     const header = ['Item No.', 'Description 2', 'Qty', 'Neg Qty', 'WH Stock'].concat(showDiscount ? ['Was', 'Now', '%'] : []).concat(['Image Link']);
@@ -4516,15 +4592,18 @@ class Component extends DCLogic {
       return !EXCLUDED_STORES.has(displayName);
     });
     const terms = q.split(/\s+/).filter(Boolean);
+    const falconAll = this.getFalconMap();
     const scored = [];
     for (const it of matrix.items) {
       const r = retailMap.get(it.itemNo) || {};
       const sku = it.itemNo.toLowerCase();
       const desc = (r.description2 || it.description2 || '').toLowerCase();
+      const falE = falconAll.get(it.itemNo);
+      const part = String(r.partNo || (falE && falE.partNo) || '').toLowerCase();
       let rank = null;
-      if (sku === q) rank = 0;
-      else if (sku.startsWith(q)) rank = 1;
-      else if (sku.includes(q)) rank = 2;
+      if (sku === q || (part && part === q)) rank = 0;
+      else if (sku.startsWith(q) || (part && part.startsWith(q))) rank = 1;
+      else if (sku.includes(q) || (part && part.includes(q))) rank = 2;
       else if (terms.every(t => desc.includes(t))) rank = desc.startsWith(q) ? 3 : 4;
       if (rank !== null) scored.push({ it, rank, desc });
     }
@@ -4546,19 +4625,25 @@ class Component extends DCLogic {
       const totalQty = storeRows.reduce((sum, sr) => sum + (sr.qty > 0 ? sr.qty : 0), 0);
       const disc = discountMap ? discountMap.get(it.itemNo) : null;
       const nat = nationalMap ? nationalMap.get(it.itemNo) : null;
+      const fal = this.getFalconMap().get(it.itemNo) || null;
       const exp = expandAll || s.skuExpanded === it.itemNo;
-      const metrics = this.costMetrics(it.itemNo, it.rsp, disc);
+      const metrics = this.costMetrics(it.itemNo, (s.skuFalcon && fal && fal.was) || it.rsp, s.skuFalcon ? fal : disc);
       const natMetrics = nat ? this.costMetrics(it.itemNo, nat.was || it.rsp, nat) : null;
       return {
         itemNo: it.itemNo,
         description2: r.description2 || it.description2,
+        partNo: r.partNo || (fal && fal.partNo) || '',
         rsp: it.rsp || '',
-        now: (nat && (nat.now || nat.pct)) ? '' : (disc ? disc.now : ''),
-        pct: (nat && (nat.now || nat.pct)) ? '' : (disc ? disc.pct : ''),
-        hasNational: !!(nat && (nat.now || nat.pct)),
+        now: (s.skuFalcon || (nat && (nat.now || nat.pct))) ? '' : (disc ? disc.now : ''),
+        pct: (s.skuFalcon || (nat && (nat.now || nat.pct))) ? '' : (disc ? disc.pct : ''),
+        hasNational: !s.skuFalcon && !!(nat && (nat.now || nat.pct)),
         natWas: nat ? nat.was : '',
         natNow: nat ? nat.now : '',
         natPct: nat ? nat.pct : '',
+        hasFalcon: !!(fal && (fal.now || fal.pct)),
+        falWas: fal ? fal.was : '',
+        falNow: fal ? fal.now : '',
+        falPct: fal ? fal.pct : '',
         natMarginText: (natMetrics && natMetrics.discMarginText) || '',
         hasNatMargin: !!(exp && natMetrics && natMetrics.showCost && natMetrics.discMarginText),
         image: r.image && r.image !== '(blank)' ? r.image : '',
@@ -4786,6 +4871,8 @@ class Component extends DCLogic {
       tagRspChecked: s.tagPriceSource === 'rsp',
       onTagRsp: () => this.onTagRsp(),
       tagNationalChecked: s.tagPriceSource === 'national',
+      tagFalconChecked: s.tagPriceSource === 'falcon',
+      onTagFalcon: () => this.onTagFalcon(),
       tagSourceNote: s.screen === 'pricetags' ? this.tagSourceNote() : '',
       onTagSeasonal: () => this.onTagSeasonal(),
       onTagNational: () => this.onTagNational(),
@@ -4911,8 +4998,10 @@ class Component extends DCLogic {
       onMlSelectAllStores: () => this.onMlSelectAllStores(),
       onMlSelectWarehouses: () => this.onMlSelectWarehouses(),
       mlBrand: s.mlBrand,
-      mlHasNational: !!(s.parsed && s.parsed.nationalMap && s.parsed.nationalMap.size),
-      mlSeasonalChecked: s.mlPriceSource !== 'national',
+      mlHasAlt: !!(s.parsed && ((s.parsed.nationalMap && s.parsed.nationalMap.size) || this.getFalconMap().size)),
+      mlSeasonalChecked: s.mlPriceSource !== 'national' && s.mlPriceSource !== 'falcon',
+      mlFalconChecked: s.mlPriceSource === 'falcon',
+      onMlFalcon: () => this.onMlFalcon(),
       mlNationalChecked: s.mlPriceSource === 'national',
       onMlSeasonal: () => this.onMlSeasonal(),
       onMlNational: () => this.onMlNational(),
@@ -4942,11 +5031,16 @@ class Component extends DCLogic {
       storeStockSelected: s.storeStockSelected,
       hasDiscountFile: !!(s.parsed && s.parsed.discountMap && s.parsed.discountMap.size),
       discountOnChecked: s.storeStockShowDiscount,
-      discountOffChecked: !s.storeStockShowDiscount && !s.storeStockAddnl1500 && !s.storeStockNationalDay,
+      discountOffChecked: !s.storeStockShowDiscount && !s.storeStockAddnl1500 && !s.storeStockNationalDay && !s.storeStockFalcon,
+      falconChecked: s.storeStockFalcon,
+      onFalconOn: () => this.onFalconOn(),
       addnl1500Checked: s.storeStockAddnl1500,
       nationalDayChecked: s.storeStockNationalDay,
-      hasPricingFile: !!(s.parsed && ((s.parsed.discountMap && s.parsed.discountMap.size) || (s.parsed.nationalMap && s.parsed.nationalMap.size))),
-      showDiscountRange: s.storeStockShowDiscount || s.storeStockAddnl1500 || s.storeStockNationalDay,
+      isFalconMode: !!s.storeStockFalcon,
+      notFalconMode: !s.storeStockFalcon,
+      onGoFalcon: () => this.onGoFalcon(),
+      hasPricingFile: !s.storeStockFalcon && !!(s.parsed && ((s.parsed.discountMap && s.parsed.discountMap.size) || (s.parsed.nationalMap && s.parsed.nationalMap.size) || this.getFalconMap().size)),
+      showDiscountRange: s.storeStockShowDiscount || s.storeStockAddnl1500 || s.storeStockNationalDay || s.storeStockFalcon,
       storeStockPctRange: s.storeStockPctRange,
       storeStockBrand: s.storeStockBrand,
       brandOptions: (s.screen === 'storestock' || s.screen === 'select' || s.screen === 'distribution') ? this.getBrandOptions() : [],
@@ -4981,6 +5075,9 @@ class Component extends DCLogic {
       onGenerate: () => this.onGenerate(),
       onBackToSelect: () => this.onBackToSelect(),
       onGoSkuLookup: () => this.onGoSkuLookup(),
+      onGoFalconLookup: () => this.onGoFalconLookup(),
+      skuFalcon: !!s.skuFalcon,
+      skuTitle: s.skuFalcon ? 'Falcon Disc. · Item lookup' : 'SKU stock across stores',
       onBackFromSku: () => this.onBackFromSku(),
       onSkuQueryChange: e => this.onSkuQueryChange(e),
       skuQuery: s.skuQuery,
