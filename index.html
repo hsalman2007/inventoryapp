@@ -261,6 +261,10 @@
               <input type="radio" name="discountToggle" checked="{{nationalDayChecked}}" onChange="{{onNationalDayOn}}">
               National Day 2026
             </label>
+            <label class="seg-opt">
+              <input type="radio" name="discountToggle" checked="{{falconChecked}}" onChange="{{onFalconOn}}">
+              Falcon Disc.
+            </label>
           </div>
         </sc-if>
 
@@ -2715,11 +2719,11 @@ class Component extends DCLogic {
   onGoSkuLookup() { this.setState({ screen: 'skulookup', skuFalcon: false }); }
   onGoFalconLookup() { this.setState({ screen: 'skulookup', skuFalcon: true, skuExpanded: '' }); }
   onBackFromSku() { this.setState({ screen: 'menu', skuFalcon: false }); }
-  onGoStoreStock() { this.setState({ screen: 'storestock', storeStockFalcon: false, storeStockSelected: this.state.isAdmin ? '__ALL__' : (this.state.storeOptions[0] ? this.state.storeOptions[0].name : '') }); }
-  onBackFromStoreStock() { this.setState({ screen: 'menu', storeStockFalcon: false }); }
+  onGoStoreStock() { this.setState({ screen: 'storestock', storeStockFalcon: false, storeStockFalconScreen: false, storeStockSelected: this.state.isAdmin ? '__ALL__' : (this.state.storeOptions[0] ? this.state.storeOptions[0].name : '') }); }
+  onBackFromStoreStock() { this.setState({ screen: 'menu', storeStockFalcon: false, storeStockFalconScreen: false }); }
   onGoFalcon() {
     this.onGoStoreStock();
-    this.setState({ storeStockFalcon: true, storeStockNationalDay: false, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' });
+    this.setState({ storeStockFalcon: true, storeStockFalconScreen: true, storeStockNationalDay: false, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' });
   }
   onStoreStockChange(e) { this.setState({ storeStockSelected: e.target.value }); }
   onDiscountOn() { this.setState({ storeStockShowDiscount: true, storeStockAddnl1500: false, storeStockNationalDay: false, storeStockFalcon: false }); }
@@ -2738,7 +2742,7 @@ class Component extends DCLogic {
       if (res.ok) this.setState({ falconMap: new Map(await res.json()) });
     } catch (e) {}
   }
-  onNationalDayOn() { this.setState({ storeStockNationalDay: true, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' }); }
+  onNationalDayOn() { this.setState({ storeStockNationalDay: true, storeStockFalcon: false, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' }); }
   onPctRangeChange(e) { this.setState({ storeStockPctRange: e.target.value }); }
   onBrandChange(e) { this.setState({ storeStockBrand: e.target.value }); }
   onCategoryChange(e) { this.setState({ storeStockCategory: e.target.value, storeStockSubCategory: '' }); }
@@ -5036,10 +5040,10 @@ class Component extends DCLogic {
       onFalconOn: () => this.onFalconOn(),
       addnl1500Checked: s.storeStockAddnl1500,
       nationalDayChecked: s.storeStockNationalDay,
-      isFalconMode: !!s.storeStockFalcon,
-      notFalconMode: !s.storeStockFalcon,
+      isFalconMode: !!s.storeStockFalconScreen,
+      notFalconMode: !s.storeStockFalconScreen,
       onGoFalcon: () => this.onGoFalcon(),
-      hasPricingFile: !s.storeStockFalcon && !!(s.parsed && ((s.parsed.discountMap && s.parsed.discountMap.size) || (s.parsed.nationalMap && s.parsed.nationalMap.size) || this.getFalconMap().size)),
+      hasPricingFile: !s.storeStockFalconScreen && !!(s.parsed && ((s.parsed.discountMap && s.parsed.discountMap.size) || (s.parsed.nationalMap && s.parsed.nationalMap.size) || this.getFalconMap().size)),
       showDiscountRange: s.storeStockShowDiscount || s.storeStockAddnl1500 || s.storeStockNationalDay || s.storeStockFalcon,
       storeStockPctRange: s.storeStockPctRange,
       storeStockBrand: s.storeStockBrand,
