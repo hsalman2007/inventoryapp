@@ -1292,7 +1292,16 @@
 
         <div class="field">
           <label for="sku-search">SKU, part number or description</label>
-          <input id="sku-search" class="input" type="text" placeholder="Type a SKU, part number or description…" value="{{skuQuery}}" onChange="{{onSkuQueryChange}}">
+          <input id="sku-search" class="input" type="text" placeholder="Type a SKU, or paste / comma-separate up to 50…" value="{{skuQuery}}" onChange="{{onSkuQueryChange}}" onPaste="{{onSkuPaste}}">
+          <sc-if value="{{skuMultiInfo}}" hint-placeholder-val="{{false}}">
+            <span style="font-size: 12px; color: var(--color-neutral-700);">{{skuMultiInfo}}</span>
+          </sc-if>
+          <sc-if value="{{skuMultiMissing}}" hint-placeholder-val="{{false}}">
+            <span style="font-size: 12px; color: #8b1a1a;">{{skuMultiMissing}}</span>
+          </sc-if>
+          <sc-if value="{{showSkuShareAll}}" hint-placeholder-val="{{false}}">
+            <button class="btn btn-primary" onClick="{{onSkuShareAll}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">Share all as image</button>
+          </sc-if>
         </div>
 
         <sc-if value="{{showSkuDiscView}}" hint-placeholder-val="{{true}}">
@@ -4456,7 +4465,98 @@ class Component extends DCLogic {
   }
 
   onSkuQueryChange(e) { this.setState({ skuQuery: e.target.value, skuExpanded: '' }); }
+  getSkuMultiTokens(query) {
+    if (!/[,\n;\t]/.test(query || '')) { this._skuMultiCapped = false; return null; }
+    const toks = String(query).split(/[,\n;\t]+/).map(t => t.trim()).filter(Boolean);
+    this._skuMultiCapped = toks.length > 50;
+    return toks.slice(0, 50);
+  }
+  onSkuPaste(e) {
+    const txt = (e.clipboardData || window.clipboardData).getData('text') || '';
+    if (!/[\r\n\t]/.test(txt.trim())) return;
+    e.preventDefault();
+    const pasted = txt.split(/[\r\n\t,;]+/).map(t => t.trim()).filter(Boolean).join(', ');
+    const el = e.target, cur = el.value || '';
+    const a = el.selectionStart ?? cur.length, b = el.selectionEnd ?? cur.length;
+    let before = cur.slice(0, a).replace(/[\s,]+$/, ''), after = cur.slice(b).replace(/^[\s,]+/, '');
+    const v = (before ? before + ', ' : '') + pasted + (after ? ', ' + after : ', ');
+    this.setState({ skuQuery: v, skuExpanded: '' });
+  }
 
+  async shareSkuListImage(items) {
+    if (!items || !items.length) return;
+    const S = 2, W = 1080, PAD = 40;
+    const INK = '#201e1d', MUTED = '#645c50', ACCENT = '#c67139', RED = '#8b1a1a', SAGE = '#eef3e6', LINE = '#e2dbcd', ROWTINT = '#faf6ee';
+    const font = (w, s) => `${w} ${s}px Figtree, "Noto Sans Arabic", system-ui, sans-serif`;
+    const m = document.createElement('canvas').getContext('2d');
+    const clip = (t, f, maxW) => { m.font = f; t = String(t || ''); if (m.measureText(t).width <= maxW) return t; while (t && m.measureText(t + '…').width > maxW) t = t.slice(0, -1); return t + '…'; };
+    const dv = this.state.skuFalcon ? 'falcon' : (this.state.skuDiscView || 'seasonal');
+    const viewName = { seasonal: 'Seasonal discounts', national: 'National Day 2026', falcon: 'Falcon Disc.', none: 'Original RSP' }[dv];
+    const loadImg = (src, anon) => new Promise(res => {
+      if (!src) return res(null);
+      const im = new Image(); if (anon) im.crossOrigin = 'anonymous';
+      const to = setTimeout(() => res(null), 8000);
+      im.onload = () => { clearTimeout(to); res(im); }; im.onerror = () => { clearTimeout(to); res(null); };
+      im.src = src;
+    });
+    const getImg = async src => {
+      if (!src) return null;
+      const proxied = 'https://images.weserv.nl/?url=' + encodeURIComponent(src.replace(/^https?:\/\//, '')) + '&w=200&output=png';
+      return (await loadImg(src, true)) || (await loadImg(proxied, true));
+    };
+    const imgs = await Promise.all(items.map(it => getImg(it.image)));
+    const IMG = 76, TX = PAD + 12 + IMG + 16;
+    const rowH = 96, headH = 130, colHeadH = 44;
+    const H = PAD + headH + colHeadH + items.length * rowH + 20 + 64 + 56;
+    const c = document.createElement('canvas'); c.width = W * S; c.height = H * S;
+    const g = c.getContext('2d'); g.scale(S, S);
+    g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+    g.textBaseline = 'alphabetic';
+    g.fillStyle = INK; g.font = font(800, 46); g.fillText('Stock summary', PAD, PAD + 46);
+    g.fillStyle = MUTED; g.font = font(600, 26);
+    g.fillText(items.length + ' SKU' + (items.length === 1 ? '' : 's') + ' · ' + viewName + ' · ' + new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }), PAD, PAD + 90);
+    const xPrice = 640, xQty = W - PAD - 12;
+    let y = PAD + headH;
+    g.font = font(800, 22); g.fillStyle = MUTED;
+    g.fillText('SKU / DESCRIPTION', TX, y + 28); g.fillText('PRICE', xPrice, y + 28);
+    g.textAlign = 'right'; g.fillText('TOTAL STOCK', xQty, y + 28); g.textAlign = 'left';
+    y += colHeadH;
+    g.strokeStyle = LINE; g.lineWidth = 1; g.beginPath(); g.moveTo(PAD, y); g.lineTo(W - PAD, y); g.stroke();
+    let total = 0;
+    items.forEach((it, i) => {
+      total += Number(it.totalQty) || 0;
+      if (i % 2 === 0) { g.fillStyle = ROWTINT; g.fillRect(PAD, y, W - PAD * 2, rowH); }
+      const im = imgs[i], bx = PAD + 12, by = y + (rowH - IMG) / 2;
+      g.fillStyle = '#fff'; g.beginPath(); g.roundRect(bx, by, IMG, IMG, 10); g.fill();
+      g.strokeStyle = LINE; g.lineWidth = 1; g.stroke();
+      if (im) { const r = Math.min((IMG - 8) / im.width, (IMG - 8) / im.height), iw = im.width * r, ih = im.height * r; g.drawImage(im, bx + (IMG - iw) / 2, by + (IMG - ih) / 2, iw, ih); }
+      g.fillStyle = INK; g.font = font(800, 30); g.fillText(it.itemNo, TX, y + 40);
+      g.fillStyle = MUTED; g.font = font(600, 22);
+      g.fillText(clip(it.description2 + (it.partNo ? '  ·  ' + it.partNo : ''), font(600, 22), xPrice - TX - 24), TX, y + 74);
+      let px = xPrice;
+      if (it.now) {
+        g.font = font(600, 24); g.fillStyle = MUTED; const w = 'Was ' + (it.was || it.rsp); g.fillText(w, px, y + 38); px += g.measureText(w).width + 10;
+        g.font = font(800, 28); g.fillStyle = RED; const n = 'Now ' + it.now; g.fillText(n, px, y + 38);
+        if (it.pct) { g.font = font(800, 20); const t = String(it.pct), tw = g.measureText(t).width; g.fillStyle = RED; g.beginPath(); g.roundRect(xPrice, y + 52, tw + 20, 28, 999); g.fill(); g.fillStyle = '#fff'; g.fillText(t, xPrice + 10, y + 72); }
+      } else if (it.rsp) { g.font = font(800, 28); g.fillStyle = ACCENT; g.fillText('RSP ' + it.rsp, px, y + 38); }
+      g.textAlign = 'right'; g.fillStyle = INK; g.font = font(800, 34); g.fillText(String(it.totalQty || 0), xQty, y + 56); g.textAlign = 'left';
+      y += rowH;
+    });
+    y += 12;
+    g.fillStyle = SAGE; g.beginPath(); g.roundRect(PAD, y, W - PAD * 2, 64, 16); g.fill();
+    g.fillStyle = INK; g.font = font(800, 32); g.textBaseline = 'middle'; g.fillText('Total', PAD + 12, y + 32);
+    g.textAlign = 'right'; g.fillText(String(total), xQty, y + 32); g.textAlign = 'left';
+    let blob = null;
+    try { blob = await new Promise(res => c.toBlob(res, 'image/png')); } catch (e) { blob = null; }
+    if (!blob && items.some(x => x.image)) return this.shareSkuListImage(items.map(x => ({ ...x, image: '' })));
+    const name = 'stock-summary-' + items.length + '-skus.png';
+    try {
+      const file = new File([blob], name, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Stock summary' }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
   async shareSkuImage(item) {
     const S = 2, W = 1080, PAD = 40;
     const BG = '#ffffff', INK = '#201e1d', MUTED = '#645c50', ACCENT = '#c67139', RED = '#8b1a1a', SAGE = '#eef3e6', LINE = '#e2dbcd', ROWTINT = '#faf6ee';
@@ -4615,7 +4715,7 @@ class Component extends DCLogic {
     const terms = q.split(/\s+/).filter(Boolean);
     const falconAll = this.getFalconMap();
     const scored = [];
-    for (const it of matrix.items) {
+    if (!this.getSkuMultiTokens(query)) for (const it of matrix.items) {
       const r = retailMap.get(it.itemNo) || {};
       const sku = it.itemNo.toLowerCase();
       const desc = (r.description2 || it.description2 || '').toLowerCase();
@@ -4628,10 +4728,34 @@ class Component extends DCLogic {
       else if (terms.every(t => desc.includes(t))) rank = desc.startsWith(q) ? 3 : 4;
       if (rank !== null) scored.push({ it, rank, desc });
     }
-    const matches = scored
-      .sort((a, b) => a.rank - b.rank || naturalCompare(a.it.itemNo, b.it.itemNo))
-      .slice(0, 25)
-      .map(x => x.it);
+    let matches;
+    const multiTokens = this.getSkuMultiTokens(query);
+    if (multiTokens) {
+      const bySku = new Map(), byPart = new Map();
+      for (const it of matrix.items) {
+        bySku.set(it.itemNo.toLowerCase(), it);
+        const r = retailMap.get(it.itemNo) || {};
+        const falE = falconAll.get(it.itemNo);
+        const p = String(r.partNo || (falE && falE.partNo) || '').toLowerCase();
+        if (p && !byPart.has(p)) byPart.set(p, it);
+      }
+      const seen = new Set(), missing = [];
+      matches = [];
+      for (const tok of multiTokens) {
+        const k = tok.toLowerCase();
+        const it = bySku.get(k) || byPart.get(k);
+        if (!it) { missing.push(tok); continue; }
+        if (seen.has(it.itemNo)) continue;
+        seen.add(it.itemNo); matches.push(it);
+      }
+      this._skuMulti = { total: multiTokens.length, found: matches.length, missing, capped: this._skuMultiCapped };
+    } else {
+      this._skuMulti = null;
+      matches = scored
+        .sort((a, b) => a.rank - b.rank || naturalCompare(a.it.itemNo, b.it.itemNo))
+        .slice(0, 25)
+        .map(x => x.it);
+    }
     const expandAll = matches.length === 1;
     return matches.map(it => {
       const r = retailMap.get(it.itemNo) || {};
@@ -4674,6 +4798,17 @@ class Component extends DCLogic {
         expanded: exp,
         collapsed: !exp,
         onToggle: () => this.setState(st => ({ skuExpanded: st.skuExpanded === it.itemNo ? '' : it.itemNo })),
+        shareRow: {
+          image: r.image && r.image !== '(blank)' ? r.image : '',
+          itemNo: it.itemNo,
+          description2: r.description2 || it.description2,
+          partNo: r.partNo || (fal && fal.partNo) || '',
+          rsp: it.rsp || '',
+          was: dv === 'national' ? (nat && nat.was) || '' : dv === 'falcon' ? (fal && fal.was) || '' : '',
+          now: dv === 'seasonal' ? (disc && disc.now) || '' : dv === 'national' ? (nat && nat.now) || '' : dv === 'falcon' ? (fal && fal.now) || '' : '',
+          pct: dv === 'seasonal' ? (disc && disc.pct) || '' : dv === 'national' ? (nat && nat.pct) || '' : dv === 'falcon' ? (fal && fal.pct) || '' : '',
+          totalQty,
+        },
         onShare: () => this.shareSkuImage({
           itemNo: it.itemNo,
           description2: r.description2 || it.description2,
@@ -5102,8 +5237,13 @@ class Component extends DCLogic {
       skuTitle: s.skuFalcon ? 'Falcon Disc. · Item lookup' : 'SKU stock across stores',
       onBackFromSku: () => this.onBackFromSku(),
       onSkuQueryChange: e => this.onSkuQueryChange(e),
+      onSkuPaste: e => this.onSkuPaste(e),
+      showSkuShareAll: !!this._skuMulti && skuMatches.length > 0,
+      onSkuShareAll: () => this.shareSkuListImage(skuMatches.map(x => x.shareRow)),
+      skuMultiInfo: this._skuMulti ? ('Showing ' + this._skuMulti.found + ' of ' + this._skuMulti.total + ' SKUs' + (this._skuMulti.capped ? ' (limit 50)' : '')) : '',
+      skuMultiMissing: this._skuMulti && this._skuMulti.missing.length ? ('Not found: ' + this._skuMulti.missing.join(', ')) : '',
       skuQuery: s.skuQuery,
-      skuQueryTooShort: s.screen === 'skulookup' && s.skuQuery.trim().length > 0 && s.skuQuery.trim().length < 2,
+      skuQueryTooShort: s.screen === 'skulookup' && !/[,\n;]/.test(s.skuQuery) && s.skuQuery.trim().length > 0 && s.skuQuery.trim().length < 2,
       skuMatches: skuMatches,
       showSkuDiscView: !s.skuFalcon,
       skuDiscView: s.skuDiscView || 'seasonal',
