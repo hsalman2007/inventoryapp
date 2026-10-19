@@ -1295,6 +1295,18 @@
           <input id="sku-search" class="input" type="text" placeholder="Type a SKU, part number or description…" value="{{skuQuery}}" onChange="{{onSkuQueryChange}}">
         </div>
 
+        <sc-if value="{{showSkuDiscView}}" hint-placeholder-val="{{true}}">
+          <div class="field">
+            <label for="sku-disc-view">Discount type</label>
+            <select id="sku-disc-view" class="input" value="{{skuDiscView}}" onChange="{{onSkuDiscViewChange}}">
+              <option value="seasonal">Seasonal discounts</option>
+              <option value="national">National Day 2026</option>
+              <option value="falcon">Falcon Disc.</option>
+              <option value="none">Original RSP only</option>
+            </select>
+          </div>
+        </sc-if>
+
         <sc-if value="{{skuQueryTooShort}}" hint-placeholder-val="{{false}}">
           <div style="font-size: 13px; color: var(--color-neutral-700);">Type at least 2 characters to search.</div>
         </sc-if>
@@ -4636,6 +4648,7 @@ class Component extends DCLogic {
       const nat = nationalMap ? nationalMap.get(it.itemNo) : null;
       const fal = this.getFalconMap().get(it.itemNo) || null;
       const exp = expandAll || s.skuExpanded === it.itemNo;
+      const dv = s.skuFalcon ? 'falcon' : (s.skuDiscView || 'seasonal');
       const metrics = this.costMetrics(it.itemNo, (s.skuFalcon && fal && fal.was) || it.rsp, s.skuFalcon ? fal : disc);
       const natMetrics = nat ? this.costMetrics(it.itemNo, nat.was || it.rsp, nat) : null;
       return {
@@ -4643,13 +4656,13 @@ class Component extends DCLogic {
         description2: r.description2 || it.description2,
         partNo: r.partNo || (fal && fal.partNo) || '',
         rsp: it.rsp || '',
-        now: (s.skuFalcon || (nat && (nat.now || nat.pct))) ? '' : (disc ? disc.now : ''),
-        pct: (s.skuFalcon || (nat && (nat.now || nat.pct))) ? '' : (disc ? disc.pct : ''),
-        hasNational: !s.skuFalcon && !!(nat && (nat.now || nat.pct)),
+        now: dv === 'seasonal' && disc ? disc.now : '',
+        pct: dv === 'seasonal' && disc ? disc.pct : '',
+        hasNational: dv === 'national' && !!(nat && (nat.now || nat.pct)),
         natWas: nat ? nat.was : '',
         natNow: nat ? nat.now : '',
         natPct: nat ? nat.pct : '',
-        hasFalcon: !!(fal && (fal.now || fal.pct)),
+        hasFalcon: dv === 'falcon' && !!(fal && (fal.now || fal.pct)),
         falWas: fal ? fal.was : '',
         falNow: fal ? fal.now : '',
         falPct: fal ? fal.pct : '',
@@ -5092,6 +5105,9 @@ class Component extends DCLogic {
       skuQuery: s.skuQuery,
       skuQueryTooShort: s.screen === 'skulookup' && s.skuQuery.trim().length > 0 && s.skuQuery.trim().length < 2,
       skuMatches: skuMatches,
+      showSkuDiscView: !s.skuFalcon,
+      skuDiscView: s.skuDiscView || 'seasonal',
+      onSkuDiscViewChange: e => this.setState({ skuDiscView: e.target.value }),
       skuNoMatches: s.screen === 'skulookup' && s.skuQuery.trim().length >= 2 && skuMatches.length === 0,
       onDownloadPdf: () => this.onDownloadPdf(),
       onDownloadExcel: () => this.onDownloadExcel(),
