@@ -2565,6 +2565,7 @@ class Component extends DCLogic {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const snap = await res.json();
       const retailMap = new Map(snap.retailMap);
+      for (const it of (snap.matrix && snap.matrix.items) || []) { const r = retailMap.get(it.itemNo); if (r && r.rsp) it.rsp = r.rsp; }
       const openOrders = new Set(snap.openOrders);
       const discountMap = new Map(snap.discountMap || []);
       const nationalMap = new Map(snap.nationalMap || []);
