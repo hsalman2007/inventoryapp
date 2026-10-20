@@ -4508,7 +4508,7 @@ class Component extends DCLogic {
     const imgs = await Promise.all(items.map(it => getImg(it.image)));
     const IMG = 76, TX = PAD + 12 + IMG + 16;
     const rowH = 96, headH = 130, colHeadH = 44;
-    const H = PAD + headH + colHeadH + items.length * rowH + 20 + 64 + 56;
+    const H = PAD + headH + colHeadH + items.length * rowH + PAD;
     const c = document.createElement('canvas'); c.width = W * S; c.height = H * S;
     const g = c.getContext('2d'); g.scale(S, S);
     g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
@@ -4543,10 +4543,6 @@ class Component extends DCLogic {
       g.textAlign = 'right'; g.fillStyle = INK; g.font = font(800, 34); g.fillText(String(it.totalQty || 0), xQty, y + 56); g.textAlign = 'left';
       y += rowH;
     });
-    y += 12;
-    g.fillStyle = SAGE; g.beginPath(); g.roundRect(PAD, y, W - PAD * 2, 64, 16); g.fill();
-    g.fillStyle = INK; g.font = font(800, 32); g.textBaseline = 'middle'; g.fillText('Total', PAD + 12, y + 32);
-    g.textAlign = 'right'; g.fillText(String(total), xQty, y + 32); g.textAlign = 'left';
     let blob = null;
     try { blob = await new Promise(res => c.toBlob(res, 'image/png')); } catch (e) { blob = null; }
     if (!blob && items.some(x => x.image)) return this.shareSkuListImage(items.map(x => ({ ...x, image: '' })));
