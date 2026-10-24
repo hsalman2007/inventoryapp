@@ -282,6 +282,12 @@
               <input type="radio" name="discountToggle" checked="{{falconChecked}}" onChange="{{onFalconOn}}">
               Falcon Disc.
             </label>
+            <sc-if value="{{hasNsFile}}" hint-placeholder-val="{{false}}">
+              <label class="seg-opt">
+                <input type="radio" name="discountToggle" checked="{{newStoreChecked}}" onChange="{{onNewStoreOn}}">
+                {{nsName}}
+              </label>
+            </sc-if>
           </div>
         </sc-if>
 
@@ -328,6 +334,18 @@
               <input type="radio" name="mlPriceSource" checked="{{mlFalconChecked}}" onChange="{{onMlFalcon}}">
               Falcon Disc.
             </label>
+            <sc-if value="{{hasNsFile}}" hint-placeholder-val="{{false}}">
+              <label class="seg-opt">
+                <input type="radio" name="mlPriceSource" checked="{{mlNsChecked}}" onChange="{{onMlNs}}">
+                {{nsName}}
+              </label>
+            </sc-if>
+            <sc-if value="{{hasNsFile}}" hint-placeholder-val="{{false}}">
+              <label class="seg-opt">
+                <input type="radio" name="discountToggle" checked="{{newStoreChecked}}" onChange="{{onNewStoreOn}}">
+                {{nsName}}
+              </label>
+            </sc-if>
           </div>
         </sc-if>
 
@@ -894,6 +912,12 @@
               <input type="radio" name="tagPriceSource" checked="{{tagFalconChecked}}" onChange="{{onTagFalcon}}">
               Falcon Disc.
             </label>
+            <sc-if value="{{hasNsFile}}" hint-placeholder-val="{{false}}">
+              <label class="seg-opt">
+                <input type="radio" name="tagPriceSource" checked="{{tagNsChecked}}" onChange="{{onTagNs}}">
+                {{nsName}}
+              </label>
+            </sc-if>
             <label class="seg-opt">
               <input type="radio" name="tagPriceSource" checked="{{tagRspChecked}}" onChange="{{onTagRsp}}">
               Original RSP only
@@ -1328,6 +1352,7 @@
               <option value="seasonal">Seasonal discounts</option>
               <option value="national">National Day 2026</option>
               <option value="falcon">Falcon Disc.</option>
+              <option value="newstore" hidden="{{nsOptHidden}}" disabled="{{nsOptHidden}}">{{nsName}}</option>
               <option value="none">Original RSP only</option>
             </select>
           </div>
@@ -1366,6 +1391,14 @@
                     <div style="font-size: 12px; color: var(--color-neutral-700);">Was {{item.natWas}}</div>
                     <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Now {{item.natNow}}</div>
                     <div style="font-size: 11px; font-weight: 700; color: #fff; background: var(--color-accent-800); border-radius: 999px; padding: 1px 7px;">{{item.natPct}}</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{item.hasNs}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                    <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">{{item.nsLabel}}</div>
+                    <div style="font-size: 12px; color: var(--color-neutral-700);">Was {{item.nsWas}}</div>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Now {{item.nsNow}}</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #fff; background: var(--color-accent-800); border-radius: 999px; padding: 1px 7px;">{{item.nsPct}}</div>
                   </div>
                 </sc-if>
                 <sc-if value="{{item.hasFalcon}}" hint-placeholder-val="{{false}}">
@@ -2577,6 +2610,7 @@ class Component extends DCLogic {
   }
 
   async componentDidMount() {
+    this.loadNsDefault();
     try {
       const dataUrl = (window.__resources && window.__resources['data-json']) || './inventory-data.json';
       const res = await fetch(dataUrl);
@@ -2588,6 +2622,8 @@ class Component extends DCLogic {
       const discountMap = new Map(snap.discountMap || []);
       const nationalMap = new Map(snap.nationalMap || []);
       const falconMap = new Map(snap.falconMap || []);
+      const nsMap = new Map(snap.nsMap || []);
+      const nsName = snap.nsName || '';
       if (!falconMap.size) this.loadFalconMap();
       const storeInfoMap = new Map(snap.storeInfoMap);
       // Locations the store master mistypes but which hold sellable stock —
@@ -2608,7 +2644,7 @@ class Component extends DCLogic {
       this.setState({
         loading: false,
         isAdmin: wasAdmin,
-        parsed: { matrix: snap.matrix, retailMap, openOrders, discountMap, nationalMap, falconMap },
+        parsed: { matrix: snap.matrix, retailMap, openOrders, discountMap, nationalMap, falconMap, nsMap, nsName },
         storeInfoMap,
         storeOptions,
         selectedStore: storeOptions[0] ? storeOptions[0].name : '',
@@ -2765,13 +2801,13 @@ class Component extends DCLogic {
   onBackFromStoreStock() { this.setState({ screen: 'menu', storeStockFalcon: false, storeStockFalconScreen: false }); }
   onGoFalcon() {
     this.onGoStoreStock();
-    this.setState({ storeStockFalcon: true, storeStockFalconScreen: true, storeStockNationalDay: false, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' });
+    this.setState({ storeStockNewStore: false, storeStockFalcon: true, storeStockFalconScreen: true, storeStockNationalDay: false, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' });
   }
   onStoreStockChange(e) { this.setState({ storeStockSelected: e.target.value }); }
-  onDiscountOn() { this.setState({ storeStockShowDiscount: true, storeStockAddnl1500: false, storeStockNationalDay: false, storeStockFalcon: false }); }
-  onDiscountOff() { this.setState({ storeStockShowDiscount: false, storeStockAddnl1500: false, storeStockNationalDay: false, storeStockFalcon: false, storeStockPctRange: '' }); }
-  onAddnl1500On() { this.setState({ storeStockAddnl1500: true, storeStockShowDiscount: false, storeStockNationalDay: false, storeStockFalcon: false, storeStockPctRange: '' }); }
-  onFalconOn() { this.setState({ storeStockFalcon: true, storeStockNationalDay: false, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' }); }
+  onDiscountOn() { this.setState({ storeStockNewStore: false, storeStockShowDiscount: true, storeStockAddnl1500: false, storeStockNationalDay: false, storeStockFalcon: false }); }
+  onDiscountOff() { this.setState({ storeStockNewStore: false, storeStockShowDiscount: false, storeStockAddnl1500: false, storeStockNationalDay: false, storeStockFalcon: false, storeStockPctRange: '' }); }
+  onAddnl1500On() { this.setState({ storeStockNewStore: false, storeStockAddnl1500: true, storeStockShowDiscount: false, storeStockNationalDay: false, storeStockFalcon: false, storeStockPctRange: '' }); }
+  onFalconOn() { this.setState({ storeStockNewStore: false, storeStockFalcon: true, storeStockNationalDay: false, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' }); }
   getFalconMap() {
     const s = this.state;
     if (s.parsed && s.parsed.falconMap && s.parsed.falconMap.size) return s.parsed.falconMap;
@@ -2784,7 +2820,18 @@ class Component extends DCLogic {
       if (res.ok) this.setState({ falconMap: new Map(await res.json()) });
     } catch (e) {}
   }
-  onNationalDayOn() { this.setState({ storeStockNationalDay: true, storeStockFalcon: false, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' }); }
+  nsName() { const p = this.state.parsed; return (p && p.nsMap && p.nsMap.size && p.nsName) || this.state.nsDefaultName || 'New Store'; }
+  nsMap() { const p = this.state.parsed; return (p && p.nsMap && p.nsMap.size) ? p.nsMap : (this.state.nsDefaultMap || new Map()); }
+  async loadNsDefault() {
+    try {
+      const res = await fetch('./newstore-discounts.json');
+      if (!res.ok) return;
+      const j = await res.json();
+      this.setState({ nsDefaultMap: new Map(j.entries || []), nsDefaultName: j.name || 'New Store' });
+    } catch (e) {}
+  }
+  onNewStoreOn() { this.setState({ storeStockNewStore: true, storeStockNationalDay: false, storeStockFalcon: false, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' }); }
+  onNationalDayOn() { this.setState({ storeStockNewStore: false, storeStockNationalDay: true, storeStockFalcon: false, storeStockAddnl1500: false, storeStockShowDiscount: false, storeStockPctRange: '' }); }
   onPctRangeChange(e) { this.setState({ storeStockPctRange: e.target.value }); }
   onBrandChange(e) { this.setState({ storeStockBrand: e.target.value }); }
   onCategoryChange(e) { this.setState({ storeStockCategory: e.target.value, storeStockSubCategory: '' }); }
@@ -3688,7 +3735,7 @@ class Component extends DCLogic {
     const st = this.state;
     if (!st.parsed) return { locations: [], rows: [] };
     const { matrix, retailMap, discountMap, nationalMap } = st.parsed;
-    const priceMap = st.mlPriceSource === 'falcon' ? this.getFalconMap() : st.mlPriceSource === 'national' ? (nationalMap || new Map()) : discountMap;
+    const priceMap = st.mlPriceSource === 'newstore' ? this.nsMap() : st.mlPriceSource === 'falcon' ? this.getFalconMap() : st.mlPriceSource === 'national' ? (nationalMap || new Map()) : discountMap;
     const sel = st.mlLocations || [];
     const locations = this.getMlLocationOptions().filter(o => sel.indexOf(o.name) >= 0);
     if (!locations.length) return { locations: [], rows: [] };
@@ -3736,7 +3783,7 @@ class Component extends DCLogic {
     if (st.mlBrand) bits.push(st.mlBrand);
     if (st.mlCategory) bits.push(st.mlCategory);
     if (st.mlSubCategory) bits.push(st.mlSubCategory);
-    bits.push(st.mlPriceSource === 'falcon' ? 'Falcon Disc.' : st.mlPriceSource === 'national' ? 'National Day 2026' : 'Seasonal discounts');
+    bits.push(st.mlPriceSource === 'newstore' ? this.nsName() : st.mlPriceSource === 'falcon' ? 'Falcon Disc.' : st.mlPriceSource === 'national' ? 'National Day 2026' : 'Seasonal discounts');
     return bits.join(' · ');
   }
 
@@ -3854,6 +3901,7 @@ class Component extends DCLogic {
 
   storeStockModeName() {
     const s = this.state;
+    if (s.storeStockNewStore) return this.nsName();
     if (s.storeStockFalcon) return 'Falcon Disc';
     if (s.storeStockNationalDay) return 'National Day 2026';
     if (s.storeStockAddnl1500) return 'Addnl 1500';
@@ -3865,8 +3913,8 @@ class Component extends DCLogic {
     const st = this.state;
     const store = st.storeStockSelected;
     const { matrix, retailMap, discountMap, nationalMap } = st.parsed;
-    const priceMap = st.storeStockFalcon ? this.getFalconMap() : st.storeStockNationalDay ? (nationalMap || new Map()) : discountMap;
-    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay || st.storeStockFalcon;
+    const priceMap = st.storeStockNewStore ? this.nsMap() : st.storeStockFalcon ? this.getFalconMap() : st.storeStockNationalDay ? (nationalMap || new Map()) : discountMap;
+    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay || st.storeStockFalcon || st.storeStockNewStore;
     const allStores = store === '__ALL__';
     const eligibleStores = matrix.storeNames.filter(name => {
           if (STORE_STOCK_WH_LOCATIONS_LC.has(name.trim().toLowerCase())) return false;
@@ -3989,8 +4037,9 @@ class Component extends DCLogic {
     if (s.tagPriceSource === 'rsp') return 'Tags show the original RSP only — no discounts applied.';
     const nat = s.tagPriceSource === 'national';
     const fal = s.tagPriceSource === 'falcon';
-    const name = fal ? 'Falcon Disc.' : nat ? 'National Day 2026' : 'Seasonal Discounts';
-    const map = fal ? this.getFalconMap() : s.parsed && (nat ? s.parsed.nationalMap : s.parsed.discountMap);
+    const ns = s.tagPriceSource === 'newstore';
+    const name = ns ? this.nsName() : fal ? 'Falcon Disc.' : nat ? 'National Day 2026' : 'Seasonal Discounts';
+    const map = ns ? this.nsMap() : fal ? this.getFalconMap() : s.parsed && (nat ? s.parsed.nationalMap : s.parsed.discountMap);
     if (!map || !map.size) return name + ' file not loaded — tags print the current price only.';
     return 'Was / now / % taken from ' + name + '.';
   }
@@ -4038,7 +4087,7 @@ class Component extends DCLogic {
       if (!it && !r) { card.note = 'SKU not found'; return card; }
       const itemNo = it ? it.itemNo : q;
       const nat = s.tagPriceSource === 'national';
-      const primary = s.tagPriceSource === 'rsp' ? null : s.tagPriceSource === 'falcon' ? this.getFalconMap() : (nat ? parsed.nationalMap : parsed.discountMap);
+      const primary = s.tagPriceSource === 'rsp' ? null : s.tagPriceSource === 'newstore' ? this.nsMap() : s.tagPriceSource === 'falcon' ? this.getFalconMap() : (nat ? parsed.nationalMap : parsed.discountMap);
       const disc = (primary && primary.get(itemNo)) || null;
       const was = disc && disc.was ? disc.was : ((it && it.rsp) || (r && r.rsp) || '');
       const now = disc && disc.now ? disc.now : '';
@@ -4524,7 +4573,7 @@ class Component extends DCLogic {
     const m = document.createElement('canvas').getContext('2d');
     const clip = (t, f, maxW) => { m.font = f; t = String(t || ''); if (m.measureText(t).width <= maxW) return t; while (t && m.measureText(t + '…').width > maxW) t = t.slice(0, -1); return t + '…'; };
     const dv = this.state.skuFalcon ? 'falcon' : (this.state.skuDiscView || 'seasonal');
-    const viewName = { seasonal: 'Seasonal discounts', national: 'National Day 2026', falcon: 'Falcon Disc.', none: 'Original RSP' }[dv];
+    const viewName = { seasonal: 'Seasonal discounts', national: 'National Day 2026', falcon: 'Falcon Disc.', newstore: this.nsName(), none: 'Original RSP' }[dv];
     const loadImg = (src, anon) => new Promise(res => {
       if (!src) return res(null);
       const im = new Image(); if (anon) im.crossOrigin = 'anonymous';
@@ -4800,6 +4849,7 @@ class Component extends DCLogic {
       const disc = discountMap ? discountMap.get(it.itemNo) : null;
       const nat = nationalMap ? nationalMap.get(it.itemNo) : null;
       const fal = this.getFalconMap().get(it.itemNo) || null;
+      const nsE = this.nsMap().get(it.itemNo) || null;
       const exp = expandAll || s.skuExpanded === it.itemNo;
       const dv = s.skuFalcon ? 'falcon' : (s.skuDiscView || 'seasonal');
       const metrics = this.costMetrics(it.itemNo, (s.skuFalcon && fal && fal.was) || it.rsp, s.skuFalcon ? fal : disc);
@@ -4816,6 +4866,11 @@ class Component extends DCLogic {
         natNow: nat ? nat.now : '',
         natPct: nat ? nat.pct : '',
         hasFalcon: dv === 'falcon' && !!(fal && (fal.now || fal.pct)),
+        hasNs: dv === 'newstore' && !!(nsE && (nsE.now || nsE.pct)),
+        nsLabel: this.nsName(),
+        nsWas: nsE ? nsE.was : '',
+        nsNow: nsE ? nsE.now : '',
+        nsPct: nsE ? nsE.pct : '',
         falWas: fal ? fal.was : '',
         falNow: fal ? fal.now : '',
         falPct: fal ? fal.pct : '',
@@ -4833,9 +4888,9 @@ class Component extends DCLogic {
           description2: r.description2 || it.description2,
           partNo: r.partNo || (fal && fal.partNo) || '',
           rsp: it.rsp || '',
-          was: dv === 'national' ? (nat && nat.was) || '' : dv === 'falcon' ? (fal && fal.was) || '' : '',
-          now: dv === 'seasonal' ? (disc && disc.now) || '' : dv === 'national' ? (nat && nat.now) || '' : dv === 'falcon' ? (fal && fal.now) || '' : '',
-          pct: dv === 'seasonal' ? (disc && disc.pct) || '' : dv === 'national' ? (nat && nat.pct) || '' : dv === 'falcon' ? (fal && fal.pct) || '' : '',
+          was: dv === 'national' ? (nat && nat.was) || '' : dv === 'falcon' ? (fal && fal.was) || '' : dv === 'newstore' ? (nsE && nsE.was) || '' : '',
+          now: dv === 'seasonal' ? (disc && disc.now) || '' : dv === 'national' ? (nat && nat.now) || '' : dv === 'falcon' ? (fal && fal.now) || '' : dv === 'newstore' ? (nsE && nsE.now) || '' : '',
+          pct: dv === 'seasonal' ? (disc && disc.pct) || '' : dv === 'national' ? (nat && nat.pct) || '' : dv === 'falcon' ? (fal && fal.pct) || '' : dv === 'newstore' ? (nsE && nsE.pct) || '' : '',
           totalQty,
         },
         onShare: () => this.shareSkuImage({
@@ -5184,8 +5239,8 @@ class Component extends DCLogic {
       onMlSelectAllStores: () => this.onMlSelectAllStores(),
       onMlSelectWarehouses: () => this.onMlSelectWarehouses(),
       mlBrand: s.mlBrand,
-      mlHasAlt: !!(s.parsed && ((s.parsed.nationalMap && s.parsed.nationalMap.size) || this.getFalconMap().size)),
-      mlSeasonalChecked: s.mlPriceSource !== 'national' && s.mlPriceSource !== 'falcon',
+      mlHasAlt: !!(s.parsed && ((s.parsed.nsMap && s.parsed.nsMap.size) || (s.parsed.nationalMap && s.parsed.nationalMap.size) || this.getFalconMap().size)),
+      mlSeasonalChecked: s.mlPriceSource !== 'national' && s.mlPriceSource !== 'falcon' && s.mlPriceSource !== 'newstore',
       mlFalconChecked: s.mlPriceSource === 'falcon',
       onMlFalcon: () => this.onMlFalcon(),
       mlNationalChecked: s.mlPriceSource === 'national',
@@ -5217,7 +5272,16 @@ class Component extends DCLogic {
       storeStockSelected: s.storeStockSelected,
       hasDiscountFile: !!(s.parsed && s.parsed.discountMap && s.parsed.discountMap.size),
       discountOnChecked: s.storeStockShowDiscount,
-      discountOffChecked: !s.storeStockShowDiscount && !s.storeStockAddnl1500 && !s.storeStockNationalDay && !s.storeStockFalcon,
+      discountOffChecked: !s.storeStockShowDiscount && !s.storeStockAddnl1500 && !s.storeStockNationalDay && !s.storeStockFalcon && !s.storeStockNewStore,
+      hasNsFile: true,
+      nsOptHidden: false,
+      nsName: this.nsName(),
+      newStoreChecked: !!s.storeStockNewStore,
+      onNewStoreOn: () => this.onNewStoreOn(),
+      tagNsChecked: s.tagPriceSource === 'newstore',
+      onTagNs: () => this.setState({ tagPriceSource: 'newstore' }),
+      mlNsChecked: s.mlPriceSource === 'newstore',
+      onMlNs: () => this.setState({ mlPriceSource: 'newstore' }),
       falconChecked: s.storeStockFalcon,
       onFalconOn: () => this.onFalconOn(),
       addnl1500Checked: s.storeStockAddnl1500,
@@ -5230,8 +5294,8 @@ class Component extends DCLogic {
       onInvScopeAll: () => this.setState({ storeStockAllInv: true }),
       onInvScopeXAll: () => this.setState({ storeStockAllInv: false }),
       onGoFalcon: () => this.onGoFalcon(),
-      hasPricingFile: !s.storeStockFalconScreen && !!(s.parsed && ((s.parsed.discountMap && s.parsed.discountMap.size) || (s.parsed.nationalMap && s.parsed.nationalMap.size) || this.getFalconMap().size)),
-      showDiscountRange: s.storeStockShowDiscount || s.storeStockAddnl1500 || s.storeStockNationalDay || s.storeStockFalcon,
+      hasPricingFile: !s.storeStockFalconScreen && !!(s.parsed && ((s.parsed.nsMap && s.parsed.nsMap.size) || (s.parsed.discountMap && s.parsed.discountMap.size) || (s.parsed.nationalMap && s.parsed.nationalMap.size) || this.getFalconMap().size)),
+      showDiscountRange: s.storeStockShowDiscount || s.storeStockAddnl1500 || s.storeStockNationalDay || s.storeStockFalcon || s.storeStockNewStore,
       storeStockPctRange: s.storeStockPctRange,
       storeStockBrand: s.storeStockBrand,
       brandOptions: (s.screen === 'storestock' || s.screen === 'select' || s.screen === 'distribution') ? this.getBrandOptions() : [],
