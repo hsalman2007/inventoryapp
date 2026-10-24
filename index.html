@@ -2824,6 +2824,11 @@ class Component extends DCLogic {
   nsMap() { const p = this.state.parsed; return (p && p.nsMap && p.nsMap.size) ? p.nsMap : (this.state.nsDefaultMap || new Map()); }
   async loadNsDefault() {
     try {
+      const emb = window.__NS_DEFAULT;
+      if (emb && emb.rows) {
+        this.setState({ nsDefaultName: emb.name || 'New Store', nsDefaultMap: new Map(emb.rows.map(r => [r[0], { was: r[1], now: r[2], pct: r[3], hasPct: !!r[4] }])) });
+        return;
+      }
       const res = await fetch('./newstore-discounts.json');
       if (!res.ok) return;
       const j = await res.json();
