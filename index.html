@@ -261,33 +261,16 @@
         </sc-if>
 
         <sc-if value="{{hasPricingFile}}" hint-placeholder-val="{{false}}">
-          <div class="seg" role="radiogroup" aria-label="Discount pricing toggle">
-            <label class="seg-opt">
-              <input type="radio" name="discountToggle" checked="{{discountOffChecked}}" onChange="{{onDiscountOff}}">
-              Standard columns
-            </label>
-            <label class="seg-opt">
-              <input type="radio" name="discountToggle" checked="{{discountOnChecked}}" onChange="{{onDiscountOn}}">
-              Seasonal Discounts
-            </label>
-            <label class="seg-opt">
-              <input type="radio" name="discountToggle" checked="{{addnl1500Checked}}" onChange="{{onAddnl1500On}}">
-              Addnl. 1500
-            </label>
-            <label class="seg-opt">
-              <input type="radio" name="discountToggle" checked="{{nationalDayChecked}}" onChange="{{onNationalDayOn}}">
-              National Day 2026
-            </label>
-            <label class="seg-opt">
-              <input type="radio" name="discountToggle" checked="{{falconChecked}}" onChange="{{onFalconOn}}">
-              Falcon Disc.
-            </label>
-            <sc-if value="{{hasNsFile}}" hint-placeholder-val="{{false}}">
-              <label class="seg-opt">
-                <input type="radio" name="discountToggle" checked="{{newStoreChecked}}" onChange="{{onNewStoreOn}}">
-                {{nsName}}
-              </label>
-            </sc-if>
+          <div class="field">
+            <label for="ss-disc-type">Pricing</label>
+            <select id="ss-disc-type" class="input" value="{{ssDiscType}}" onChange="{{onSsDiscType}}">
+              <option value="standard">Standard columns</option>
+              <option value="seasonal">Seasonal Discounts</option>
+              <option value="addnl1500">Addnl. 1500</option>
+              <option value="national">National Day 2026</option>
+              <option value="falcon">Falcon Disc.</option>
+              <option value="newstore" hidden="{{nsOptHidden}}" disabled="{{nsOptHidden}}">{{nsName}}</option>
+            </select>
           </div>
         </sc-if>
 
@@ -5279,6 +5262,8 @@ class Component extends DCLogic {
       discountOnChecked: s.storeStockShowDiscount,
       discountOffChecked: !s.storeStockShowDiscount && !s.storeStockAddnl1500 && !s.storeStockNationalDay && !s.storeStockFalcon && !s.storeStockNewStore,
       hasNsFile: true,
+      ssDiscType: s.storeStockNewStore ? 'newstore' : s.storeStockFalcon ? 'falcon' : s.storeStockNationalDay ? 'national' : s.storeStockAddnl1500 ? 'addnl1500' : s.storeStockShowDiscount ? 'seasonal' : 'standard',
+      onSsDiscType: e => { const v = e.target.value; ({ standard: () => this.onDiscountOff(), seasonal: () => this.onDiscountOn(), addnl1500: () => this.onAddnl1500On(), national: () => this.onNationalDayOn(), falcon: () => this.onFalconOn(), newstore: () => this.onNewStoreOn() }[v] || (() => {}))(); },
       nsOptHidden: false,
       nsName: this.nsName(),
       newStoreChecked: !!s.storeStockNewStore,
