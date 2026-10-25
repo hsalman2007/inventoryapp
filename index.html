@@ -4433,13 +4433,14 @@ class Component extends DCLogic {
     const showDiscount = true;
     const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     const MAX_PDF_ROWS = 6000;
-    const noImages = allRows.length > 5000;
+    const noImages = false;
+    const bigList = allRows.length > 1500;
     const truncated = allRows.length > MAX_PDF_ROWS;
     const rows = truncated ? allRows.slice(0, MAX_PDF_ROWS) : allRows;
 
-    const rowsHtml = (noImages ? rows : await this.scaleRowImages(rows)).map(r => (
+    const rowsHtml = (bigList ? rows : await this.scaleRowImages(rows)).map(r => (
       '<tr' + (r.highlight ? ' style="background:#fbe1de;"' : '') + '>'
-      + (noImages ? '' : '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" referrerpolicy="no-referrer" />' : '') + '</td>')
+      + '<td class="img-cell">' + (r.image ? '<img src="' + esc(r.image) + '" loading="lazy" decoding="async" referrerpolicy="no-referrer" />' : '') + '</td>'
       + '<td class="itemno">' + esc(r.itemNo) + '</td>'
       + '<td class="desc">' + esc(r.description2) + '</td>'
       + '<td class="ctr"' + (r.negQty ? ' style="color:#8b1a1a;"' : '') + '>' + (r.qtyText || fmtNum(r.qty)) + '</td>'
