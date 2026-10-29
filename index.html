@@ -4188,8 +4188,8 @@ class Component extends DCLogic {
       card.shNPadL = card.hasPct ? (mini ? '4cqw' : '3cqw') : '0';
       card.isMini = true;
       card.notMini = false;
-      card.shTxFs = mini ? '3.2cqw' : '2cqw';
-      card.shTxMax = mini ? '13.6cqw' : '4.8cqw';
+      card.shTxFs = mini ? '2.5cqw' : '2cqw';
+      card.shTxMax = mini ? '9cqw' : '4.8cqw';
       card.shTxPad = mini ? '1cqw 0' : '0';
       card.shBcTFs = mini ? '2.4cqw' : '1.8cqw';
       card.shFrameMm = '1.2mm solid #1a1a1a';
@@ -4361,7 +4361,7 @@ class Component extends DCLogic {
       + '.sheet.mini{display:grid;grid-template-columns:98.5mm 98.5mm;grid-template-rows:repeat(7,38.5mm);gap:2.5mm 3mm;padding:6mm 5mm;}'
       + '.mcell{width:98.5mm;height:38.5mm;overflow:hidden;}'
       + '.mini .sht{height:78.2mm;transform:scale(0.4925);transform-origin:0 0;border-width:1.8mm!important;}'
-      + '.mini .shL{justify-content:flex-start;align-items:flex-start;padding:2mm 1.6mm 2mm;}.mini .shL > img{max-height:19mm;flex:none;margin:0;}.mini .shPct{width:25mm;height:25mm;font-size:8.8mm;border-width:1mm;}.mini .shPct ~ .shR .shN,.mini .shR.pct .shN{padding-left:8mm;}.sheet.shelf:not(.mini) .shL{justify-content:flex-start;align-items:flex-start;padding:2mm 1.6mm 2mm;}.sheet.shelf:not(.mini) .shL > img{max-height:11mm;margin:0;flex:none;}.sheet.shelf:not(.mini) .shL img.shBc{height:6mm;}.sheet.shelf:not(.mini) .shBcT{font-size:3.6mm;line-height:1.15;}.sheet.shelf:not(.mini) .shBcW{order:1;margin:0;width:100%;flex:none;}.sheet.shelf:not(.mini) .shTx{font-size:4mm;max-height:9.6mm;padding:0;flex:none;}.sheet.shelf:not(.mini) .shPct{width:20mm;height:20mm;font-size:7.2mm;}.sheet.shelf:not(.mini) .shR.pct .shN{padding-left:6mm;}.mini .shBcW{order:1;margin:0;width:100%;flex:none;}.shTx{width:100%;margin:auto 0;padding:2mm 0;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:6.4mm;line-height:1.2;text-align:left;max-height:27mm;overflow:hidden;text-wrap:pretty;}.shL > img{flex:none;}.mini .shL img.shBc{height:14mm;}.mini .shLine{font-size:5.8mm;}'
+      + '.mini .shL{justify-content:flex-start;align-items:flex-start;padding:2mm 1.6mm 2mm;}.mini .shL > img{max-height:19mm;flex:none;margin:0;}.mini .shPct{width:25mm;height:25mm;font-size:8.8mm;border-width:1mm;}.mini .shPct ~ .shR .shN,.mini .shR.pct .shN{padding-left:8mm;}.sheet.shelf:not(.mini) .shL{justify-content:flex-start;align-items:flex-start;padding:2mm 1.6mm 2mm;}.sheet.shelf:not(.mini) .shL > img{max-height:11mm;margin:0;flex:none;}.sheet.shelf:not(.mini) .shL img.shBc{height:6mm;}.sheet.shelf:not(.mini) .shBcT{font-size:3.6mm;line-height:1.15;}.sheet.shelf:not(.mini) .shBcW{order:1;margin:0;width:100%;flex:none;}.sheet.shelf:not(.mini) .shTx{font-size:4mm;max-height:9.6mm;padding:0;flex:none;}.sheet.shelf:not(.mini) .shPct{width:20mm;height:20mm;font-size:7.2mm;}.sheet.shelf:not(.mini) .shR.pct .shN{padding-left:6mm;}.mini .shBcW{order:1;margin:0;width:100%;flex:none;}.shTx{width:100%;margin:auto 0;padding:2mm 0;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:5mm;line-height:1.2;text-align:left;max-height:18mm;overflow:hidden;text-wrap:pretty;}.shL > img{flex:none;}.mini .shL img.shBc{height:14mm;}.mini .shLine{font-size:5.8mm;}'
       + '.shN{flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:2mm;font-weight:900;line-height:1;white-space:nowrap;}';
     const shelfHtml = c => '<div class="sht" style="border:' + c.shFrameMm + '">'
       + '<div class="shL" style="width:' + c.shLW + '">'
