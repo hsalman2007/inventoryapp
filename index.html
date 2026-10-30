@@ -70,9 +70,7 @@
         <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Item Lookup in All Stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoMultiLoc}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Multi Locations</button>
-        <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
-          <button class="btn btn-secondary btn-block" onClick="{{onGoPhysCount}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Physical Count</button>
-        </sc-if>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoPhysCount}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Physical Count</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoFalcon}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Ageing Clearance</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoDistribution}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Distribution</button>
@@ -2879,7 +2877,7 @@ class Component extends DCLogic {
   }
   onAdminSignOut() {
     this.setState({ isAdmin: false, adminPromptOpen: false, adminPw: '', adminError: '', mkItems: [], mkRsp: {}, mkDisc: {}, mkQuery: '' });
-    if (this.state.screen === 'markup' || this.state.screen === 'physcount') this.setState({ screen: 'menu' });
+    if (this.state.screen === 'markup') this.setState({ screen: 'menu' });
     try { localStorage.removeItem('inv-admin'); } catch (e) {}
   }
 
@@ -3970,7 +3968,6 @@ class Component extends DCLogic {
     return d.stores[store];
   }
   onGoPhysCount() {
-    if (!this.state.isAdmin) return;
     const d = this.pcLoad();
     const l = d.last || {};
     this.setState({ screen: 'physcount', pcStore: l.store || '', pcCategory: l.category || '', pcSubCategory: l.subCategory || '', pcBrand: l.brand || '', pcSort: l.sort || '', pcQuery: '', pcLimit: 150, pcView: 'all', pcPickerOpen: !l.store, pcPickerQuery: '', pcRev: (this.state.pcRev || 0) + 1 });
