@@ -445,6 +445,19 @@
               </label>
             </div>
 
+            <div class="field">
+              <label for="pc-find">Find in list</label>
+              <div style="display: flex; gap: var(--space-2); align-items: stretch;">
+                <input id="pc-find" class="input" type="search" placeholder="SKU, part no., barcode or description…" value="{{pc.find}}" onChange="{{onPcFindChange}}" style="flex: 1 1 auto; min-width: 0;">
+                <sc-if value="{{pc.hasFind}}" hint-placeholder-val="{{false}}">
+                  <button class="btn btn-ghost" onClick="{{onPcFindClear}}" style="flex: none;">Clear</button>
+                </sc-if>
+              </div>
+              <sc-if value="{{pc.hasFind}}" hint-placeholder-val="{{false}}">
+                <span style="font-size: 12px; color: var(--color-neutral-700);">{{pc.findInfo}}</span>
+              </sc-if>
+            </div>
+
             <div style="overflow-x: auto; border-top: 1px solid var(--color-neutral-300);">
               <table class="table" style="width: 100%; font-size: 12.5px;">
                 <tbody>
@@ -4109,7 +4122,7 @@ class Component extends DCLogic {
     const pq = (st.pcPickerQuery || '').trim().toLowerCase();
     const curOpt = storeOptions.find(o => o.name === st.pcStore);
     const pickerOptions = storeOptions.filter(o => !pq || o.label.toLowerCase().indexOf(pq) >= 0).map(o => ({ label: o.label, isWarehouse: o.isWarehouse, bg: o.name === st.pcStore ? 'var(--color-accent-100)' : 'transparent', onPick: () => this.onPcPickStore(o.name) }));
-    const base = { restoreMsg: st.pcRestoreMsg || '', sort: st.pcSort || '', storeLabel: curOpt ? curOpt.label : 'Choose a store…', pickerOpen: !!st.pcPickerOpen, pickerArrow: st.pcPickerOpen ? '▲' : '▼', pickerQuery: st.pcPickerQuery || '', pickerOptions, store: st.pcStore || '', storeOptions, hasStore: !!st.pcStore, category: st.pcCategory || '', subCategory: st.pcSubCategory || '', brand: st.pcBrand || '', query: st.pcQuery || '' };
+    const base = { find: st.pcFind || '', hasFind: !!(st.pcFind || '').trim(), restoreMsg: st.pcRestoreMsg || '', sort: st.pcSort || '', storeLabel: curOpt ? curOpt.label : 'Choose a store…', pickerOpen: !!st.pcPickerOpen, pickerArrow: st.pcPickerOpen ? '▲' : '▼', pickerQuery: st.pcPickerQuery || '', pickerOptions, store: st.pcStore || '', storeOptions, hasStore: !!st.pcStore, category: st.pcCategory || '', subCategory: st.pcSubCategory || '', brand: st.pcBrand || '', query: st.pcQuery || '' };
     if (!st.pcStore || !st.parsed) return Object.assign(base, { rows: [], categoryOptions: [], subCategoryOptions: [], brandOptions: [], searchResults: [] });
     const { matrix, retailMap } = st.parsed;
     const cats = new Set(), subs = new Set(), brands = new Set();
@@ -4127,7 +4140,10 @@ class Component extends DCLogic {
     const short = varRows.reduce((s, r) => s + Math.min(0, r.count - r.sys), 0);
     const over = varRows.reduce((s, r) => s + Math.max(0, r.count - r.sys), 0);
     const view = st.pcView || 'all';
-    const shown = view === 'todo' ? all.filter(r => r.count === undefined) : view === 'var' ? varRows : view === 'neg' ? all.filter(r => r.sys < 0) : all;
+    const findQ = (st.pcFind || '').trim().toLowerCase();
+    const findCode = findQ ? this.skuFromCode(findQ).toLowerCase() : '';
+    const shownBase = view === 'todo' ? all.filter(r => r.count === undefined) : view === 'var' ? varRows : view === 'neg' ? all.filter(r => r.sys < 0) : all;
+    const shown = !findQ ? shownBase : shownBase.filter(r => String(r.itemNo).toLowerCase().indexOf(findQ) >= 0 || String(r.itemNo).toLowerCase() === findCode || String(r.partNo || '').toLowerCase().indexOf(findQ) >= 0 || String(r.barcode || '').indexOf(findQ) >= 0 || String(r.desc || '').toLowerCase().indexOf(findQ) >= 0);
     const limit = st.pcLimit || 150;
     const sd = this.pcStoreData(st.pcStore);
     const rows = shown.slice(0, limit).map(r => {
@@ -4198,7 +4214,8 @@ class Component extends DCLogic {
       hasSearch: q.length >= 2,
       searchResults, searchEmpty: q.length >= 2 && !searchResults.length,
       rows, rowsEmpty: rows.length === 0,
-      emptyText: view === 'neg' ? 'No negative stock in this selection.' : view === 'todo' ? 'Everything in this selection is counted.' : view === 'var' ? 'No variances yet.' : 'No stock at this store for this selection — search to add an item.',
+      findInfo: shown.length + ' of ' + shownBase.length + ' items match',
+      emptyText: findQ ? 'Nothing in this list matches — use “Add an item” above to add it.' : view === 'neg' ? 'No negative stock in this selection.' : view === 'todo' ? 'Everything in this selection is counted.' : view === 'var' ? 'No variances yet.' : 'No stock at this store for this selection — search to add an item.',
       hasMore: shown.length > limit,
       moreLabel: 'Show more (' + (shown.length - limit) + ' left)',
       progressText: 'Counted ' + counted.length + ' of ' + all.length + ' items',
@@ -6058,6 +6075,8 @@ class Component extends DCLogic {
       onPcViewTodo: () => this.setState({ pcView: 'todo', pcLimit: 150 }),
       onPcViewVar: () => this.setState({ pcView: 'var', pcLimit: 150 }),
       onPcSortChange: e => { const d = this.pcLoad(); d.last = Object.assign({}, d.last, { sort: e.target.value }); this.pcSave(); this.setState({ pcSort: e.target.value, pcLimit: 150 }); },
+      onPcFindChange: e => this.setState({ pcFind: e.target.value, pcLimit: 150 }),
+      onPcFindClear: () => this.setState({ pcFind: '', pcLimit: 150 }),
       onPcViewNeg: () => this.setState({ pcView: 'neg', pcLimit: 150 }),
       onPcAddUnlisted: () => this.onPcAddUnlisted(),
       onPcShowMore: () => this.setState(st => ({ pcLimit: (st.pcLimit || 150) + 150 })),
