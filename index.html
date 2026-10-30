@@ -364,42 +364,6 @@
               </select>
             </div>
 
-            <div class="field">
-              <label for="pc-search">Add an item</label>
-              <div style="display: flex; gap: var(--space-2); align-items: stretch;">
-                <input id="pc-search" class="input" type="text" placeholder="Search SKU, description or barcode…" value="{{pc.query}}" onChange="{{onPcQueryChange}}" style="flex: 1 1 auto; min-width: 0;">
-                <button class="btn btn-secondary" onClick="{{onOpenScan}}" aria-label="Scan barcode" style="flex: none; display: flex; align-items: center; gap: 6px;">
-                  <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M232,48V88a8,8,0,0,1-16,0V56H184a8,8,0,0,1,0-16h40A8,8,0,0,1,232,48ZM72,200H40V168a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H72a8,8,0,0,0,0-16Zm152-40a8,8,0,0,0-8,8v32H184a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V168A8,8,0,0,0,224,160ZM32,96a8,8,0,0,0,8-8V56H72a8,8,0,0,0,0-16H32a8,8,0,0,0-8,8V88A8,8,0,0,0,32,96ZM80,80a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,80,80Zm104,88V88a8,8,0,0,0-16,0v80a8,8,0,0,0,16,0ZM144,80a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,144,80Zm-32,0a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,112,80Z"></path></svg>
-                  Scan
-                </button>
-              </div>
-              <sc-if value="{{pc.hasSearch}}" hint-placeholder-val="{{false}}">
-                <div style="border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); display: flex; flex-direction: column; overflow: hidden;">
-                  <sc-for list="{{pc.searchResults}}" as="sr" hint-placeholder-count="3">
-                    <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-bottom: 1px solid var(--color-neutral-300);">
-                      <div style="flex: none; width: 40px; height: 40px; border-radius: var(--radius-sm); background: #fff; border: 1px solid var(--color-neutral-300); overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                        <sc-if value="{{sr.image}}" hint-placeholder-val="{{false}}">
-                          <img src="{{sr.image}}" alt="" loading="lazy" style="width: 100%; height: 100%; object-fit: contain; display: block;">
-                        </sc-if>
-                      </div>
-                      <div style="flex: 1; min-width: 0;">
-                        <div style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{sr.itemNo}}</div>
-                        <div style="font-size: 11.5px; color: var(--color-neutral-700); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{sr.desc}}</div>
-                        <div style="font-size: 11px; color: var(--color-neutral-700);">{{sr.sysText}}</div>
-                      </div>
-                      <button class="btn btn-primary" onClick="{{sr.onAdd}}" style="flex: none; font-size: 12px; padding: 6px 12px;">{{sr.addLabel}}</button>
-                    </div>
-                  </sc-for>
-                  <sc-if value="{{pc.searchEmpty}}" hint-placeholder-val="{{false}}">
-                    <div style="font-size: 12px; color: var(--color-neutral-700); padding: 8px 10px;">No item matches.</div>
-                  </sc-if>
-                  <sc-if value="{{pc.canAddUnlisted}}" hint-placeholder-val="{{false}}">
-                    <button class="btn btn-ghost" onClick="{{onPcAddUnlisted}}" style="justify-content: flex-start; text-align: left; font-size: 12.5px; padding: 10px; border-radius: 0;">{{pc.addUnlistedLabel}}</button>
-                  </sc-if>
-                </div>
-              </sc-if>
-            </div>
-
             <div style="display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3);">
               <div style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{pc.progressText}}</div>
               <div style="height: 6px; border-radius: 3px; background: var(--color-neutral-300); overflow: hidden;">
@@ -444,7 +408,49 @@
                 <input type="radio" name="pcView" checked="{{pc.viewNeg}}" onChange="{{onPcViewNeg}}">
                 Negative
               </label>
+              <label class="seg-opt">
+                <input type="radio" name="pcView" checked="{{pc.viewAdd}}" onChange="{{onPcViewAdd}}">
+                Add item
+              </label>
             </div>
+
+            <sc-if value="{{pc.viewAdd}}" hint-placeholder-val="{{false}}">
+            <div class="field">
+              <label for="pc-search">Add an item</label>
+              <div style="display: flex; gap: var(--space-2); align-items: stretch;">
+                <input id="pc-search" class="input" type="text" placeholder="Search SKU, description or barcode…" value="{{pc.query}}" onChange="{{onPcQueryChange}}" style="flex: 1 1 auto; min-width: 0;">
+                <button class="btn btn-secondary" onClick="{{onOpenScan}}" aria-label="Scan barcode" style="flex: none; display: flex; align-items: center; gap: 6px;">
+                  <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M232,48V88a8,8,0,0,1-16,0V56H184a8,8,0,0,1,0-16h40A8,8,0,0,1,232,48ZM72,200H40V168a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H72a8,8,0,0,0,0-16Zm152-40a8,8,0,0,0-8,8v32H184a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V168A8,8,0,0,0,224,160ZM32,96a8,8,0,0,0,8-8V56H72a8,8,0,0,0,0-16H32a8,8,0,0,0-8,8V88A8,8,0,0,0,32,96ZM80,80a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,80,80Zm104,88V88a8,8,0,0,0-16,0v80a8,8,0,0,0,16,0ZM144,80a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,144,80Zm-32,0a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,112,80Z"></path></svg>
+                  Scan
+                </button>
+              </div>
+              <sc-if value="{{pc.hasSearch}}" hint-placeholder-val="{{false}}">
+                <div style="border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); display: flex; flex-direction: column; overflow: hidden;">
+                  <sc-for list="{{pc.searchResults}}" as="sr" hint-placeholder-count="3">
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-bottom: 1px solid var(--color-neutral-300);">
+                      <div style="flex: none; width: 40px; height: 40px; border-radius: var(--radius-sm); background: #fff; border: 1px solid var(--color-neutral-300); overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                        <sc-if value="{{sr.image}}" hint-placeholder-val="{{false}}">
+                          <img src="{{sr.image}}" alt="" loading="lazy" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                        </sc-if>
+                      </div>
+                      <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{sr.itemNo}}</div>
+                        <div style="font-size: 11.5px; color: var(--color-neutral-700); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{sr.desc}}</div>
+                        <div style="font-size: 11px; color: var(--color-neutral-700);">{{sr.sysText}}</div>
+                      </div>
+                      <button class="btn btn-primary" onClick="{{sr.onAdd}}" style="flex: none; font-size: 12px; padding: 6px 12px;">{{sr.addLabel}}</button>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{pc.searchEmpty}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size: 12px; color: var(--color-neutral-700); padding: 8px 10px;">No item matches.</div>
+                  </sc-if>
+                  <sc-if value="{{pc.canAddUnlisted}}" hint-placeholder-val="{{false}}">
+                    <button class="btn btn-ghost" onClick="{{onPcAddUnlisted}}" style="justify-content: flex-start; text-align: left; font-size: 12.5px; padding: 10px; border-radius: 0;">{{pc.addUnlistedLabel}}</button>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+            </sc-if>
 
             <div class="field">
               <label for="pc-find">Find in list</label>
@@ -4014,7 +4020,7 @@ class Component extends DCLogic {
     sd.added = [itemNo].concat((sd.added || []).filter(x => x !== itemNo));
     sd.savedAt = Date.now();
     this.pcSave();
-    this.setState(s => ({ pcQuery: '', pcView: 'all', pcRev: (s.pcRev || 0) + 1 }));
+    this.setState(s => ({ pcQuery: '', pcView: s.pcView === 'add' ? 'add' : 'all', pcRev: (s.pcRev || 0) + 1 }));
     setTimeout(() => { const el = document.querySelector('input[aria-label="Physical count"]'); if (el) el.focus(); }, 80);
   }
   onPcAddUnlisted() {
@@ -4233,7 +4239,7 @@ class Component extends DCLogic {
       progressPct: pct + '%',
       varianceText: counted.length ? (varRows.length + ' with variance · short ' + fmt(short) + ' · over +' + fmt(over)) : 'No counts entered yet.',
       savedText: this._pcSaveErr ? 'Could not save on this device — storage is full or blocked.' : t ? ('Saved on this device · ' + t.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })) : 'Nothing saved yet.',
-      viewAll: view === 'all', viewTodo: view === 'todo', viewVar: view === 'var', viewNeg: view === 'neg',
+      viewAll: view === 'all', viewTodo: view === 'todo', viewVar: view === 'var', viewNeg: view === 'neg', viewAdd: view === 'add',
       canAddUnlisted: q.length >= 2 && !exactHit,
       addUnlistedLabel: '+ Add “' + q + '” as an item not in system',
       exportDisabled: !all.length,
@@ -6089,6 +6095,7 @@ class Component extends DCLogic {
       onPcFindChange: e => this.setState({ pcFind: e.target.value, pcLimit: 150 }),
       onPcFindClear: () => this.setState({ pcFind: '', pcLimit: 150 }),
       onPcViewNeg: () => this.setState({ pcView: 'neg', pcLimit: 150 }),
+      onPcViewAdd: () => this.setState({ pcView: 'add', pcLimit: 150 }),
       onPcAddUnlisted: () => this.onPcAddUnlisted(),
       onPcShowMore: () => this.setState(st => ({ pcLimit: (st.pcLimit || 150) + 150 })),
       onPcExcel: () => this.onPcExcel(),
