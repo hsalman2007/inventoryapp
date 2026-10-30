@@ -267,7 +267,7 @@
               <option value="standard">Standard columns</option>
               <option value="seasonal">Seasonal Discounts</option>
               <option value="addnl1500">Addnl. 1500</option>
-              <option value="national">National Day 2026</option>
+              <option value="national" hidden="{{natOptHidden}}" disabled="{{natOptHidden}}">National Day 2026</option>
               <option value="falcon">Ageing Clearance</option>
               <option value="newstore" hidden="{{nsOptHidden}}" disabled="{{nsOptHidden}}">{{nsName}}</option>
             </select>
@@ -309,10 +309,12 @@
               <input type="radio" name="mlPriceSource" checked="{{mlSeasonalChecked}}" onChange="{{onMlSeasonal}}">
               Seasonal discounts
             </label>
+            <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
             <label class="seg-opt">
               <input type="radio" name="mlPriceSource" checked="{{mlNationalChecked}}" onChange="{{onMlNational}}">
               National Day 2026
             </label>
+            </sc-if>
             <label class="seg-opt">
               <input type="radio" name="mlPriceSource" checked="{{mlFalconChecked}}" onChange="{{onMlFalcon}}">
               Ageing Clearance
@@ -891,10 +893,12 @@
               <input type="radio" name="tagPriceSource" checked="{{tagSeasonalChecked}}" onChange="{{onTagSeasonal}}">
               Seasonal Discounts
             </label>
+            <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
             <label class="seg-opt">
               <input type="radio" name="tagPriceSource" checked="{{tagNationalChecked}}" onChange="{{onTagNational}}">
               National Day 2026
             </label>
+            </sc-if>
             <label class="seg-opt">
               <input type="radio" name="tagPriceSource" checked="{{tagFalconChecked}}" onChange="{{onTagFalcon}}">
               Ageing Clearance
@@ -1341,7 +1345,7 @@
             <label for="sku-disc-view">Discount type</label>
             <select id="sku-disc-view" class="input" value="{{skuDiscView}}" onChange="{{onSkuDiscViewChange}}">
               <option value="seasonal">Seasonal discounts</option>
-              <option value="national">National Day 2026</option>
+              <option value="national" hidden="{{natOptHidden}}" disabled="{{natOptHidden}}">National Day 2026</option>
               <option value="falcon">Ageing Clearance</option>
               <option value="newstore" hidden="{{nsOptHidden}}" disabled="{{nsOptHidden}}">{{nsName}}</option>
               <option value="none">Original RSP only</option>
@@ -5374,6 +5378,7 @@ class Component extends DCLogic {
       ssDiscType: s.storeStockNewStore ? 'newstore' : s.storeStockFalcon ? 'falcon' : s.storeStockNationalDay ? 'national' : s.storeStockAddnl1500 ? 'addnl1500' : s.storeStockShowDiscount ? 'seasonal' : 'standard',
       onSsDiscType: e => { const v = e.target.value; ({ standard: () => this.onDiscountOff(), seasonal: () => this.onDiscountOn(), addnl1500: () => this.onAddnl1500On(), national: () => this.onNationalDayOn(), falcon: () => this.onFalconOn(), newstore: () => this.onNewStoreOn() }[v] || (() => {}))(); },
       nsOptHidden: false,
+      natOptHidden: !s.isAdmin,
       nsName: this.nsName(),
       newStoreChecked: !!s.storeStockNewStore,
       onNewStoreOn: () => this.onNewStoreOn(),
