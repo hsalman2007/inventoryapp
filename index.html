@@ -71,7 +71,7 @@
         <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Item Lookup in All Stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoMultiLoc}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Multi Locations</button>
-        <button class="btn btn-secondary btn-block" onClick="{{onGoFalcon}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Falcon Disc.</button>
+        <button class="btn btn-secondary btn-block" onClick="{{onGoFalcon}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Ageing Clearance</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoDistribution}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Distribution</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoWhStores}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">WH vs Stores</button>
@@ -180,8 +180,8 @@
     <sc-if value="{{isStoreStock}}" hint-placeholder-val="{{false}}">
       <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
         <sc-if value="{{isFalconMode}}" hint-placeholder-val="{{false}}">
-          <div class="card-kicker">Falcon Disc.</div>
-          <div class="seg" role="radiogroup" aria-label="Falcon Disc. view">
+          <div class="card-kicker">Ageing Clearance</div>
+          <div class="seg" role="radiogroup" aria-label="Ageing Clearance view">
             <label class="seg-opt">
               <input type="radio" name="falconView" checked="{{true}}">
               Store stock
@@ -191,7 +191,7 @@
               Item lookup
             </label>
           </div>
-          <div class="card-title" style="font-size: 18px;">Falcon discount stock</div>
+          <div class="card-title" style="font-size: 18px;">Ageing Clearance stock</div>
         </sc-if>
         <sc-if value="{{notFalconMode}}" hint-placeholder-val="{{true}}">
           <div class="card-kicker">Complete stock</div>
@@ -269,7 +269,7 @@
               <option value="seasonal">Seasonal Discounts</option>
               <option value="addnl1500">Addnl. 1500</option>
               <option value="national">National Day 2026</option>
-              <option value="falcon">Falcon Disc.</option>
+              <option value="falcon">Ageing Clearance</option>
               <option value="newstore" hidden="{{nsOptHidden}}" disabled="{{nsOptHidden}}">{{nsName}}</option>
             </select>
           </div>
@@ -316,7 +316,7 @@
             </label>
             <label class="seg-opt">
               <input type="radio" name="mlPriceSource" checked="{{mlFalconChecked}}" onChange="{{onMlFalcon}}">
-              Falcon Disc.
+              Ageing Clearance
             </label>
             <sc-if value="{{hasNsFile}}" hint-placeholder-val="{{false}}">
               <label class="seg-opt">
@@ -898,7 +898,7 @@
             </label>
             <label class="seg-opt">
               <input type="radio" name="tagPriceSource" checked="{{tagFalconChecked}}" onChange="{{onTagFalcon}}">
-              Falcon Disc.
+              Ageing Clearance
             </label>
             <sc-if value="{{hasNsFile}}" hint-placeholder-val="{{false}}">
               <label class="seg-opt">
@@ -1311,7 +1311,7 @@
           <div class="card-title" style="font-size: 18px; align-self: center;">{{skuTitle}}</div>
         </div>
         <sc-if value="{{skuFalcon}}" hint-placeholder-val="{{false}}">
-          <div class="seg" role="radiogroup" aria-label="Falcon Disc. view">
+          <div class="seg" role="radiogroup" aria-label="Ageing Clearance view">
             <label class="seg-opt">
               <input type="radio" name="falconView2" checked="{{false}}" onChange="{{onGoFalcon}}">
               Store stock
@@ -1343,7 +1343,7 @@
             <select id="sku-disc-view" class="input" value="{{skuDiscView}}" onChange="{{onSkuDiscViewChange}}">
               <option value="seasonal">Seasonal discounts</option>
               <option value="national">National Day 2026</option>
-              <option value="falcon">Falcon Disc.</option>
+              <option value="falcon">Ageing Clearance</option>
               <option value="newstore" hidden="{{nsOptHidden}}" disabled="{{nsOptHidden}}">{{nsName}}</option>
               <option value="none">Original RSP only</option>
             </select>
@@ -1395,7 +1395,7 @@
                 </sc-if>
                 <sc-if value="{{item.hasFalcon}}" hint-placeholder-val="{{false}}">
                   <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
-                    <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">Falcon Disc.</div>
+                    <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">Ageing Clearance</div>
                     <div style="font-size: 12px; color: var(--color-neutral-700);">Was {{item.falWas}}</div>
                     <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Now {{item.falNow}}</div>
                     <div style="font-size: 11px; font-weight: 700; color: #fff; background: var(--color-accent-800); border-radius: 999px; padding: 1px 7px;">{{item.falPct}}</div>
@@ -1733,7 +1733,7 @@ class Component extends DCLogic {
     "Seasonal Discounts": "الخصومات الموسمية",
     "Addnl. 1500": "1500 صنف إضافي",
     "National Day 2026": "اليوم الوطني 2026",
-    "Falcon Disc.": "خصم فالكون",
+    "Ageing Clearance": "تصفية المخزون القديم",
     "Discount range": "نطاق الخصم",
     "All discounts": "جميع الخصومات",
     "10% to 20%": "من 10% إلى 20%",
@@ -2616,7 +2616,7 @@ class Component extends DCLogic {
       const falconMap = new Map(snap.falconMap || []);
       const nsMap = new Map(snap.nsMap || []);
       const nsName = snap.nsName || '';
-      if (!falconMap.size) this.loadFalconMap();
+      if (!falconMap.size) 
       const storeInfoMap = new Map(snap.storeInfoMap);
       // Locations the store master mistypes but which hold sellable stock —
       // without this they are dropped from every report.
@@ -2803,7 +2803,7 @@ class Component extends DCLogic {
   getFalconMap() {
     const s = this.state;
     if (s.parsed && s.parsed.falconMap && s.parsed.falconMap.size) return s.parsed.falconMap;
-    return s.falconMap || new Map();
+    return new Map();
   }
   async loadFalconMap() {
     try {
@@ -3780,7 +3780,7 @@ class Component extends DCLogic {
     if (st.mlBrand) bits.push(st.mlBrand);
     if (st.mlCategory) bits.push(st.mlCategory);
     if (st.mlSubCategory) bits.push(st.mlSubCategory);
-    bits.push(st.mlPriceSource === 'newstore' ? this.nsName() : st.mlPriceSource === 'falcon' ? 'Falcon Disc.' : st.mlPriceSource === 'national' ? 'National Day 2026' : 'Seasonal discounts');
+    bits.push(st.mlPriceSource === 'newstore' ? this.nsName() : st.mlPriceSource === 'falcon' ? 'Ageing Clearance' : st.mlPriceSource === 'national' ? 'National Day 2026' : 'Seasonal discounts');
     return bits.join(' · ');
   }
 
@@ -3892,14 +3892,14 @@ class Component extends DCLogic {
     const cols = [{ width: 16 }, { width: 44 }]
       .concat(locations.map(() => ({ width: 12 })))
       .concat([{ width: 10 }, { width: 10 }, { width: 14 }, { width: 42 }]);
-    const fileTitle = ('Multi-Locations-' + locations.length + '-' + (this.state.mlPriceSource === 'falcon' ? 'Falcon-Disc-' : this.state.mlPriceSource === 'national' ? 'National-Day-2026-' : '') + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    const fileTitle = ('Multi-Locations-' + locations.length + '-' + (this.state.mlPriceSource === 'falcon' ? 'Ageing-Clearance-' : this.state.mlPriceSource === 'national' ? 'National-Day-2026-' : '') + today).replace(/[^a-z0-9\-_.]+/gi, '-');
     downloadXlsx(aoa, fileTitle, { sheetName: 'Multi Locations', cols });
   }
 
   storeStockModeName() {
     const s = this.state;
     if (s.storeStockNewStore) return this.nsName();
-    if (s.storeStockFalcon) return 'Falcon Disc';
+    if (s.storeStockFalcon) return 'Ageing Clearance';
     if (s.storeStockNationalDay) return 'National Day 2026';
     if (s.storeStockAddnl1500) return 'Addnl 1500';
     if (s.storeStockShowDiscount) return 'Promo Stocks';
@@ -4036,7 +4036,7 @@ class Component extends DCLogic {
     const nat = s.tagPriceSource === 'national';
     const fal = s.tagPriceSource === 'falcon';
     const ns = s.tagPriceSource === 'newstore';
-    const name = ns ? this.nsName() : fal ? 'Falcon Disc.' : nat ? 'National Day 2026' : 'Seasonal Discounts';
+    const name = ns ? this.nsName() : fal ? 'Ageing Clearance' : nat ? 'National Day 2026' : 'Seasonal Discounts';
     const map = ns ? this.nsMap() : fal ? this.getFalconMap() : s.parsed && (nat ? s.parsed.nationalMap : s.parsed.discountMap);
     if (!map || !map.size) return name + ' file not loaded — tags print the current price only.';
     return 'Was / now / % taken from ' + name + '.';
@@ -4663,7 +4663,7 @@ class Component extends DCLogic {
     const m = document.createElement('canvas').getContext('2d');
     const clip = (t, f, maxW) => { m.font = f; t = String(t || ''); if (m.measureText(t).width <= maxW) return t; while (t && m.measureText(t + '…').width > maxW) t = t.slice(0, -1); return t + '…'; };
     const dv = this.state.skuFalcon ? 'falcon' : (this.state.skuDiscView || 'seasonal');
-    const viewName = { seasonal: 'Seasonal discounts', national: 'National Day 2026', falcon: 'Falcon Disc.', newstore: this.nsName(), none: 'Original RSP' }[dv];
+    const viewName = { seasonal: 'Seasonal discounts', national: 'National Day 2026', falcon: 'Ageing Clearance', newstore: this.nsName(), none: 'Original RSP' }[dv];
     const loadImg = (src, anon) => new Promise(res => {
       if (!src) return res(null);
       const im = new Image(); if (anon) im.crossOrigin = 'anonymous';
@@ -5433,7 +5433,7 @@ class Component extends DCLogic {
       onGoSkuLookup: () => this.onGoSkuLookup(),
       onGoFalconLookup: () => this.onGoFalconLookup(),
       skuFalcon: !!s.skuFalcon,
-      skuTitle: s.skuFalcon ? 'Falcon Disc. · Item lookup' : 'SKU stock across stores',
+      skuTitle: s.skuFalcon ? 'Ageing Clearance · Item lookup' : 'SKU stock across stores',
       onBackFromSku: () => this.onBackFromSku(),
       onSkuQueryChange: e => this.onSkuQueryChange(e),
       onSkuPaste: e => this.onSkuPaste(e),
