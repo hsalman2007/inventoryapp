@@ -70,6 +70,9 @@
         <button class="btn btn-secondary btn-block" onClick="{{onGoSkuLookup}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Item Lookup in All Stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoStoreStock}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Regular &amp; Promo Stocks</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoMultiLoc}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Multi Locations</button>
+        <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
+          <button class="btn btn-secondary btn-block" onClick="{{onGoPhysCount}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Physical Count</button>
+        </sc-if>
         <button class="btn btn-secondary btn-block" onClick="{{onGoFalcon}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Ageing Clearance</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoDistribution}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Distribution</button>
@@ -294,6 +297,249 @@
         <button class="btn btn-secondary btn-block" onClick="{{onDownloadStoreStockExcel}}">Download Excel</button>
         <button class="btn btn-ghost btn-block" onClick="{{onBackFromStoreStock}}">← Back</button>
       </div>
+    </sc-if>
+
+    <!-- PHYSICAL COUNT SCREEN -->
+    <sc-if value="{{isPhysCount}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromPhysCount}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">Physical count</div>
+        </div>
+        <span style="font-size: 12px; color: var(--color-neutral-700);">Counts save on this device as you type — closing the page or losing signal won't lose them.</span>
+
+        <div class="field">
+          <label for="pc-store">Store</label>
+          <button id="pc-store" class="input" onClick="{{onPcTogglePicker}}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; cursor: pointer;">
+            <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{pc.storeLabel}}</span>
+            <span style="flex: none; font-size: 11px; color: var(--color-neutral-700);">{{pc.pickerArrow}}</span>
+          </button>
+          <sc-if value="{{pc.pickerOpen}}" hint-placeholder-val="{{false}}">
+            <div style="border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); padding: var(--space-2); display: flex; flex-direction: column; gap: var(--space-2);">
+              <input class="input" type="text" placeholder="Filter stores…" value="{{pc.pickerQuery}}" onChange="{{onPcPickerQuery}}" style="font-size: 13px;">
+              <div style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px;">
+                <sc-for list="{{pc.pickerOptions}}" as="o" hint-placeholder-count="6">
+                  <button onClick="{{o.onPick}}" style="display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; font: inherit; font-size: 13px; padding: 8px 10px; border: none; border-radius: var(--radius-sm); background: {{o.bg}}; color: var(--color-text); cursor: pointer;" style-hover="background: var(--color-neutral-200);">
+                    <span style="flex: 1;">{{o.label}}</span>
+                    <sc-if value="{{o.isWarehouse}}" hint-placeholder-val="{{false}}">
+                      <span class="tag tag-outline" style="font-size: 10px;">WH</span>
+                    </sc-if>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{pc.hasStore}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+            <div class="field">
+              <label for="pc-category">Category</label>
+              <select id="pc-category" class="input" value="{{pc.category}}" onChange="{{onPcCategoryChange}}">
+                <option value="">All categories</option>
+                <sc-for list="{{pc.categoryOptions}}" as="c" hint-placeholder-count="3">
+                  <option value="{{c}}">{{c}}</option>
+                </sc-for>
+              </select>
+            </div>
+            <sc-if value="{{pc.hasSubCategoryOptions}}" hint-placeholder-val="{{false}}">
+              <div class="field">
+                <label for="pc-subcategory">Sub-category</label>
+                <select id="pc-subcategory" class="input" value="{{pc.subCategory}}" onChange="{{onPcSubCategoryChange}}">
+                  <option value="">All sub-categories</option>
+                  <sc-for list="{{pc.subCategoryOptions}}" as="sc" hint-placeholder-count="3">
+                    <option value="{{sc}}">{{sc}}</option>
+                  </sc-for>
+                </select>
+              </div>
+            </sc-if>
+            <div class="field">
+              <label for="pc-brand">Brand</label>
+              <select id="pc-brand" class="input" value="{{pc.brand}}" onChange="{{onPcBrandChange}}">
+                <option value="">All brands</option>
+                <sc-for list="{{pc.brandOptions}}" as="b" hint-placeholder-count="3">
+                  <option value="{{b}}">{{b}}</option>
+                </sc-for>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="pc-search">Add an item</label>
+              <div style="display: flex; gap: var(--space-2); align-items: stretch;">
+                <input id="pc-search" class="input" type="text" placeholder="Search SKU, description or barcode…" value="{{pc.query}}" onChange="{{onPcQueryChange}}" style="flex: 1 1 auto; min-width: 0;">
+                <button class="btn btn-secondary" onClick="{{onOpenScan}}" aria-label="Scan barcode" style="flex: none; display: flex; align-items: center; gap: 6px;">
+                  <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M232,48V88a8,8,0,0,1-16,0V56H184a8,8,0,0,1,0-16h40A8,8,0,0,1,232,48ZM72,200H40V168a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H72a8,8,0,0,0,0-16Zm152-40a8,8,0,0,0-8,8v32H184a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V168A8,8,0,0,0,224,160ZM32,96a8,8,0,0,0,8-8V56H72a8,8,0,0,0,0-16H32a8,8,0,0,0-8,8V88A8,8,0,0,0,32,96ZM80,80a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,80,80Zm104,88V88a8,8,0,0,0-16,0v80a8,8,0,0,0,16,0ZM144,80a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,144,80Zm-32,0a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,112,80Z"></path></svg>
+                  Scan
+                </button>
+              </div>
+              <sc-if value="{{pc.hasSearch}}" hint-placeholder-val="{{false}}">
+                <div style="border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); display: flex; flex-direction: column; overflow: hidden;">
+                  <sc-for list="{{pc.searchResults}}" as="sr" hint-placeholder-count="3">
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-bottom: 1px solid var(--color-neutral-300);">
+                      <div style="flex: none; width: 40px; height: 40px; border-radius: var(--radius-sm); background: #fff; border: 1px solid var(--color-neutral-300); overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                        <sc-if value="{{sr.image}}" hint-placeholder-val="{{false}}">
+                          <img src="{{sr.image}}" alt="" loading="lazy" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                        </sc-if>
+                      </div>
+                      <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{sr.itemNo}}</div>
+                        <div style="font-size: 11.5px; color: var(--color-neutral-700); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{sr.desc}}</div>
+                        <div style="font-size: 11px; color: var(--color-neutral-700);">{{sr.sysText}}</div>
+                      </div>
+                      <button class="btn btn-primary" onClick="{{sr.onAdd}}" style="flex: none; font-size: 12px; padding: 6px 12px;">{{sr.addLabel}}</button>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{pc.searchEmpty}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size: 12px; color: var(--color-neutral-700); padding: 8px 10px;">No item matches.</div>
+                  </sc-if>
+                  <sc-if value="{{pc.canAddUnlisted}}" hint-placeholder-val="{{false}}">
+                    <button class="btn btn-ghost" onClick="{{onPcAddUnlisted}}" style="justify-content: flex-start; text-align: left; font-size: 12.5px; padding: 10px; border-radius: 0;">{{pc.addUnlistedLabel}}</button>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3);">
+              <div style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{pc.progressText}}</div>
+              <div style="height: 6px; border-radius: 3px; background: var(--color-neutral-300); overflow: hidden;">
+                <div style="height: 100%; background: var(--color-accent); width: {{pc.progressPct}};"></div>
+              </div>
+              <div style="font-size: 12px; color: var(--color-neutral-700);">{{pc.varianceText}}</div>
+              <div style="font-size: 11.5px; color: var(--color-neutral-700);">{{pc.savedText}}</div>
+            </div>
+
+            <div class="field">
+              <label for="pc-sort">Sort by</label>
+              <select id="pc-sort" class="input" value="{{pc.sort}}" onChange="{{onPcSortChange}}">
+                <option value="">Item number (A → Z)</option>
+                <option value="partNo">Part No. (A → Z)</option>
+                <option value="category">Category</option>
+                <option value="subCategory">Sub-category</option>
+                <option value="brand">Brand</option>
+                <option value="desc">Description (A → Z)</option>
+                <option value="sysDesc">System qty (high → low)</option>
+                <option value="sysAsc">System qty (low → high)</option>
+                <option value="varAsc">Variance (most short first)</option>
+                <option value="varDesc">Variance (most over first)</option>
+                <option value="counted">Counted first</option>
+                <option value="todo">Not counted first</option>
+              </select>
+            </div>
+
+            <div class="seg" role="radiogroup" aria-label="Show">
+              <label class="seg-opt">
+                <input type="radio" name="pcView" checked="{{pc.viewAll}}" onChange="{{onPcViewAll}}">
+                All
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="pcView" checked="{{pc.viewTodo}}" onChange="{{onPcViewTodo}}">
+                Not counted
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="pcView" checked="{{pc.viewVar}}" onChange="{{onPcViewVar}}">
+                Variance
+              </label>
+              <label class="seg-opt">
+                <input type="radio" name="pcView" checked="{{pc.viewNeg}}" onChange="{{onPcViewNeg}}">
+                Negative
+              </label>
+            </div>
+
+            <div style="overflow-x: auto; border-top: 1px solid var(--color-neutral-300);">
+              <table class="table" style="width: 100%; font-size: 12.5px;">
+                <tbody>
+                  <tr>
+                    <th style="text-align: left;">Item</th>
+                    <th style="text-align: right; width: 56px;">System</th>
+                    <th style="text-align: center; width: 84px;">Count</th>
+                    <th style="text-align: right; width: 52px;">Var.</th>
+                  </tr>
+                  <sc-for list="{{pc.rows}}" as="row" hint-placeholder-count="6">
+                    <tr style="background: {{row.bg}};">
+                      <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                          <div style="flex: none; width: 48px; height: 48px; border-radius: var(--radius-sm); background: #fff; border: 1px solid var(--color-neutral-300); overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                            <sc-if value="{{row.image}}" hint-placeholder-val="{{false}}">
+                              <img src="{{row.image}}" alt="" loading="lazy" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                            </sc-if>
+                          </div>
+                          <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                              <span style="font-weight: 700; color: var(--color-text);">{{row.itemNo}}</span>
+                              <sc-if value="{{row.addedOnly}}" hint-placeholder-val="{{false}}">
+                                <span class="tag tag-outline" style="font-size: 10px;">Added</span>
+                              </sc-if>
+                              <sc-if value="{{row.notInSystem}}" hint-placeholder-val="{{false}}">
+                                <span class="tag tag-accent" style="font-size: 10px;">Not in system</span>
+                              </sc-if>
+                              <sc-if value="{{row.sysNeg}}" hint-placeholder-val="{{false}}">
+                                <span class="tag" style="font-size: 10px; background: rgba(179,38,30,0.12); color: #b3261e;">Negative</span>
+                              </sc-if>
+                            </div>
+                            <sc-if value="{{row.partNo}}" hint-placeholder-val="{{false}}">
+                              <div style="color: var(--color-text); font-size: 12px; font-weight: 700;">Part No. {{row.partNo}}</div>
+                            </sc-if>
+                            <div style="color: var(--color-neutral-700); font-size: 11.5px;">{{row.desc}}</div>
+                            <sc-if value="{{row.barcode}}" hint-placeholder-val="{{false}}">
+                              <div style="color: var(--color-neutral-700); font-size: 11px; font-variant-numeric: tabular-nums;">Barcode {{row.barcode}}</div>
+                            </sc-if>
+                            <sc-if value="{{row.countedAtText}}" hint-placeholder-val="{{false}}">
+                              <div style="color: var(--color-accent-700); font-size: 11px;">{{row.countedAtText}}</div>
+                            </sc-if>
+                            <sc-if value="{{row.sysChangedText}}" hint-placeholder-val="{{false}}">
+                              <div style="color: #8a5a00; font-size: 11px; font-weight: 600; background: rgba(214,150,0,0.12); border-radius: 4px; padding: 2px 6px; margin-top: 2px;">{{row.sysChangedText}}</div>
+                            </sc-if>
+                          </div>
+                        </div>
+                      </td>
+                      <td style="text-align: right; font-weight: 600; color: {{row.sysColor}};">{{row.sysText}}</td>
+                      <td style="text-align: center;">
+                        <input class="input" type="number" inputmode="numeric" min="0" placeholder="–" value="{{row.countVal}}" onChange="{{row.onCount}}" aria-label="Physical count" style="width: 76px; padding: 6px 8px; text-align: center; font-size: 14px;">
+                      </td>
+                      <td style="text-align: right; font-weight: 700; color: {{row.varColor}};">{{row.varText}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <sc-if value="{{pc.rowsEmpty}}" hint-placeholder-val="{{false}}">
+              <span style="font-size: 12.5px; color: var(--color-neutral-700);">{{pc.emptyText}}</span>
+            </sc-if>
+            <sc-if value="{{pc.hasMore}}" hint-placeholder-val="{{false}}">
+              <button class="btn btn-ghost btn-block" onClick="{{onPcShowMore}}">{{pc.moreLabel}}</button>
+            </sc-if>
+
+            <button class="btn btn-primary btn-block" onClick="{{onPcPdf}}" disabled="{{pc.exportDisabled}}">{{pc.pdfLabel}}</button>
+            <button class="btn btn-secondary btn-block" onClick="{{onPcExcel}}" disabled="{{pc.exportDisabled}}">Download Excel</button>
+            <div style="display: flex; flex-direction: column; gap: var(--space-2); border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3);">
+              <div style="font-size: 13px; font-weight: 700; color: var(--color-text);">Backup &amp; move between devices</div>
+              <span style="font-size: 12px; color: var(--color-neutral-700);">Download a backup file, then restore it on another phone. Restoring merges — for an item counted on both, the latest count wins.</span>
+              <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                <button class="btn btn-secondary" onClick="{{onPcBackup}}" disabled="{{pc.clearDisabled}}" style="flex: 1 1 140px;">Download backup</button>
+                <label class="btn btn-secondary" style="flex: 1 1 140px; cursor: pointer; justify-content: center;">
+                  Restore / merge backup
+                  <input type="file" accept=".json,application/json" onChange="{{onPcRestore}}" style="display: none;">
+                </label>
+              </div>
+              <sc-if value="{{pc.restoreMsg}}" hint-placeholder-val="{{false}}">
+                <span style="font-size: 12px; color: var(--color-accent-700); font-weight: 600;">{{pc.restoreMsg}}</span>
+              </sc-if>
+            </div>
+            <button class="btn btn-ghost btn-block" onClick="{{onPcClear}}" disabled="{{pc.clearDisabled}}">Clear counts for this store</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{skuScanOpen}}" hint-placeholder-val="{{false}}">
+        <div style="position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.88); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px;">
+          <div style="position: relative; width: 100%; max-width: 480px; aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden; background: #000;">
+            <video ref="{{scanVideoRef}}" playsinline="true" muted="true" autoplay="true" style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>
+            <div style="position: absolute; left: 10%; right: 10%; top: 38%; height: 24%; border: 2px solid #fff; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.35);"></div>
+          </div>
+          <div style="color: #fff; font-size: 14px; text-align: center; max-width: 480px;">{{skuScanStatus}}</div>
+          <button class="btn btn-secondary" onClick="{{onCloseScan}}" style="background: #fff; color: #111; min-width: 140px;">Cancel</button>
+        </div>
+      </sc-if>
     </sc-if>
 
     <!-- MULTI LOCATIONS SCREEN -->
@@ -2616,7 +2862,7 @@ class Component extends DCLogic {
   }
   onAdminSignOut() {
     this.setState({ isAdmin: false, adminPromptOpen: false, adminPw: '', adminError: '', mkItems: [], mkRsp: {}, mkDisc: {}, mkQuery: '' });
-    if (this.state.screen === 'markup') this.setState({ screen: 'menu' });
+    if (this.state.screen === 'markup' || this.state.screen === 'physcount') this.setState({ screen: 'menu' });
     try { localStorage.removeItem('inv-admin'); } catch (e) {}
   }
 
@@ -3688,6 +3934,401 @@ class Component extends DCLogic {
     });
   }
 
+
+  pcLoad() {
+    if (this._pcData) return this._pcData;
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem('inv-physcount-v1') || 'null'); } catch (e) {}
+    this._pcData = (d && typeof d === 'object') ? d : { stores: {}, last: {} };
+    if (!this._pcData.stores) this._pcData.stores = {};
+    if (!this._pcData.last) this._pcData.last = {};
+    return this._pcData;
+  }
+  pcSave() {
+    try { localStorage.setItem('inv-physcount-v1', JSON.stringify(this._pcData)); this._pcSaveErr = false; } catch (e) { this._pcSaveErr = true; }
+  }
+  pcStoreData(store) {
+    const d = this.pcLoad();
+    if (!d.stores[store]) d.stores[store] = { counts: {}, added: [], savedAt: 0 };
+    return d.stores[store];
+  }
+  onGoPhysCount() {
+    if (!this.state.isAdmin) return;
+    const d = this.pcLoad();
+    const l = d.last || {};
+    this.setState({ screen: 'physcount', pcStore: l.store || '', pcCategory: l.category || '', pcSubCategory: l.subCategory || '', pcBrand: l.brand || '', pcSort: l.sort || '', pcQuery: '', pcLimit: 150, pcView: 'all', pcPickerOpen: !l.store, pcPickerQuery: '', pcRev: (this.state.pcRev || 0) + 1 });
+  }
+  onBackFromPhysCount() { this.setState({ screen: 'menu' }); }
+  pcRemember(patch) {
+    const d = this.pcLoad();
+    d.last = Object.assign({}, d.last, patch);
+    this.pcSave();
+    this.setState(Object.assign({ pcLimit: 150 }, Object.keys(patch).reduce((o, k) => (o['pc' + k[0].toUpperCase() + k.slice(1)] = patch[k], o), {})));
+  }
+  onPcStoreChange(e) { this.pcRemember({ store: e.target.value }); }
+  onPcPickStore(name) { this.setState({ pcPickerOpen: false, pcPickerQuery: '' }); this.pcRemember({ store: name }); }
+  onPcCategoryChange(e) { this.pcRemember({ category: e.target.value, subCategory: '' }); }
+  onPcSubCategoryChange(e) { this.pcRemember({ subCategory: e.target.value }); }
+  onPcBrandChange(e) { this.pcRemember({ brand: e.target.value }); }
+  onPcQueryChange(e) { this.setState({ pcQuery: e.target.value }); }
+  onPcSetCount(itemNo, raw) {
+    const store = this.state.pcStore;
+    if (!store) return;
+    const sd = this.pcStoreData(store);
+    if (!sd.meta) sd.meta = {};
+    const v = String(raw).trim();
+    if (v === '' || isNaN(Number(v))) { delete sd.counts[itemNo]; delete sd.meta[itemNo]; }
+    else {
+      const prev = sd.meta[itemNo];
+      let sysNow = 0;
+      const it = this.state.parsed && this.state.parsed.matrix.items.find(x => x.itemNo === itemNo);
+      if (it) sysNow = Number(it.stores[store]) || 0;
+      sd.counts[itemNo] = Number(v);
+      sd.meta[itemNo] = { at: Date.now(), sys: prev && prev.sys !== undefined ? prev.sys : sysNow };
+    }
+    sd.savedAt = Date.now();
+    this.pcSave();
+    this.setState(s => ({ pcRev: (s.pcRev || 0) + 1 }));
+  }
+  onPcAdd(itemNo) {
+    const store = this.state.pcStore;
+    if (!store) return;
+    const sd = this.pcStoreData(store);
+    sd.added = [itemNo].concat((sd.added || []).filter(x => x !== itemNo));
+    sd.savedAt = Date.now();
+    this.pcSave();
+    this.setState(s => ({ pcQuery: '', pcView: 'all', pcRev: (s.pcRev || 0) + 1 }));
+    setTimeout(() => { const el = document.querySelector('input[aria-label="Physical count"]'); if (el) el.focus(); }, 80);
+  }
+  onPcAddUnlisted() {
+    const store = this.state.pcStore;
+    const code = this.skuFromCode((this.state.pcQuery || '').trim());
+    if (!store || !code) return;
+    const desc = window.prompt('Description for ' + code + ' (optional)', '') || '';
+    const sd = this.pcStoreData(store);
+    sd.unlisted = (sd.unlisted || []).filter(u => u.itemNo !== code).concat([{ itemNo: code, desc: desc.trim() }]);
+    this.onPcAdd(code);
+  }
+  onPcScanned(code) {
+    const sku = this.skuFromCode(code);
+    const parsed = this.state.parsed;
+    const it = parsed && parsed.matrix.items.find(x => String(x.itemNo).trim().toLowerCase() === String(sku).trim().toLowerCase());
+    if (it) this.onPcAdd(it.itemNo);
+    else if (parsed && parsed.retailMap.has(sku)) this.onPcAdd(sku);
+    else this.setState({ pcQuery: sku });
+  }
+  onPcClear() {
+    const store = this.state.pcStore;
+    if (!store) return;
+    if (!window.confirm('Clear every count saved for this store? This cannot be undone.')) return;
+    const d = this.pcLoad();
+    delete d.stores[store];
+    this.setState({ pcRestoreMsg: '' });
+    this.pcSave();
+    this.setState(s => ({ pcRev: (s.pcRev || 0) + 1 }));
+  }
+  pcStoreLabel() {
+    const o = this.getMlLocationOptions().find(x => x.name === this.state.pcStore);
+    return o ? o.short : (this.state.pcStore || '');
+  }
+  pcScopeLabel() {
+    const st = this.state;
+    const bits = [this.pcStoreLabel()];
+    if (st.pcCategory) bits.push(st.pcCategory);
+    if (st.pcSubCategory) bits.push(st.pcSubCategory);
+    if (st.pcBrand) bits.push(st.pcBrand);
+    if (!st.pcCategory && !st.pcSubCategory && !st.pcBrand) bits.push('All items');
+    return bits.join(' · ');
+  }
+  getPcRows() {
+    const st = this.state;
+    if (!st.parsed || !st.pcStore) return [];
+    const { matrix, retailMap } = st.parsed;
+    const sd = this.pcStoreData(st.pcStore);
+    const counts = sd.counts || {};
+    const addedSet = new Set(sd.added || []);
+    const bmap = this.state.barcodeMap || {};
+    const meta = (no, r, fallbackDesc) => ({ itemNo: no, image: (r.image && r.image !== '(blank)') ? r.image : '', desc: r.description2 || fallbackDesc || '', partNo: String(r.partNo || '').trim(), barcode: String(bmap[no] || bmap[String(no).toUpperCase()] || '').trim(), brand: (r.brand || '').trim(), category: (r.category || '').trim(), subCategory: (r.subCategory || '').trim() });
+    const byNo = new Map();
+    const rows = [];
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo) || {};
+      const isAdded = addedSet.has(it.itemNo);
+      const sys = Number(it.stores[st.pcStore]) || 0;
+      const inFilter = (!st.pcBrand || (r.brand || '').trim() === st.pcBrand)
+        && (!st.pcCategory || (r.category || '').trim() === st.pcCategory)
+        && (!st.pcSubCategory || (r.subCategory || '').trim() === st.pcSubCategory);
+      if (!isAdded && !(inFilter && (sys !== 0 || counts[it.itemNo] !== undefined))) continue;
+      const row = Object.assign(meta(it.itemNo, r, it.description2), { sys, count: counts[it.itemNo], added: isAdded && !(inFilter && sys !== 0), notInSystem: false });
+      byNo.set(it.itemNo, row);
+      if (!isAdded) rows.push(row);
+    }
+    rows.sort((a, b) => naturalCompare(a.itemNo, b.itemNo));
+    const unlisted = new Map((sd.unlisted || []).map(u => [u.itemNo, u]));
+    const addedRows = (sd.added || []).map(n => {
+      if (byNo.has(n)) return byNo.get(n);
+      const r = retailMap.get(n);
+      const u = unlisted.get(n);
+      if (!r && !u) return null;
+      return Object.assign(meta(n, r || {}, u && u.desc), { sys: 0, count: counts[n], added: true, notInSystem: true });
+    }).filter(Boolean);
+    const all = addedRows.concat(rows);
+    const pcMeta = sd.meta || {};
+    for (const row of all) {
+      row.liveSys = row.sys;
+      const mt = row.count !== undefined ? pcMeta[row.itemNo] : null;
+      row.countedAt = mt && mt.at ? mt.at : 0;
+      row.sysAtCount = mt && mt.sys !== undefined ? mt.sys : '';
+      row.sysChanged = !!mt && mt.sys !== undefined && mt.sys !== row.sys;
+    }
+    const key = st.pcSort || '';
+    if (!key) return all;
+    const txt = f => (a, b) => naturalCompare(String(a[f] || '~'), String(b[f] || '~'));
+    const bySku = (a, b) => naturalCompare(a.itemNo, b.itemNo);
+    const vr = r => r.count === undefined ? null : r.count - r.sys;
+    const vcmp = dir => (a, b) => { const x = vr(a), y = vr(b); if (x === null && y === null) return bySku(a, b); if (x === null) return 1; if (y === null) return -1; return (dir * (x - y)) || bySku(a, b); };
+    const cmp = {
+      category: (a, b) => txt('category')(a, b) || txt('subCategory')(a, b) || bySku(a, b),
+      subCategory: (a, b) => txt('subCategory')(a, b) || bySku(a, b),
+      partNo: (a, b) => txt('partNo')(a, b) || bySku(a, b),
+      brand: (a, b) => txt('brand')(a, b) || bySku(a, b),
+      desc: (a, b) => txt('desc')(a, b) || bySku(a, b),
+      sysDesc: (a, b) => (b.sys - a.sys) || bySku(a, b),
+      sysAsc: (a, b) => (a.sys - b.sys) || bySku(a, b),
+      varAsc: vcmp(1),
+      varDesc: vcmp(-1),
+      counted: (a, b) => ((a.count === undefined) - (b.count === undefined)) || bySku(a, b),
+      todo: (a, b) => ((b.count === undefined) - (a.count === undefined)) || bySku(a, b),
+    }[key];
+    return cmp ? all.slice().sort(cmp) : all;
+  }
+  getPcView() {
+    const st = this.state;
+    const fmt = v => Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const storeOptions = this.getMlLocationOptions();
+    const pq = (st.pcPickerQuery || '').trim().toLowerCase();
+    const curOpt = storeOptions.find(o => o.name === st.pcStore);
+    const pickerOptions = storeOptions.filter(o => !pq || o.label.toLowerCase().indexOf(pq) >= 0).map(o => ({ label: o.label, isWarehouse: o.isWarehouse, bg: o.name === st.pcStore ? 'var(--color-accent-100)' : 'transparent', onPick: () => this.onPcPickStore(o.name) }));
+    const base = { restoreMsg: st.pcRestoreMsg || '', sort: st.pcSort || '', storeLabel: curOpt ? curOpt.label : 'Choose a store…', pickerOpen: !!st.pcPickerOpen, pickerArrow: st.pcPickerOpen ? '▲' : '▼', pickerQuery: st.pcPickerQuery || '', pickerOptions, store: st.pcStore || '', storeOptions, hasStore: !!st.pcStore, category: st.pcCategory || '', subCategory: st.pcSubCategory || '', brand: st.pcBrand || '', query: st.pcQuery || '' };
+    if (!st.pcStore || !st.parsed) return Object.assign(base, { rows: [], categoryOptions: [], subCategoryOptions: [], brandOptions: [], searchResults: [] });
+    const { matrix, retailMap } = st.parsed;
+    const cats = new Set(), subs = new Set(), brands = new Set();
+    for (const it of matrix.items) {
+      const r = retailMap.get(it.itemNo);
+      if (!r) continue;
+      const c = (r.category || '').trim(), sc = (r.subCategory || '').trim(), b = (r.brand || '').trim();
+      if (c) cats.add(c);
+      if (sc && (!st.pcCategory || c === st.pcCategory)) subs.add(sc);
+      if (b && (!st.pcCategory || c === st.pcCategory) && (!st.pcSubCategory || sc === st.pcSubCategory)) brands.add(b);
+    }
+    const all = this.getPcRows();
+    const counted = all.filter(r => r.count !== undefined);
+    const varRows = counted.filter(r => r.count !== r.sys);
+    const short = varRows.reduce((s, r) => s + Math.min(0, r.count - r.sys), 0);
+    const over = varRows.reduce((s, r) => s + Math.max(0, r.count - r.sys), 0);
+    const view = st.pcView || 'all';
+    const shown = view === 'todo' ? all.filter(r => r.count === undefined) : view === 'var' ? varRows : view === 'neg' ? all.filter(r => r.sys < 0) : all;
+    const limit = st.pcLimit || 150;
+    const sd = this.pcStoreData(st.pcStore);
+    const rows = shown.slice(0, limit).map(r => {
+      const d = r.count === undefined ? null : r.count - r.sys;
+      return {
+        itemNo: r.itemNo, desc: r.desc, added: r.added, addedOnly: r.added && !r.notInSystem, notInSystem: r.notInSystem, image: r.image, partNo: r.partNo, barcode: r.barcode,
+        sysNeg: r.liveSys < 0, sysColor: r.sys < 0 ? '#b3261e' : 'var(--color-text)',
+        countedAtText: r.countedAt ? 'Counted ' + this.pcFmtAt(r.countedAt) : '',
+        sysChangedText: r.sysChanged ? 'Inventory changed after new snapshot: ' + fmt(r.sysAtCount) + ' at count → ' + fmt(r.sys) + ' now' : '',
+        sysText: fmt(r.sys),
+        countVal: r.count === undefined ? '' : String(r.count),
+        onCount: e => this.onPcSetCount(r.itemNo, e.target.value),
+        varText: d === null ? '' : d === 0 ? '0' : (d > 0 ? '+' : '') + fmt(d),
+        varColor: d === null || d === 0 ? 'var(--color-neutral-700)' : d < 0 ? '#b3261e' : '#1b7a3a',
+        bg: d !== null && d !== 0 ? 'rgba(179,38,30,0.06)' : 'transparent',
+      };
+    });
+    const q = (st.pcQuery || '').trim();
+    let searchResults = [];
+    let exactHit = false;
+    if (q.length >= 2) {
+      const code = this.skuFromCode(q).toLowerCase();
+      const lc = q.toLowerCase();
+      const scored = [];
+      for (const it of matrix.items) {
+        const sku = String(it.itemNo).toLowerCase();
+        const r = retailMap.get(it.itemNo) || {};
+        const desc = String(r.description2 || it.description2 || '');
+        let sc = -1;
+        if (sku === code || sku === lc) sc = 0;
+        else if (sku.indexOf(lc) === 0) sc = 1;
+        else if (sku.indexOf(lc) >= 0) sc = 2;
+        else if (desc.toLowerCase().indexOf(lc) >= 0) sc = 3;
+        if (sc < 0) continue;
+        scored.push({ sc, it, desc });
+        if (scored.length > 400) break;
+      }
+      const inMatrix = new Set(matrix.items.map(x => x.itemNo));
+      if (scored.length < 400) for (const [no, r] of retailMap) {
+        if (inMatrix.has(no)) continue;
+        const sku = String(no).toLowerCase();
+        const desc = String(r.description2 || '');
+        let sc = -1;
+        if (sku === code || sku === lc) sc = 0;
+        else if (sku.indexOf(lc) >= 0) sc = 2;
+        else if (desc.toLowerCase().indexOf(lc) >= 0) sc = 3;
+        if (sc < 0) continue;
+        scored.push({ sc, it: { itemNo: no, stores: {} }, desc });
+        if (scored.length > 400) break;
+      }
+      exactHit = scored.some(x => x.sc === 0);
+      scored.sort((a, b) => a.sc - b.sc || naturalCompare(a.it.itemNo, b.it.itemNo));
+      const addedSet = new Set(sd.added || []);
+      searchResults = scored.slice(0, 8).map(x => ({
+        itemNo: x.it.itemNo, desc: x.desc, image: (() => { const rr = retailMap.get(x.it.itemNo) || {}; return (rr.image && rr.image !== '(blank)') ? rr.image : ''; })(),
+        sysText: 'System qty here: ' + fmt(Number(x.it.stores[st.pcStore]) || 0),
+        addLabel: addedSet.has(x.it.itemNo) ? 'Move to top' : 'Add',
+        onAdd: () => this.onPcAdd(x.it.itemNo),
+      }));
+    }
+    const pct = all.length ? Math.round(counted.length / all.length * 100) : 0;
+    const t = sd.savedAt ? new Date(sd.savedAt) : null;
+    return Object.assign(base, {
+      categoryOptions: Array.from(cats).sort(naturalCompare),
+      subCategoryOptions: Array.from(subs).sort(naturalCompare),
+      hasSubCategoryOptions: subs.size > 0,
+      brandOptions: Array.from(brands).sort(naturalCompare),
+      hasSearch: q.length >= 2,
+      searchResults, searchEmpty: q.length >= 2 && !searchResults.length,
+      rows, rowsEmpty: rows.length === 0,
+      emptyText: view === 'neg' ? 'No negative stock in this selection.' : view === 'todo' ? 'Everything in this selection is counted.' : view === 'var' ? 'No variances yet.' : 'No stock at this store for this selection — search to add an item.',
+      hasMore: shown.length > limit,
+      moreLabel: 'Show more (' + (shown.length - limit) + ' left)',
+      progressText: 'Counted ' + counted.length + ' of ' + all.length + ' items',
+      progressPct: pct + '%',
+      varianceText: counted.length ? (varRows.length + ' with variance · short ' + fmt(short) + ' · over +' + fmt(over)) : 'No counts entered yet.',
+      savedText: this._pcSaveErr ? 'Could not save on this device — storage is full or blocked.' : t ? ('Saved on this device · ' + t.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })) : 'Nothing saved yet.',
+      viewAll: view === 'all', viewTodo: view === 'todo', viewVar: view === 'var', viewNeg: view === 'neg',
+      canAddUnlisted: q.length >= 2 && !exactHit,
+      addUnlistedLabel: '+ Add “' + q + '” as an item not in system',
+      exportDisabled: !all.length,
+      clearDisabled: !counted.length && !(sd.added || []).length,
+      pdfLabel: st.pcPdfDownloading ? 'Preparing PDF…' : 'Download PDF',
+    });
+  }
+  pcFmtAt(ts) { return new Date(ts).toLocaleString(undefined, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+  onPcBackup() {
+    const store = this.state.pcStore;
+    if (!store) return;
+    const sd = this.pcStoreData(store);
+    const payload = { type: 'physical-count-backup', version: 1, exportedAt: Date.now(), stores: { [store]: sd }, storeLabels: { [store]: this.pcStoreLabel() } };
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+    a.href = url;
+    a.download = ('Physical-Count-Backup-' + this.pcStoreLabel() + '-' + stamp).replace(/[^a-z0-9\-_.]+/gi, '-') + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  async onPcRestore(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    let j;
+    try { j = JSON.parse(await file.text()); } catch (err) { this.setState({ pcRestoreMsg: 'That file is not a valid backup.' }); return; }
+    if (!j || j.type !== 'physical-count-backup' || !j.stores) { this.setState({ pcRestoreMsg: 'That file is not a physical count backup.' }); return; }
+    const d = this.pcLoad();
+    let newer = 0, kept = 0, added = 0, firstStore = '';
+    for (const store of Object.keys(j.stores)) {
+      if (!firstStore) firstStore = store;
+      const inc = j.stores[store] || {};
+      const loc = this.pcStoreData(store);
+      if (!loc.meta) loc.meta = {};
+      const incCounts = inc.counts || {}, incMeta = inc.meta || {};
+      for (const no of Object.keys(incCounts)) {
+        const im = incMeta[no] || { at: inc.savedAt || 0 };
+        const lm = loc.meta[no];
+        if (loc.counts[no] === undefined) { loc.counts[no] = incCounts[no]; loc.meta[no] = im; added++; }
+        else if ((im.at || 0) > ((lm && lm.at) || 0)) { loc.counts[no] = incCounts[no]; loc.meta[no] = Object.assign({}, im, { sys: lm && lm.sys !== undefined ? lm.sys : im.sys }); newer++; }
+        else kept++;
+      }
+      const addSet = new Set(loc.added || []);
+      for (const no of inc.added || []) if (!addSet.has(no)) { loc.added = (loc.added || []).concat([no]); addSet.add(no); }
+      const unl = new Map((loc.unlisted || []).map(u => [u.itemNo, u]));
+      for (const u of inc.unlisted || []) if (!unl.has(u.itemNo)) unl.set(u.itemNo, u);
+      loc.unlisted = Array.from(unl.values());
+      loc.savedAt = Date.now();
+    }
+    this.pcSave();
+    const patch = { pcRestoreMsg: 'Merged backup: ' + added + ' new counts, ' + newer + ' updated with newer counts, ' + kept + ' kept (yours were newer).', pcRev: (this.state.pcRev || 0) + 1 };
+    if (firstStore && firstStore !== this.state.pcStore) { d.last = Object.assign({}, d.last, { store: firstStore }); this.pcSave(); patch.pcStore = firstStore; }
+    this.setState(patch);
+  }
+  onPcExcel() {
+    const rows = this.getPcRows();
+    if (!rows.length) return;
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const counted = rows.filter(r => r.count !== undefined);
+    const aoa = [
+      [{ v: 'Physical count · ' + this.pcStoreLabel(), s: 1 }],
+      [this.pcScopeLabel() + ' · counted ' + counted.length + ' of ' + rows.length + ' · ' + today],
+      [],
+      ['Item No.', 'Part No.', 'Barcode', 'Description 2', 'Brand', 'Category', 'Sub-category', 'System Qty', 'Physical Count', 'Variance', 'Counted On', 'System Qty at Count', 'Note'].map(h => ({ v: h, s: 5 })),
+    ];
+    let sysT = 0, cntT = 0, varT = 0;
+    for (const r of rows) {
+      const d = r.count === undefined ? '' : r.count - r.sys;
+      const s = d !== '' && d !== 0 ? 3 : 0;
+      sysT += r.sys; if (r.count !== undefined) { cntT += r.count; varT += d; }
+      const note = [r.notInSystem ? 'Not in system' : r.added ? 'Added by search' : '', r.liveSys < 0 ? 'Negative stock' : '', r.sysChanged ? 'Inventory changed after new snapshot (' + r.sysAtCount + ' at count → ' + r.sys + ' now)' : '', r.count === undefined ? 'Not counted' : ''].filter(Boolean).join(' · ');
+      aoa.push([{ v: r.itemNo, t: 's', s }, { v: r.partNo, t: 's', s }, { v: r.barcode, t: 's', s }, { v: r.desc, t: 's', s }, { v: r.brand, t: 's', s }, { v: r.category, t: 's', s }, { v: r.subCategory, t: 's', s }, { v: r.sys, s }, { v: r.count === undefined ? '' : r.count, s }, { v: d, s }, { v: r.countedAt ? this.pcFmtAt(r.countedAt) : '', t: 's', s }, { v: r.sysAtCount, s }, { v: note, t: 's', s }]);
+    }
+    aoa.push([{ v: 'Total · ' + rows.length + ' items', s: 5 }].concat(Array(6).fill(0).map(() => ({ v: '', s: 5 }))).concat([{ v: sysT, s: 5 }, { v: cntT, s: 5 }, { v: varT, s: 5 }, { v: '', s: 5 }, { v: '', s: 5 }, { v: '', s: 5 }]));
+    const cols = [{ width: 16 }, { width: 18 }, { width: 16 }, { width: 44 }, { width: 18 }, { width: 22 }, { width: 22 }, { width: 14 }, { width: 14 }, { width: 11 }, { width: 20 }, { width: 14 }, { width: 40 }];
+    downloadXlsx(aoa, ('Physical-Count-' + this.pcStoreLabel() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-'), { sheetName: 'Physical Count', cols });
+  }
+  onPcPdf() {
+    const rows = this.getPcRows();
+    if (!rows.length) return;
+    this.setState({ pcPdfDownloading: true });
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const fmt = v => Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const counted = rows.filter(r => r.count !== undefined);
+    let sysT = 0, cntT = 0, varT = 0;
+    const rowsHtml = rows.map(r => {
+      const d = r.count === undefined ? null : r.count - r.sys;
+      sysT += r.sys; if (d !== null) { cntT += r.count; varT += d; }
+      return '<tr' + (d ? ' style="background:#fbe1de;"' : '') + '>'
+        + '<td class="itemno">' + esc(r.itemNo) + (r.notInSystem ? ' <span class="tag">not in system</span>' : r.added ? ' <span class="tag">added</span>' : '') + (r.partNo ? '<div class="part">' + esc(r.partNo) + '</div>' : '') + (r.barcode ? '<div class="sub">' + esc(r.barcode) + '</div>' : '') + '</td>'
+        + '<td>' + esc(r.desc) + (r.sysChanged ? '<div class="chg">Inventory changed after new snapshot: ' + fmt(r.sysAtCount) + ' at count → ' + fmt(r.sys) + ' now</div>' : '') + '</td>'
+        + '<td class="num"' + (r.sys < 0 ? ' style="color:#8b1a1a;font-weight:700;"' : '') + '>' + fmt(r.sys) + '</td>'
+        + '<td class="num">' + (d === null ? '<span class="muted">–</span>' : fmt(r.count)) + '</td>'
+        + '<td class="num" style="font-weight:700;' + (d ? (d < 0 ? 'color:#8b1a1a;' : 'color:#1b6b34;') : '') + '">' + (d === null ? '' : (d > 0 ? '+' : '') + fmt(d)) + '</td>'
+        + '<td class="at">' + (r.countedAt ? esc(this.pcFmtAt(r.countedAt)) : '') + '</td>'
+        + '</tr>';
+    }).join('');
+    const styleCss = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#201e1d;}'
+      + 'h1{font-size:20px;margin:0 0 4px;}.meta{font-size:13px;color:#6b6360;margin-bottom:10px;}'
+      + 'table{width:100%;border-collapse:separate;border-spacing:0;font-size:11.5px;table-layout:fixed;}tr{break-inside:avoid;}'
+      + 'th{text-align:left;font-size:10px;text-transform:uppercase;color:#6b6360;padding:6px 4px;border-bottom:2px solid #201e1d;}'
+      + 'th.num,td.num{text-align:right;white-space:nowrap;}'
+      + 'td{padding:6px 4px;border-bottom:1px solid #e6ddd2;overflow-wrap:break-word;vertical-align:middle;}'
+      + 'td.itemno{font-weight:700;}.part{font-weight:700;font-size:10.5px;}.sub{font-weight:400;font-size:10px;color:#6b6360;}td.at{font-size:10px;color:#6b6360;}'
+      + '.chg{font-size:10px;font-weight:600;color:#8a5a00;margin-top:2px;}'
+      + '.muted{color:#b8afa6;}.tag{font-size:9px;font-weight:600;color:#6b6360;border:1px solid #b8afa6;border-radius:3px;padding:0 3px;}'
+      + 'tr.tot td{border-top:2px solid #201e1d;border-bottom:none;font-weight:700;padding-top:8px;}'
+      + '.sign{display:flex;gap:40px;margin-top:36px;font-size:12px;color:#6b6360;}.sign div{flex:1;border-top:1px solid #201e1d;padding-top:4px;}';
+    const bodyHtml = '<h1>Physical count · ' + esc(this.pcStoreLabel()) + '</h1>'
+      + '<div class="meta">' + esc(this.pcScopeLabel()) + ' · counted ' + counted.length + ' of ' + rows.length + ' items · ' + today + '</div>'
+      + '<table><colgroup><col style="width:17%"><col style="width:37%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:16%"></colgroup>'
+      + '<tbody><tr><th>Item No.</th><th>Description 2</th><th class="num">System</th><th class="num">Count</th><th class="num">Variance</th><th>Counted on</th></tr>'
+      + rowsHtml
+      + '<tr class="tot"><td colspan="2">Total · ' + rows.length + ' items</td><td class="num">' + fmt(sysT) + '</td><td class="num">' + fmt(cntT) + '</td><td class="num">' + (varT > 0 ? '+' : '') + fmt(varT) + '</td><td></td></tr>'
+      + '</tbody></table>'
+      + '<div class="sign"><div>Counted by</div><div>Checked by</div><div>Date</div></div>';
+    const fileTitle = ('Physical-Count-' + this.pcStoreLabel() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    this.printHtmlInPage(styleCss, bodyHtml, fileTitle, () => this.setState({ pcPdfDownloading: false }));
+  }
+
   onGoMultiLoc() { this.setState({ screen: 'multiloc' }); }
   onBackFromMultiLoc() { this.setState({ screen: 'menu' }); }
   onMlBrandChange(e) { this.setState({ mlBrand: e.target.value }); }
@@ -4680,7 +5321,7 @@ class Component extends DCLogic {
       return;
     }
     this.setState({ skuScanStatus: 'Point the camera at the barcode' });
-    const done = code => { this.onCloseScan(); this.setState({ skuQuery: this.skuFromCode(code), skuExpanded: '' }); };
+    const done = code => { this.onCloseScan(); if (this.state.screen === 'physcount') return this.onPcScanned(code); this.setState({ skuQuery: this.skuFromCode(code), skuExpanded: '' }); };
     if ('BarcodeDetector' in window) {
       try {
         const det = new window.BarcodeDetector({ formats: ['ean_13', 'upc_a', 'ean_8', 'upc_e', 'code_128', 'code_39', 'qr_code'] });
@@ -5402,6 +6043,29 @@ class Component extends DCLogic {
       mkSuggestions: s.screen === 'markup' ? this.getMkSuggestions() : [],
       mk: s.screen === 'markup' ? this.getMarkupView() : { rows: [], has: false, empty: true, countLabel: '', totalCost: '', totalRsp: '', totalNet: '', hasTotalDisc: false, totalDiff: '', totalPct: '', missingCost: false, missingCostNote: '' },
       isSkuLookup: s.screen === 'skulookup',
+      isPhysCount: s.screen === 'physcount' && !!s.isAdmin,
+      pc: s.screen === 'physcount' ? this.getPcView() : { rows: [], storeOptions: [], categoryOptions: [], subCategoryOptions: [], brandOptions: [], searchResults: [] },
+      onGoPhysCount: () => this.onGoPhysCount(),
+      onBackFromPhysCount: () => this.onBackFromPhysCount(),
+      onPcStoreChange: e => this.onPcStoreChange(e),
+      onPcTogglePicker: () => this.setState(st => ({ pcPickerOpen: !st.pcPickerOpen, pcPickerQuery: '' })),
+      onPcPickerQuery: e => this.setState({ pcPickerQuery: e.target.value }),
+      onPcCategoryChange: e => this.onPcCategoryChange(e),
+      onPcSubCategoryChange: e => this.onPcSubCategoryChange(e),
+      onPcBrandChange: e => this.onPcBrandChange(e),
+      onPcQueryChange: e => this.onPcQueryChange(e),
+      onPcViewAll: () => this.setState({ pcView: 'all', pcLimit: 150 }),
+      onPcViewTodo: () => this.setState({ pcView: 'todo', pcLimit: 150 }),
+      onPcViewVar: () => this.setState({ pcView: 'var', pcLimit: 150 }),
+      onPcSortChange: e => { const d = this.pcLoad(); d.last = Object.assign({}, d.last, { sort: e.target.value }); this.pcSave(); this.setState({ pcSort: e.target.value, pcLimit: 150 }); },
+      onPcViewNeg: () => this.setState({ pcView: 'neg', pcLimit: 150 }),
+      onPcAddUnlisted: () => this.onPcAddUnlisted(),
+      onPcShowMore: () => this.setState(st => ({ pcLimit: (st.pcLimit || 150) + 150 })),
+      onPcExcel: () => this.onPcExcel(),
+      onPcPdf: () => this.onPcPdf(),
+      onPcClear: () => this.onPcClear(),
+      onPcBackup: () => this.onPcBackup(),
+      onPcRestore: e => this.onPcRestore(e),
       isMultiLoc: s.screen === 'multiloc',
       onGoMultiLoc: () => this.onGoMultiLoc(),
       onBackFromMultiLoc: () => this.onBackFromMultiLoc(),
