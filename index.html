@@ -305,6 +305,9 @@
           <div class="card-title" style="font-size: 18px; align-self: center;">Physical count</div>
         </div>
         <span style="font-size: 12px; color: var(--color-neutral-700);">Counts save on this device as you type — closing the page or losing signal won't lose them.</span>
+        <sc-if value="{{pc.error}}" hint-placeholder-val="{{false}}">
+          <div style="padding: var(--space-3); border-radius: var(--radius-md); background: #fbe1de; color: #b3261e; font-size: 13px;">{{pc.error}}</div>
+        </sc-if>
 
         <div class="field">
           <label for="pc-store">Store</label>
@@ -3131,7 +3134,7 @@ class Component extends DCLogic {
     for (const it of matrix.items) {
       const r = retailMap.get(it.itemNo);
       if (!r || !r.subCategory || !r.subCategory.trim()) continue;
-      if (st.storeStockCategory && (r.category || '').trim() !== st.storeStockCategory) continue;
+      if (st.storeStockCategory && String(r.category || '').trim() !== st.storeStockCategory) continue;
       set.add(r.subCategory.trim());
     }
     return Array.from(set).sort();
@@ -3163,7 +3166,7 @@ class Component extends DCLogic {
     for (const it of matrix.items) {
       const r = retailMap.get(it.itemNo);
       if (!r || !r.subCategory || !r.subCategory.trim()) continue;
-      if (st.whCategory && (r.category || '').trim() !== st.whCategory) continue;
+      if (st.whCategory && String(r.category || '').trim() !== st.whCategory) continue;
       set.add(r.subCategory.trim());
     }
     return Array.from(set).sort();
@@ -3184,9 +3187,9 @@ class Component extends DCLogic {
       const abha = num(it.stores[ABHA]);
       if (riyadh + abha <= 0) continue;
       const r = retailMap.get(it.itemNo) || {};
-      if (st.whBrand && (r.brand || '').trim() !== st.whBrand) continue;
-      if (st.whCategory && (r.category || '').trim() !== st.whCategory) continue;
-      if (st.whSubCategory && (r.subCategory || '').trim() !== st.whSubCategory) continue;
+      if (st.whBrand && String(r.brand || '').trim() !== st.whBrand) continue;
+      if (st.whCategory && String(r.category || '').trim() !== st.whCategory) continue;
+      if (st.whSubCategory && String(r.subCategory || '').trim() !== st.whSubCategory) continue;
       let storeQty = 0, storeNeg = 0;
       for (const s of scope) { const n = num(it.stores[s.name]); if (n > 0) storeQty += n; else if (n < 0) storeNeg += n; }
       const disc = discountMap ? discountMap.get(it.itemNo) : null;
@@ -3200,7 +3203,7 @@ class Component extends DCLogic {
         itemNo: it.itemNo,
         description2: r.description2 || it.description2 || '',
         image: r.image && r.image !== '(blank)' ? r.image : '',
-        brandLine: [(r.brand || '').trim(), (r.category || '').trim(), (r.subCategory || '').trim()].filter(Boolean).join(' · '),
+        brandLine: [String(r.brand || '').trim(), String(r.category || '').trim(), String(r.subCategory || '').trim()].filter(Boolean).join(' · '),
         storeQty: storeQty,
         storeNeg: storeNeg,
         riyadh: riyadh,
@@ -3387,8 +3390,8 @@ class Component extends DCLogic {
     const out = [];
     for (const it of matrix.items) {
       const r = retailMap.get(it.itemNo) || {};
-      if (st.distBrand && (r.brand || '').trim() !== st.distBrand) continue;
-      if (st.distCategory && (r.category || '').trim() !== st.distCategory) continue;
+      if (st.distBrand && String(r.brand || '').trim() !== st.distBrand) continue;
+      if (st.distCategory && String(r.category || '').trim() !== st.distCategory) continue;
       out.push({ it: it, r: r });
     }
     return out;
@@ -3430,7 +3433,7 @@ class Component extends DCLogic {
             key: rg + '|' + it.itemNo,
             itemNo: it.itemNo,
             description2: r.description2 || it.description2 || '',
-            brand: (r.brand || '').trim(),
+            brand: String(r.brand || '').trim(),
             image: r.image || '',
             region: rg,
             holders: holders,
@@ -4062,16 +4065,16 @@ class Component extends DCLogic {
     const counts = sd.counts || {};
     const addedSet = new Set(sd.added || []);
     const bmap = this.state.barcodeMap || {};
-    const meta = (no, r, fallbackDesc) => ({ itemNo: no, image: (r.image && r.image !== '(blank)') ? r.image : '', desc: r.description2 || fallbackDesc || '', partNo: String(r.partNo || '').trim(), barcode: String(bmap[no] || bmap[String(no).toUpperCase()] || '').trim(), brand: (r.brand || '').trim(), category: (r.category || '').trim(), subCategory: (r.subCategory || '').trim() });
+    const meta = (no, r, fallbackDesc) => ({ itemNo: no, image: (r.image && r.image !== '(blank)') ? r.image : '', desc: r.description2 || fallbackDesc || '', partNo: String(r.partNo || '').trim(), barcode: String(bmap[no] || bmap[String(no).toUpperCase()] || '').trim(), brand: String(r.brand || '').trim(), category: String(r.category || '').trim(), subCategory: String(r.subCategory || '').trim() });
     const byNo = new Map();
     const rows = [];
     for (const it of matrix.items) {
       const r = retailMap.get(it.itemNo) || {};
       const isAdded = addedSet.has(it.itemNo);
       const sys = Number(it.stores[st.pcStore]) || 0;
-      const inFilter = (!st.pcBrand || (r.brand || '').trim() === st.pcBrand)
-        && (!st.pcCategory || (r.category || '').trim() === st.pcCategory)
-        && (!st.pcSubCategory || (r.subCategory || '').trim() === st.pcSubCategory);
+      const inFilter = (!st.pcBrand || String(r.brand || '').trim() === st.pcBrand)
+        && (!st.pcCategory || String(r.category || '').trim() === st.pcCategory)
+        && (!st.pcSubCategory || String(r.subCategory || '').trim() === st.pcSubCategory);
       if (!isAdded && !(inFilter && (sys !== 0 || counts[it.itemNo] !== undefined))) continue;
       const row = Object.assign(meta(it.itemNo, r, it.description2), { sys, count: counts[it.itemNo], added: isAdded && !(inFilter && sys !== 0), notInSystem: false });
       byNo.set(it.itemNo, row);
@@ -4116,6 +4119,13 @@ class Component extends DCLogic {
     }[key];
     return cmp ? all.slice().sort(cmp) : all;
   }
+  safePcView() {
+    try { return this.getPcView(); }
+    catch (e) {
+      console.error('Physical count error', e);
+      return { error: 'Could not show this page: ' + (e && e.message ? e.message : e), rows: [], storeOptions: [], pickerOptions: [], categoryOptions: [], subCategoryOptions: [], brandOptions: [], searchResults: [], storeLabel: 'Choose a store…', pickerArrow: '▼' };
+    }
+  }
   getPcView() {
     const st = this.state;
     const fmt = v => Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -4130,7 +4140,7 @@ class Component extends DCLogic {
     for (const it of matrix.items) {
       const r = retailMap.get(it.itemNo);
       if (!r) continue;
-      const c = (r.category || '').trim(), sc = (r.subCategory || '').trim(), b = (r.brand || '').trim();
+      const c = String(r.category || '').trim(), sc = String(r.subCategory || '').trim(), b = String(r.brand || '').trim();
       if (c) cats.add(c);
       if (sc && (!st.pcCategory || c === st.pcCategory)) subs.add(sc);
       if (b && (!st.pcCategory || c === st.pcCategory) && (!st.pcSubCategory || sc === st.pcSubCategory)) brands.add(b);
@@ -4399,7 +4409,7 @@ class Component extends DCLogic {
     for (const it of matrix.items) {
       const r = retailMap.get(it.itemNo);
       if (!r || !r.subCategory || !r.subCategory.trim()) continue;
-      if (st.mlCategory && (r.category || '').trim() !== st.mlCategory) continue;
+      if (st.mlCategory && String(r.category || '').trim() !== st.mlCategory) continue;
       set.add(r.subCategory.trim());
     }
     return Array.from(set).sort(naturalCompare);
@@ -4416,10 +4426,10 @@ class Component extends DCLogic {
     const rows = [];
     for (const it of matrix.items) {
       const r = retailMap.get(it.itemNo) || {};
-      const brand = (r.brand || '').trim();
+      const brand = String(r.brand || '').trim();
       if (st.mlBrand && brand !== st.mlBrand) continue;
-      if (st.mlCategory && (r.category || '').trim() !== st.mlCategory) continue;
-      if (st.mlSubCategory && (r.subCategory || '').trim() !== st.mlSubCategory) continue;
+      if (st.mlCategory && String(r.category || '').trim() !== st.mlCategory) continue;
+      if (st.mlSubCategory && String(r.subCategory || '').trim() !== st.mlSubCategory) continue;
       const qtys = locations.map(l => Number(it.stores[l.name]) || 0);
       if (qtys.every(q => q === 0)) continue;
       const disc = priceMap ? priceMap.get(it.itemNo) : null;
@@ -4639,10 +4649,10 @@ class Component extends DCLogic {
         const [lo, hi] = st.storeStockPctRange.split('-').map(Number);
         if (pctNum === null || pctNum < lo || pctNum > hi) continue;
       }
-      const brand = (r.brand || '').trim();
+      const brand = String(r.brand || '').trim();
       if (st.storeStockBrand && brand !== st.storeStockBrand) continue;
-      if (st.storeStockCategory && (r.category || '').trim() !== st.storeStockCategory) continue;
-      if (st.storeStockSubCategory && (r.subCategory || '').trim() !== st.storeStockSubCategory) continue;
+      if (st.storeStockCategory && String(r.category || '').trim() !== st.storeStockCategory) continue;
+      if (st.storeStockSubCategory && String(r.subCategory || '').trim() !== st.storeStockSubCategory) continue;
       rows.push({
         itemNo: it.itemNo,
         description2: r.description2 || it.description2,
@@ -5839,9 +5849,9 @@ class Component extends DCLogic {
       const q = Number(raw);
       if (q !== qty) continue;
       const r = retailMap.get(it.itemNo) || {};
-      if (brand && (r.brand || '').trim() !== brand) continue;
-      if (category && (r.category || '').trim() !== category) continue;
-      if (subCategory && (r.subCategory || '').trim() !== subCategory) continue;
+      if (brand && String(r.brand || '').trim() !== brand) continue;
+      if (category && String(r.category || '').trim() !== category) continue;
+      if (subCategory && String(r.subCategory || '').trim() !== subCategory) continue;
       const abha = Number(it.stores['Sub Warehouse - Abha'] || 0) || 0;
       const riyadh = Number(it.stores['Main Warehouse - Riyadh'] || 0) || 0;
       const totalStock = Object.values(it.stores).reduce((sum, v) => sum + (Number(v) || 0), 0);
@@ -6061,8 +6071,8 @@ class Component extends DCLogic {
       mkSuggestions: s.screen === 'markup' ? this.getMkSuggestions() : [],
       mk: s.screen === 'markup' ? this.getMarkupView() : { rows: [], has: false, empty: true, countLabel: '', totalCost: '', totalRsp: '', totalNet: '', hasTotalDisc: false, totalDiff: '', totalPct: '', missingCost: false, missingCostNote: '' },
       isSkuLookup: s.screen === 'skulookup',
-      isPhysCount: s.screen === 'physcount' && !!s.isAdmin,
-      pc: s.screen === 'physcount' ? this.getPcView() : { rows: [], storeOptions: [], categoryOptions: [], subCategoryOptions: [], brandOptions: [], searchResults: [] },
+      isPhysCount: s.screen === 'physcount',
+      pc: s.screen === 'physcount' ? this.safePcView() : { rows: [], storeOptions: [], categoryOptions: [], subCategoryOptions: [], brandOptions: [], searchResults: [] },
       onGoPhysCount: () => this.onGoPhysCount(),
       onBackFromPhysCount: () => this.onBackFromPhysCount(),
       onPcStoreChange: e => this.onPcStoreChange(e),
