@@ -266,7 +266,7 @@
             <label for="ss-disc-type">Pricing</label>
             <select id="ss-disc-type" class="input" value="{{ssDiscType}}" onChange="{{onSsDiscType}}">
               <option value="standard">Standard columns</option>
-              <option value="seasonal">Seasonal Discounts</option>
+              <option value="seasonal" hidden="{{natOptHidden}}" disabled="{{natOptHidden}}">Seasonal Discounts</option>
               <option value="addnl1500">Addnl. 1500</option>
               <option value="national" hidden="{{natOptHidden}}" disabled="{{natOptHidden}}">National Day 2026</option>
               <option value="falcon">Ageing Clearance</option>
@@ -575,10 +575,12 @@
 
         <sc-if value="{{mlHasAlt}}" hint-placeholder-val="{{false}}">
           <div class="seg" role="radiogroup" aria-label="Pricing source">
+            <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
             <label class="seg-opt">
               <input type="radio" name="mlPriceSource" checked="{{mlSeasonalChecked}}" onChange="{{onMlSeasonal}}">
               Seasonal discounts
             </label>
+            </sc-if>
             <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
             <label class="seg-opt">
               <input type="radio" name="mlPriceSource" checked="{{mlNationalChecked}}" onChange="{{onMlNational}}">
@@ -1159,10 +1161,12 @@
         <div class="field" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
           <label>Discount type</label>
           <div class="seg" role="radiogroup" aria-label="Discount type">
+            <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
             <label class="seg-opt">
               <input type="radio" name="tagPriceSource" checked="{{tagSeasonalChecked}}" onChange="{{onTagSeasonal}}">
               Seasonal Discounts
             </label>
+            </sc-if>
             <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
             <label class="seg-opt">
               <input type="radio" name="tagPriceSource" checked="{{tagNationalChecked}}" onChange="{{onTagNational}}">
@@ -1597,9 +1601,9 @@
         </sc-if>
 
         <div class="field">
-          <label for="sku-search">SKU, part number or description</label>
+          <label for="sku-search">SKU, barcode, part number or description</label>
           <div style="display: flex; gap: var(--space-2); align-items: stretch;">
-            <input id="sku-search" class="input" type="text" placeholder="Type a SKU, scan, or paste up to 50…" value="{{skuQuery}}" onChange="{{onSkuQueryChange}}" onPaste="{{onSkuPaste}}" style="flex: 1 1 auto; min-width: 0;">
+            <input id="sku-search" class="input" type="text" placeholder="Type a SKU or barcode, scan, or paste up to 50…" value="{{skuQuery}}" onChange="{{onSkuQueryChange}}" onPaste="{{onSkuPaste}}" style="flex: 1 1 auto; min-width: 0;">
             <button class="btn btn-secondary" onClick="{{onOpenScan}}" aria-label="Scan barcode" style="flex: none; display: flex; align-items: center; gap: 6px;">
               <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M232,48V88a8,8,0,0,1-16,0V56H184a8,8,0,0,1,0-16h40A8,8,0,0,1,232,48ZM72,200H40V168a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H72a8,8,0,0,0,0-16Zm152-40a8,8,0,0,0-8,8v32H184a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V168A8,8,0,0,0,224,160ZM32,96a8,8,0,0,0,8-8V56H72a8,8,0,0,0,0-16H32a8,8,0,0,0-8,8V88A8,8,0,0,0,32,96ZM80,80a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,80,80Zm104,88V88a8,8,0,0,0-16,0v80a8,8,0,0,0,16,0ZM144,80a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,144,80Zm-32,0a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,112,80Z"></path></svg>
               Scan
@@ -1630,7 +1634,7 @@
           <div class="field">
             <label for="sku-disc-view">Discount type</label>
             <select id="sku-disc-view" class="input" value="{{skuDiscView}}" onChange="{{onSkuDiscViewChange}}">
-              <option value="seasonal">Seasonal discounts</option>
+              <option value="seasonal" hidden="{{natOptHidden}}" disabled="{{natOptHidden}}">Seasonal discounts</option>
               <option value="national" hidden="{{natOptHidden}}" disabled="{{natOptHidden}}">National Day 2026</option>
               <option value="falcon">Ageing Clearance</option>
               <option value="newstore" hidden="{{nsOptHidden}}" disabled="{{nsOptHidden}}">{{nsName}}</option>
@@ -2125,6 +2129,7 @@ class Component extends DCLogic {
     "Difference": "الفرق",
     "Markup %": "نسبة هامش الربح",
     "SKU, part number or description": "رمز الصنف أو رقم القطعة أو الوصف",
+    "SKU, barcode, part number or description": "رمز الصنف أو الباركود أو رقم القطعة أو الوصف",
     "Part No.": "رقم القطعة",
     "Qty": "الكمية",
     "Line total": "إجمالي السطر",
@@ -2801,7 +2806,7 @@ class Component extends DCLogic {
     lowStockFilter: 'all',
     skuQuery: '',
     tagSkus: ['', '', '', '', '', ''],
-    tagPriceSource: 'discount',
+    tagPriceSource: 'falcon',
     tagLayout: 'four',
     tagsPrinting: false,
     skuExpanded: '',
@@ -2825,7 +2830,7 @@ class Component extends DCLogic {
     storeStockCategory: '',
     storeStockSubCategory: '',
     mlLocations: [],
-    mlPriceSource: 'discount',
+    mlPriceSource: 'falcon',
     mlBrand: '',
     mlCategory: '',
     mlSubCategory: '',
@@ -2885,6 +2890,7 @@ class Component extends DCLogic {
     }
   }
   onAdminSignOut() {
+    this.setState(s => ({ tagPriceSource: /^(discount|national)$/.test(s.tagPriceSource) ? 'falcon' : s.tagPriceSource, mlPriceSource: /^(discount|national)$/.test(s.mlPriceSource) ? 'falcon' : s.mlPriceSource, skuDiscView: /^(seasonal|national)$/.test(s.skuDiscView) ? 'falcon' : s.skuDiscView }));
     this.setState({ isAdmin: false, adminPromptOpen: false, adminPw: '', adminError: '', mkItems: [], mkRsp: {}, mkDisc: {}, mkQuery: '' });
     if (this.state.screen === 'markup') this.setState({ screen: 'menu' });
     try { localStorage.removeItem('inv-admin'); } catch (e) {}
@@ -4159,8 +4165,9 @@ class Component extends DCLogic {
     const view = st.pcView || 'all';
     const findQ = (st.pcFind || '').trim().toLowerCase();
     const findCode = findQ ? this.skuFromCode(findQ).toLowerCase() : '';
+    const findN = findQ.replace(/[^a-z0-9]/g, '');
     const shownBase = view === 'todo' ? all.filter(r => r.count === undefined) : view === 'var' ? varRows : view === 'neg' ? all.filter(r => r.sys < 0) : all;
-    const shown = !findQ ? shownBase : shownBase.filter(r => String(r.itemNo).toLowerCase().indexOf(findQ) >= 0 || String(r.itemNo).toLowerCase() === findCode || String(r.partNo || '').toLowerCase().indexOf(findQ) >= 0 || String(r.barcode || '').indexOf(findQ) >= 0 || String(r.desc || '').toLowerCase().indexOf(findQ) >= 0);
+    const shown = !findQ ? shownBase : shownBase.filter(r => String(r.itemNo).toLowerCase().indexOf(findQ) >= 0 || (findN.length >= 3 && String(r.partNo || '').toLowerCase().replace(/[^a-z0-9]/g, '').indexOf(findN) >= 0) || String(r.itemNo).toLowerCase() === findCode || String(r.partNo || '').toLowerCase().indexOf(findQ) >= 0 || String(r.barcode || '').indexOf(findQ) >= 0 || String(r.desc || '').toLowerCase().indexOf(findQ) >= 0);
     const limit = st.pcLimit || 150;
     const sd = this.pcStoreData(st.pcStore);
     const rows = shown.slice(0, limit).map(r => {
@@ -5639,14 +5646,22 @@ class Component extends DCLogic {
     const terms = q.split(/\s+/).filter(Boolean);
     const falconAll = this.getFalconMap();
     const scored = [];
+    const bmap = s.barcodeMap || {};
+    const isDigits = /^\d{4,14}$/.test(q);
+    const qn = q.replace(/[^a-z0-9]/g, '');
     if (!this.getSkuMultiTokens(query)) for (const it of matrix.items) {
       const r = retailMap.get(it.itemNo) || {};
       const sku = it.itemNo.toLowerCase();
       const desc = (r.description2 || it.description2 || '').toLowerCase();
       const falE = falconAll.get(it.itemNo);
       const part = String(r.partNo || (falE && falE.partNo) || '').toLowerCase();
+      const bc = isDigits ? String(bmap[it.itemNo] || '').trim() : '';
+      const pn = part.replace(/[^a-z0-9]/g, '');
       let rank = null;
-      if (sku === q || (part && part === q)) rank = 0;
+      if (qn && pn && pn === qn) rank = 0;
+      else if (qn.length >= 3 && pn && pn.includes(qn)) rank = 2;
+      if (rank !== null) {} else if (sku === q || (part && part === q) || (bc && (bc === q || bc === '0' + q || '0' + bc === q))) rank = 0;
+      else if (bc && bc.includes(q)) rank = 2;
       else if (sku.startsWith(q) || (part && part.startsWith(q))) rank = 1;
       else if (sku.includes(q) || (part && part.includes(q))) rank = 2;
       else if (terms.every(t => desc.includes(t))) rank = desc.startsWith(q) ? 3 : 4;
@@ -5662,12 +5677,14 @@ class Component extends DCLogic {
         const falE = falconAll.get(it.itemNo);
         const p = String(r.partNo || (falE && falE.partNo) || '').toLowerCase();
         if (p && !byPart.has(p)) byPart.set(p, it);
+        const pn = p.replace(/[^a-z0-9]/g, '');
+        if (pn && !byPart.has(pn)) byPart.set(pn, it);
       }
       const seen = new Set(), missing = [];
       matches = [];
       for (const tok of multiTokens) {
         const k = tok.toLowerCase();
-        const it = bySku.get(k) || byPart.get(k);
+        const it = bySku.get(k) || byPart.get(k) || byPart.get(k.replace(/[^a-z0-9]/g, '')) || (/^\d{8,14}$/.test(tok) ? bySku.get(String(this.skuFromCode(tok)).toLowerCase()) : null);
         if (!it) { missing.push(tok); continue; }
         if (seen.has(it.itemNo)) continue;
         seen.add(it.itemNo); matches.push(it);
