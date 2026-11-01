@@ -1285,8 +1285,8 @@
                         <span style="font-size: 8.04cqw; font-weight: 900;">WAS</span>
                         <span style="font-family: Tahoma, Arial, sans-serif; font-size: 8.83cqw; font-weight: 900;">قبل</span>
                       </div>
-                      <div style="display: inline-flex; align-items: center; gap: 1.47cqw; font-size: 9.8cqw; font-weight: 900; text-decoration: line-through; text-decoration-color: #e1261c; text-decoration-thickness: 1.07cqw; height: 11.76cqw; flex: none;">
-                        <img src="assets/riyal-black.png" alt="SAR" style="height: 7.85cqw; display: block;">{{c.wasText}}
+                      <div style="display: inline-flex; align-items: center; justify-content: center; gap: 1.47cqw; font-size: {{c.pvWasSize}}; font-weight: 900; text-decoration: line-through; text-decoration-color: #e1261c; text-decoration-thickness: {{c.pvWasLine}}; height: {{c.pvWasH}}; margin-bottom: {{c.pvWasMb}}; position: relative; z-index: 3; white-space: nowrap; flex: none;">
+                        <img src="assets/riyal-black.png" alt="SAR" style="height: {{c.pvWasRy}}; display: block;">{{c.wasText}}
                       </div>
                     </sc-if>
                     <sc-if value="{{c.noPromo}}" hint-placeholder-val="{{false}}">
@@ -4814,7 +4814,7 @@ class Component extends DCLogic {
       card.description = ((r && r.description2) || (it && it.description2) || '').toUpperCase();
       card.wasText = this.tagMoney(was);
       card.nowText = this.tagMoney(now);
-      card.pctText = /%$/.test(pct) ? pct : '';
+      card.pctText = s.tagPriceSource === 'falcon' ? '' : (/%$/.test(pct) ? pct : '');
       card.hasPct = !!card.pctText;
       if (!card.wasText && !card.nowText) {
         card.found = false;
@@ -4836,7 +4836,14 @@ class Component extends DCLogic {
       const shown = (card.nowText || card.wasText || '').replace(/[^0-9.,]/g, '');
       let em = 0.75;
       for (const ch of shown) em += /[0-9]/.test(ch) ? 0.62 : 0.3;
-      const mm = Math.min(theme.priceMaxMm || 21.5, Math.max(11, (95 / em)));
+      const bigWas = !!card.nowText && !card.hasPct;
+      const mm = Math.min((theme.priceMaxMm || 21.5) * (bigWas ? 1.12 : 1), Math.max(11, (95 / em)));
+      let wem = 0.75; for (const ch of (card.wasText || '').replace(/[^0-9.,]/g, '')) wem += /[0-9]/.test(ch) ? 0.62 : 0.3;
+      const wmm = bigWas ? Math.min(20, Math.max(10.5, 82 / wem)) : 10.5;
+      card.wasSize = wmm.toFixed(1) + 'mm'; card.wasRy = (wmm * 0.76).toFixed(1) + 'mm'; card.wasLine = (wmm * 0.105).toFixed(2) + 'mm';
+      card.wasH = bigWas ? '27.5mm' : '12mm'; card.wasMb = bigWas ? '-15.5mm' : '0';
+      card.pvWasSize = (wmm * 0.933).toFixed(2) + 'cqw'; card.pvWasRy = (wmm * 0.747).toFixed(2) + 'cqw'; card.pvWasLine = (wmm * 0.102).toFixed(2) + 'cqw';
+      card.pvWasH = bigWas ? '26.96cqw' : '11.76cqw'; card.pvWasMb = bigWas ? '-15.2cqw' : '0';
       card.nowSize = mm.toFixed(1) + 'mm';
       card.nowRy = (mm * 0.78).toFixed(1) + 'mm';
       // Preview uses container units so it matches print at any shell width
@@ -4852,8 +4859,9 @@ class Component extends DCLogic {
       // Shelf strip (200mm x 45mm): the price sits in a 48%-wide accent block with
       // ~80mm usable width; the struck was-price has ~33mm in the middle column.
       const emOf = t => { let e = 0.75; for (const ch of String(t || '').replace(/[^0-9.,]/g, '')) e += /[0-9]/.test(ch) ? 0.62 : 0.3; return e; };
-      const shN = mini ? Math.min(34, Math.max(11, 72 / emOf(card.priceText))) : Math.min(23, Math.max(9, (card.hasPct ? 70 : 78) / emOf(card.priceText)));
-      const shW = mini ? Math.min(13, Math.max(6, 28 / emOf(card.wasText))) : Math.min(10, Math.max(5, 26 / emOf(card.wasText)));
+      const noPc = !!card.nowText && !card.hasPct;
+      const shN = mini ? Math.min(noPc ? 39 : 34, Math.max(11, (noPc ? 82 : 72) / emOf(card.priceText))) : Math.min(noPc ? 26 : 23, Math.max(9, (card.hasPct ? 70 : 84) / emOf(card.priceText)));
+      const shW = mini ? Math.min(noPc ? 19 : 13, Math.max(6, (noPc ? 40 : 28) / emOf(card.wasText))) : Math.min(noPc ? 15 : 10, Math.max(5, (noPc ? 38 : 26) / emOf(card.wasText)));
       card.shNowSize = shN.toFixed(1) + 'mm';
       card.shNowRy = (shN * 0.78).toFixed(1) + 'mm';
       card.shWasSize = shW.toFixed(1) + 'mm';
@@ -4868,8 +4876,8 @@ class Component extends DCLogic {
       card.shLogoCap = mini ? '9.5cqw' : '5.5cqw';
       card.shLW = card.nowText ? '30%' : (mini ? '46%' : '40%');
       card.shMW = '22%';
-      card.shMPad = mini ? '0 7.5cqw 1cqw 0' : '0 6cqw 1cqw 0';
-      card.shMPadMm = mini ? '0 15mm 2mm 0' : '0 12mm 2mm 0';
+      card.shMPad = noPc ? '0 1cqw 1cqw 0' : (mini ? '0 7.5cqw 1cqw 0' : '0 6cqw 1cqw 0');
+      card.shMPadMm = noPc ? '0 2mm 2mm 0' : (mini ? '0 15mm 2mm 0' : '0 12mm 2mm 0');
       card.pctSize = mini ? '12.5cqw' : '10cqw';
       card.pctFs = mini ? '4.4cqw' : '3.6cqw';
       card.shBcOrder = 1;
@@ -4998,7 +5006,7 @@ class Component extends DCLogic {
         + '<div class="desc">' + esc(c.description) + '</div>'
         + (c.nowText
           ? '<div class="wasrow"><span class="lbl">WAS</span><span class="lbl ar">\u0642\u0628\u0644</span></div>'
-            + '<div class="wasprice"><span class="strike"><img class="ry blk" src="' + riyalBlack + '" alt="" />' + esc(c.wasText) + '</span></div>'
+            + '<div class="wasprice" style="height:' + c.wasH + ';margin-bottom:' + c.wasMb + '"><span class="strike" style="font-size:' + c.wasSize + ';text-decoration-thickness:' + c.wasLine + '"><img class="ry blk" style="height:' + c.wasRy + '" src="' + riyalBlack + '" alt="" />' + esc(c.wasText) + '</span></div>'
             + '<div class="rule">' + (c.hasPct ? '<span class="badge" style="background:' + ac + ';text-shadow:0.75mm 0.75mm 0 ' + c.shade + '">' + esc(c.pctText) + '</span>' : '') + '</div>'
           : '<div class="gap"></div><div class="rule"></div>')
         + bottom
@@ -5021,7 +5029,7 @@ class Component extends DCLogic {
       + '.lbl{font-size:8.2mm;font-weight:900;letter-spacing:0.01em;}'
       + '.lbl.ar{font-family:Tahoma,Arial,sans-serif;font-size:9mm;}'
       + '.lbl.red{color:#e1261c;}'
-      + '.wasprice{display:flex;justify-content:center;align-items:center;width:100%;height:12mm;margin:0;flex:none;}'
+      + '.wasprice{display:flex;justify-content:center;align-items:center;width:100%;height:12mm;margin:0;flex:none;position:relative;z-index:3;white-space:nowrap;}'
       + '.strike{display:inline-flex;align-items:center;gap:1.5mm;font-size:10.5mm;font-weight:900;text-decoration:line-through;text-decoration-color:#e1261c;text-decoration-thickness:1.1mm;}'
       + '.ry{display:block;}'
       + '.ry.blk{height:8mm;}'
