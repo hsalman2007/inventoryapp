@@ -1469,8 +1469,20 @@
 
         <div class="field">
           <label for="mk-search">Add SKU</label>
-          <input id="mk-search" class="input" type="text" placeholder="Type a SKU or description…" value="{{mkQuery}}" onChange="{{onMkQueryChange}}">
+          <input id="mk-search" class="input" type="text" placeholder="Type a SKU or description…" value="{{mkQuery}}" onChange="{{onMkQueryChange}}" onKeyDown="{{onMkKeyDown}}">
+          <span style="font-size: 11px; color: var(--color-neutral-700);">Paste several SKUs, part numbers or barcodes separated by commas, spaces or new lines to add them all at once.</span>
         </div>
+
+        <sc-if value="{{mkMulti.show}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <sc-if value="{{mkMulti.hasFound}}" hint-placeholder-val="{{false}}">
+              <button class="btn btn-primary btn-block" onClick="{{onMkAddAll}}">{{mkMulti.addLabel}}</button>
+            </sc-if>
+            <sc-if value="{{mkMulti.hasMissing}}" hint-placeholder-val="{{false}}">
+              <span style="font-size: 11px; color: #8b1a1a;">{{mkMulti.missingNote}}</span>
+            </sc-if>
+          </div>
+        </sc-if>
 
         <sc-for list="{{mkSuggestions}}" as="sug" hint-placeholder-count="0">
           <button class="btn btn-ghost btn-block" onClick="{{sug.onAdd}}" style="justify-content: space-between; text-align: left; gap: 10px; padding: 8px 10px; border: 1px solid var(--color-neutral-300);">
@@ -1567,6 +1579,28 @@
               <div style="display: flex; flex-direction: column;">
                 <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-neutral-700);">Blended markup</span>
                 <span style="font-size: 16px; font-weight: 800; color: var(--color-accent-800);">{{mk.totalPct}}</span>
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-neutral-700);">Gross margin</span>
+                <span style="font-size: 16px; font-weight: 800; color: var(--color-accent-800);">{{mk.totalMargin}}</span>
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-neutral-700);">Total qty</span>
+                <span style="font-size: 16px; font-weight: 800; color: var(--color-text);">{{mk.totalQty}}</span>
+              </div>
+              <sc-if value="{{mk.hasTotalDisc}}" hint-placeholder-val="{{false}}">
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #8b1a1a;">Discount given</span>
+                  <span style="font-size: 16px; font-weight: 800; color: #8b1a1a;">{{mk.totalDiscAmt}}</span>
+                </div>
+              </sc-if>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-neutral-700);">Lowest markup</span>
+                <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{mk.minPct}}</span>
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-neutral-700);">Highest markup</span>
+                <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{mk.maxPct}}</span>
               </div>
             </div>
             <sc-if value="{{mk.hasFree}}" hint-placeholder-val="{{false}}">
@@ -2987,10 +3021,46 @@ class Component extends DCLogic {
   }
   mkNum(v) { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : 0; }
   mkMoney(n) { return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  getMkMulti() {
+    const s = this.state;
+    const toks = String(s.mkQuery || '').split(/[\s,;|]+/).map(t => t.trim()).filter(Boolean);
+    if (!s.parsed || toks.length < 2) return { show: false, found: [] };
+    const { matrix, retailMap } = s.parsed;
+    if (!this._mkMultiIdx || this._mkMultiSrc !== matrix) {
+      const bySku = new Map(), byPart = new Map();
+      for (const it of matrix.items) {
+        bySku.set(String(it.itemNo).toLowerCase(), it.itemNo);
+        const r = retailMap.get(it.itemNo) || {};
+        const p = String(r.partNo || it.partNo || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (p && !byPart.has(p)) byPart.set(p, it.itemNo);
+      }
+      this._mkMultiIdx = { bySku, byPart };
+      this._mkMultiSrc = matrix;
+    }
+    const { bySku, byPart } = this._mkMultiIdx;
+    const found = [], missing = [], chosen = s.mkItems || [];
+    for (const t of toks) {
+      const k = t.toLowerCase();
+      const hit = bySku.get(k) || byPart.get(k.replace(/[^a-z0-9]/g, '')) || (/^\d{8,14}$/.test(t) ? bySku.get(String(this.skuFromCode(t)).toLowerCase()) : null);
+      if (hit) { if (found.indexOf(hit) < 0 && chosen.indexOf(hit) < 0) found.push(hit); } else missing.push(t);
+    }
+    return {
+      show: true, found,
+      hasFound: found.length > 0,
+      addLabel: 'Add ' + found.length + (found.length === 1 ? ' SKU' : ' SKUs'),
+      hasMissing: missing.length > 0,
+      missingNote: 'Not found: ' + missing.join(', '),
+    };
+  }
+  onMkAddAll() {
+    const m = this.getMkMulti();
+    if (!m.found.length) return;
+    this.setState({ mkItems: (this.state.mkItems || []).concat(m.found), mkQuery: '' });
+  }
   getMkSuggestions() {
     const s = this.state;
     const q = (s.mkQuery || '').trim().toLowerCase();
-    if (!s.parsed || q.length < 2) return [];
+    if (!s.parsed || q.length < 2 || /[\s,;|]/.test(q.trim())) return [];
     const { matrix, retailMap } = s.parsed;
     const chosen = s.mkItems || [];
     const out = [];
@@ -3010,7 +3080,8 @@ class Component extends DCLogic {
     const s = this.state;
     const list = s.mkItems || [];
     const rows = [];
-    let totCost = 0, totRsp = 0, totNet = 0, missing = 0, freeCount = 0, freeCost = 0;
+    let totCost = 0, totRsp = 0, totNet = 0, missing = 0, freeCount = 0, freeCost = 0, totQty = 0;
+    const pcts = [];
     if (s.parsed) {
       const { matrix, retailMap } = s.parsed;
       if (!this._mkIndex || this._mkIndexSrc !== matrix) {
@@ -3036,6 +3107,8 @@ class Component extends DCLogic {
         if (isFree) { freeCount += qty; freeCost += cost * qty; }
         if (!cost) missing += 1;
         const diff = net - cost;
+        totQty += qty;
+        if (both) pcts.push({ p: (diff / cost) * 100, sku: itemNo });
         totCost += cost * qty;
         totRsp += rsp * qty;
         totNet += net * qty;
@@ -3076,6 +3149,11 @@ class Component extends DCLogic {
       freeNote: freeCount + (freeCount === 1 ? ' item given free' : ' items given free') + ' — ' + this.mkMoney(freeCost) + ' of cost absorbed. Blended markup below covers the whole bundle.',
       totalDiff: this.mkMoney(totDiff),
       totalPct: totCost ? ((totDiff / totCost) * 100).toFixed(1) + '%' : '—',
+      totalMargin: totCost && totNet ? ((totDiff / totNet) * 100).toFixed(1) + '%' : '—',
+      totalQty: String(totQty),
+      totalDiscAmt: this.mkMoney(totRsp - totNet),
+      minPct: pcts.length ? (pcts.reduce((a, b) => b.p < a.p ? b : a)).p.toFixed(1) + '% · ' + pcts.reduce((a, b) => b.p < a.p ? b : a).sku : '—',
+      maxPct: pcts.length ? (pcts.reduce((a, b) => b.p > a.p ? b : a)).p.toFixed(1) + '% · ' + pcts.reduce((a, b) => b.p > a.p ? b : a).sku : '—',
       missingCost: missing > 0,
       missingCostNote: missing + ' of these SKUs have no cost on file — totals exclude their cost.',
     };
@@ -6098,6 +6176,9 @@ class Component extends DCLogic {
       onBackFromMarkup: () => this.onBackFromMarkup(),
       mkQuery: s.mkQuery || '',
       onMkQueryChange: e => this.onMkQueryChange(e),
+      mkMulti: s.screen === 'markup' ? this.getMkMulti() : { show: false },
+      onMkAddAll: () => this.onMkAddAll(),
+      onMkKeyDown: e => { if (e.key === 'Enter') { const m = this.getMkMulti(); if (m.show) this.onMkAddAll(); else { const sg = this.getMkSuggestions(); if (sg.length) sg[0].onAdd(); } } },
       onMkClear: () => this.onMkClear(),
       mkSuggestions: s.screen === 'markup' ? this.getMkSuggestions() : [],
       mk: s.screen === 'markup' ? this.getMarkupView() : { rows: [], has: false, empty: true, countLabel: '', totalCost: '', totalRsp: '', totalNet: '', hasTotalDisc: false, totalDiff: '', totalPct: '', missingCost: false, missingCostNote: '' },
