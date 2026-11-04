@@ -291,6 +291,20 @@
           </div>
         </sc-if>
 
+        <div class="field">
+          <label for="ss-sort">Sort by</label>
+          <select id="ss-sort" class="input" value="{{storeStockSort}}" onChange="{{onStoreStockSort}}">
+            <option value="">Unsorted</option>
+            <option value="itemNo">Item</option>
+            <option value="partNo">Part#</option>
+            <option value="description2">Description</option>
+            <option value="category">Category</option>
+            <option value="subCategory">Sub Category</option>
+            <option value="brand">Brand</option>
+            <option value="qty">Qty. (highest first)</option>
+          </select>
+        </div>
+
         <button class="btn btn-primary btn-block" onClick="{{onDownloadStoreStockPdf}}" disabled="{{storeStockPdfDownloading}}">{{storeStockPdfDownloadLabel}}</button>
         <button class="btn btn-secondary btn-block" onClick="{{onDownloadStoreStockExcel}}">Download Excel</button>
         <button class="btn btn-ghost btn-block" onClick="{{onBackFromStoreStock}}">← Back</button>
@@ -2861,6 +2875,7 @@ class Component extends DCLogic {
     storeStockNationalDay: false, storeStockFalcon: false,
     storeStockPctRange: '',
     storeStockBrand: '',
+    storeStockSort: '',
     storeStockCategory: '',
     storeStockSubCategory: '',
     mlLocations: [],
@@ -4759,9 +4774,14 @@ class Component extends DCLogic {
         pct: disc ? disc.pct : '',
         highlight: showDiscount && pctNum !== null && pctNum >= 50 && pctNum <= 70,
         brand,
+        partNo: String(r.partNo || it.partNo || '').trim(),
+        category: String(r.category || '').trim(),
+        subCategory: String(r.subCategory || '').trim(),
       });
     }
-    rows.sort((a, b) => naturalCompare(a.itemNo, b.itemNo));
+    const sk = st.storeStockSort || '';
+    if (sk === 'qty') rows.sort((a, b) => (b.qty - a.qty) || naturalCompare(a.itemNo, b.itemNo));
+    else if (sk) rows.sort((a, b) => { const x = String(a[sk] || ''), y = String(b[sk] || ''); if (!x !== !y) return x ? -1 : 1; return naturalCompare(x.toLowerCase(), y.toLowerCase()) || naturalCompare(a.itemNo, b.itemNo); });
     return rows;
   }
 
@@ -6280,6 +6300,8 @@ class Component extends DCLogic {
       showDiscountRange: s.storeStockShowDiscount || s.storeStockAddnl1500 || s.storeStockNationalDay || s.storeStockFalcon || s.storeStockNewStore,
       storeStockPctRange: s.storeStockPctRange,
       storeStockBrand: s.storeStockBrand,
+      storeStockSort: s.storeStockSort || '',
+      onStoreStockSort: e => this.setState({ storeStockSort: e.target.value }),
       brandOptions: (s.screen === 'storestock' || s.screen === 'select' || s.screen === 'distribution') ? this.getBrandOptions() : [],
       storeStockCategory: s.storeStockCategory,
       storeStockSubCategory: s.storeStockSubCategory,
