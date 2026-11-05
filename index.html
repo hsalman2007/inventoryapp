@@ -1675,6 +1675,7 @@
           </sc-if>
           <sc-if value="{{showSkuShareAll}}" hint-placeholder-val="{{false}}">
             <button class="btn btn-primary" onClick="{{onSkuShareAll}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">Share all as image</button>
+            <button class="btn btn-secondary" onClick="{{onSkuExportXlsx}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">Export to Excel</button>
           </sc-if>
         </div>
 
@@ -5729,6 +5730,27 @@ class Component extends DCLogic {
     a.href = url; a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
+  exportSkuListXlsx(rows) {
+    if (!rows || !rows.length) return;
+    const stores = [];
+    for (const r of rows) for (const sr of (r.storeRows || [])) if (stores.indexOf(sr.label) < 0) stores.push(sr.label);
+    const num = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, '')); return isNaN(n) ? '' : n; };
+    const dv = this.state.skuFalcon ? 'falcon' : (this.state.skuDiscView || 'falcon');
+    const dName = { falcon: 'Ageing Clearance', seasonal: 'Seasonal Discounts', national: 'National Day 2026', newstore: this.nsName() }[dv] || '';
+    const today = new Date().toISOString().slice(0, 10);
+    const head = ['SKU', 'Part#', 'Description', 'RSP', 'Was', 'Now', 'Discount %', 'Total qty'].concat(stores);
+    const aoa = [[{ v: 'SKU stock across stores · ' + dName + ' · ' + today, s: 1 }], head.map(h => ({ v: h, s: 4 }))];
+    const tot = { qty: 0, st: stores.map(() => 0) };
+    for (const r of rows) {
+      const m = {}; for (const sr of (r.storeRows || [])) m[sr.label] = sr.qty;
+      const sq = stores.map((n, i) => { const q = m[n] || 0; tot.st[i] += q; return q || ''; });
+      tot.qty += r.totalQty || 0;
+      aoa.push([r.itemNo, r.partNo || '', r.description2 || '', num(r.rsp), num(r.was), num(r.now), r.pct || '', r.totalQty || 0].concat(sq));
+    }
+    aoa.push([{ v: 'Total · ' + rows.length + ' SKUs', s: 5 }].concat(Array(6).fill(0).map(() => ({ v: '', s: 5 }))).concat([{ v: tot.qty, s: 5 }]).concat(tot.st.map(q => ({ v: q, s: 5 }))));
+    const cols = [{ width: 14 }, { width: 18 }, { width: 44 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 11 }, { width: 10 }].concat(stores.map(() => ({ width: 11 })));
+    downloadXlsx(aoa, ('SKU-Stock-' + rows.length + '-SKUs-' + dName + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-'), { sheetName: 'SKU Stock', cols });
+  }
   getSkuMatches(query) {
     const s = this.state;
     if (!s.parsed || !query || query.trim().length < 2) return [];
@@ -5853,6 +5875,7 @@ class Component extends DCLogic {
           now: dv === 'seasonal' ? (disc && disc.now) || '' : dv === 'national' ? (nat && nat.now) || '' : dv === 'falcon' ? (fal && fal.now) || '' : dv === 'newstore' ? (nsE && nsE.now) || '' : '',
           pct: dv === 'seasonal' ? (disc && disc.pct) || '' : dv === 'national' ? (nat && nat.pct) || '' : dv === 'falcon' ? (fal && fal.pct) || '' : dv === 'newstore' ? (nsE && nsE.pct) || '' : '',
           totalQty,
+          storeRows,
         },
         onShare: () => this.shareSkuImage({
           itemNo: it.itemNo,
@@ -6348,6 +6371,7 @@ class Component extends DCLogic {
       scanVideoRef: this.scanVideoRef || (this.scanVideoRef = React.createRef()),
       showSkuShareAll: !!this._skuMulti && skuMatches.length > 0,
       onSkuShareAll: () => this.shareSkuListImage(skuMatches.map(x => x.shareRow)),
+      onSkuExportXlsx: () => this.exportSkuListXlsx(skuMatches.map(x => x.shareRow)),
       skuMultiInfo: this._skuMulti ? ('Showing ' + this._skuMulti.found + ' of ' + this._skuMulti.total + ' SKUs' + (this._skuMulti.capped ? ' (limit 50)' : '')) : '',
       skuMultiMissing: this._skuMulti && this._skuMulti.missing.length ? ('Not found: ' + this._skuMulti.missing.join(', ')) : '',
       skuQuery: s.skuQuery,
