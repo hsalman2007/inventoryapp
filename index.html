@@ -199,12 +199,20 @@
         </sc-if>
 
         <div class="field">
+          <label for="storestock-region">Region</label>
+          <select id="storestock-region" class="input" value="{{storeStockRegion}}" onChange="{{onStoreStockRegion}}">
+            <option value="">All regions</option>
+            <sc-for list="{{storeStockRegionOptions}}" as="rg" hint-placeholder-count="3">
+              <option value="{{rg}}">{{rg}}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <div class="field">
           <label for="storestock-select">Store</label>
           <select id="storestock-select" class="input" value="{{storeStockSelected}}" onChange="{{onStoreStockChange}}">
-            <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
-              <option value="__ALL__">All stores</option>
-            </sc-if>
-            <sc-for list="{{storeOptions}}" as="opt" hint-placeholder-count="5">
+            <option value="__ALL__">{{storeStockAllLabel}}</option>
+            <sc-for list="{{storeStockStoreOptions}}" as="opt" hint-placeholder-count="5">
               <option value="{{opt.name}}">{{opt.label}}</option>
             </sc-for>
           </select>
@@ -2877,6 +2885,7 @@ class Component extends DCLogic {
     storeStockPctRange: '',
     storeStockBrand: '',
     storeStockSort: '',
+    storeStockRegion: '',
     storeStockCategory: '',
     storeStockSubCategory: '',
     mlLocations: [],
@@ -4724,7 +4733,9 @@ class Component extends DCLogic {
       const displayName = ((info && info.shortName) || name).trim().toLowerCase();
       return STORE_STOCK_WH_LOCATIONS_LC.has(displayName);
     });
-    const storeList = allStores ? eligibleStores.concat(whStoreNames) : [store];
+    const ssRg = st.storeStockRegion || '';
+    const inRg = name => { const inf = st.storeInfoMap && st.storeInfoMap.get(name); return String((inf && inf.region) || '').trim() === ssRg; };
+    const storeList = allStores ? (ssRg ? eligibleStores.filter(inRg).concat(whStoreNames.filter(inRg)) : eligibleStores.concat(whStoreNames)) : [store];
     const rows = [];
     const addnl1500 = st.storeStockAddnl1500;
     for (const it of matrix.items) {
@@ -5336,7 +5347,7 @@ class Component extends DCLogic {
     const st = this.state;
     const store = st.storeStockSelected;
     const info = st.storeInfoMap && st.storeInfoMap.get(store);
-    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
+    const storeLabel = store === '__ALL__' ? (st.storeStockRegion ? 'All stores - ' + st.storeStockRegion : 'All stores') : (info ? (info.shortName || store) + ' — ' + info.region : store);
     const allRows = this.getStoreStockRows();
     const showDiscount = true;
     const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -5394,7 +5405,7 @@ class Component extends DCLogic {
     const st = this.state;
     const store = st.storeStockSelected;
     const info = st.storeInfoMap && st.storeInfoMap.get(store);
-    const storeLabel = store === '__ALL__' ? 'All stores' : (info ? (info.shortName || store) + ' — ' + info.region : store);
+    const storeLabel = store === '__ALL__' ? (st.storeStockRegion ? 'All stores - ' + st.storeStockRegion : 'All stores') : (info ? (info.shortName || store) + ' — ' + info.region : store);
     const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     const rows = this.getStoreStockRows();
     const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay || st.storeStockFalcon;
@@ -6324,6 +6335,11 @@ class Component extends DCLogic {
       storeStockPctRange: s.storeStockPctRange,
       storeStockBrand: s.storeStockBrand,
       storeStockSort: s.storeStockSort || '',
+      storeStockRegion: s.storeStockRegion || '',
+      storeStockAllLabel: s.storeStockRegion ? 'All stores in ' + s.storeStockRegion : 'All stores',
+      storeStockRegionOptions: s.screen === 'storestock' ? Array.from(new Set((s.storeOptions || []).map(o => { const inf = s.storeInfoMap && s.storeInfoMap.get(o.name); return String((inf && inf.region) || '').trim(); }).filter(Boolean))).sort() : [],
+      storeStockStoreOptions: !s.storeStockRegion ? (s.storeOptions || []) : (s.storeOptions || []).filter(o => { const inf = s.storeInfoMap && s.storeInfoMap.get(o.name); return String((inf && inf.region) || '').trim() === s.storeStockRegion; }),
+      onStoreStockRegion: e => { const v = e.target.value; this.setState(st => { const cur = st.storeStockSelected; const inf = cur && cur !== '__ALL__' && st.storeInfoMap && st.storeInfoMap.get(cur); const keep = !v || cur === '__ALL__' || String((inf && inf.region) || '').trim() === v; return { storeStockRegion: v, storeStockSelected: keep ? cur : '__ALL__' }; }); },
       onStoreStockSort: e => this.setState({ storeStockSort: e.target.value }),
       brandOptions: (s.screen === 'storestock' || s.screen === 'select' || s.screen === 'distribution') ? this.getBrandOptions() : [],
       storeStockCategory: s.storeStockCategory,
