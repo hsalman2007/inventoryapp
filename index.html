@@ -315,6 +315,9 @@
 
         <button class="btn btn-primary btn-block" onClick="{{onDownloadStoreStockPdf}}" disabled="{{storeStockPdfDownloading}}">{{storeStockPdfDownloadLabel}}</button>
         <button class="btn btn-secondary btn-block" onClick="{{onDownloadStoreStockExcel}}">Download Excel</button>
+        <sc-if value="{{pvAllowed}}" hint-placeholder-val="{{false}}">
+          <button class="btn btn-secondary btn-block" onClick="{{onStorePreviewOpen}}">Preview</button>
+        </sc-if>
         <button class="btn btn-ghost btn-block" onClick="{{onBackFromStoreStock}}">← Back</button>
       </div>
     </sc-if>
@@ -1480,6 +1483,53 @@
       </div>
     </sc-if>
 
+    <sc-if value="{{pv.open}}" hint-placeholder-val="{{false}}">
+      <div style="position: fixed; inset: 0; z-index: 900; background: #ffffff; display: flex; flex-direction: column; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid #e3e3e3; background: #fafafa;">
+          <button class="btn btn-secondary" onClick="{{onPvClose}}" style="font-size: 13px; padding: 6px 14px;">← Close</button>
+          <span style="font-size: 15px; font-weight: 700; color: #1a1a1a;">{{pv.title}} · {{pv.count}} SKUs</span>
+          <span style="flex: 1;"></span>
+          <button class="btn btn-primary" onClick="{{onPvPdf}}" disabled="{{pv.busy}}" style="font-size: 13px; padding: 6px 12px;">{{pv.pdfLabel}}</button>
+          <button class="btn btn-secondary" onClick="{{onPvImage}}" disabled="{{pv.busy}}" style="font-size: 13px; padding: 6px 12px;">{{pv.imgLabel}}</button>
+          <button class="btn btn-secondary" onClick="{{onPvPrev}}" disabled="{{pv.atFirst}}" style="font-size: 13px; padding: 6px 12px;">‹ Prev</button>
+          <span style="font-size: 13px; color: #444; min-width: 90px; text-align: center;">Page {{pv.page}} of {{pv.pages}}</span>
+          <button class="btn btn-secondary" onClick="{{onPvNext}}" disabled="{{pv.atLast}}" style="font-size: 13px; padding: 6px 12px;">Next ›</button>
+        </div>
+        <div ref="{{pvScroll}}" style="flex: 1; overflow: auto; padding: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; max-width: 1400px; margin: 0 auto;">
+            <sc-for list="{{pv.cells}}" as="c" hint-placeholder-count="8">
+              <div style="display: flex; flex-direction: column; gap: 6px; border: 1px solid #e3e3e3; border-radius: 10px; padding: 10px; background: #ffffff; min-width: 0;">
+                <div style="aspect-ratio: 1 / 1; width: 100%; display: flex; align-items: center; justify-content: center; background: #f6f6f6; border-radius: 6px; overflow: hidden;">
+                  <sc-if value="{{c.hasImg}}" hint-placeholder-val="{{true}}">
+                    <img src="{{c.image}}" alt="{{c.itemNo}}" loading="lazy" referrerpolicy="no-referrer" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                  </sc-if>
+                  <sc-if value="{{c.noImg}}" hint-placeholder-val="{{false}}">
+                    <span style="font-size: 12px; color: #999;">No image</span>
+                  </sc-if>
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 6px; align-items: baseline; flex-wrap: wrap;">
+                  <span style="font-size: 15px; font-weight: 800; color: #1a1a1a;">{{c.itemNo}}</span>
+                  <span style="font-size: 12px; color: #555; overflow-wrap: anywhere;">{{c.partNo}}</span>
+                </div>
+                <div style="font-size: 12px; line-height: 1.35; color: #333; overflow-wrap: anywhere;">{{c.description}}</div>
+                <sc-if value="{{c.hasDisc}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap;">
+                    <span style="font-size: 12px; color: #777; text-decoration: line-through; text-decoration-color: #e1261c;">Was {{c.was}}</span>
+                    <span style="font-size: 15px; font-weight: 800; color: #c8102e;">Now {{c.now}}</span>
+                    <span style="font-size: 11px; font-weight: 700; color: #ffffff; background: #c8102e; border-radius: 999px; padding: 1px 7px;">{{c.pct}}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{c.noDisc}}" hint-placeholder-val="{{true}}">
+                  <div style="font-size: 15px; font-weight: 800; color: #1a1a1a;">RSP {{c.rsp}}</div>
+                </sc-if>
+                <div style="font-size: 12px; color: #444;">Total qty: <strong style="color: #1a1a1a;">{{c.totalQty}}</strong></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
     <!-- MARKUP CALCULATOR SCREEN -->
     <sc-if value="{{isMarkup}}" hint-placeholder-val="{{false}}">
       <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
@@ -1684,6 +1734,9 @@
           <sc-if value="{{showSkuShareAll}}" hint-placeholder-val="{{false}}">
             <button class="btn btn-primary" onClick="{{onSkuShareAll}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">Share all as image</button>
             <button class="btn btn-secondary" onClick="{{onSkuExportXlsx}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">Export to Excel</button>
+            <sc-if value="{{pvAllowed}}" hint-placeholder-val="{{false}}">
+              <button class="btn btn-secondary" onClick="{{onSkuPreviewOpen}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">Preview</button>
+            </sc-if>
           </sc-if>
         </div>
 
@@ -5741,6 +5794,100 @@ class Component extends DCLogic {
     a.href = url; a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
+  pvItems() {
+    const s = this.state;
+    if (s.pvSource === 'store') {
+      return this.getStoreStockRows().map(r => ({ itemNo: r.itemNo, partNo: r.partNo || '', description2: r.description2 || '', image: r.image || '', rsp: r.rsp || '', was: r.now ? (r.was || r.rsp || '') : '', now: r.now || '', pct: r.now ? (r.pct || '') : '', totalQty: Number(r.qty) || 0 }));
+    }
+    return this.getSkuMatches(s.skuQuery).map(x => x.shareRow);
+  }
+  pvTitle() {
+    const s = this.state;
+    if (s.pvSource === 'store') {
+      const store = s.storeStockSelected, info = s.storeInfoMap && s.storeInfoMap.get(store);
+      return (store === '__ALL__' ? (s.storeStockRegion ? 'All stores - ' + s.storeStockRegion : 'All stores') : (info ? (info.shortName || store) + ' — ' + info.region : store)) + ' · ' + this.storeStockModeName();
+    }
+    return 'SKU stock across stores';
+  }
+  async pvExportPdf() {
+    const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    this.setState({ pvBusy: 'pdf' });
+    let items = this.pvItems();
+    if (items.length <= 1500) items = await this.scaleRowImages(items);
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const title = this.pvTitle();
+    const cell = r => '<div class="c"><div class="im">' + (r.image ? '<img src="' + esc(r.image) + '" referrerpolicy="no-referrer">' : '<span>No image</span>') + '</div>'
+      + '<div class="hd"><b>' + esc(r.itemNo) + '</b><i>' + esc(r.partNo) + '</i></div>'
+      + '<div class="ds">' + esc(r.description2) + '</div>'
+      + (r.now ? '<div class="pr"><s>Was ' + esc(r.was || r.rsp) + '</s><em>Now ' + esc(r.now) + '</em>' + (r.pct ? '<u>' + esc(r.pct) + '</u>' : '') + '</div>' : '<div class="pr"><strong>RSP ' + esc(r.rsp || '—') + '</strong></div>')
+      + '<div class="q">Total qty: <b>' + esc(r.totalQty || 0) + '</b></div></div>';
+    const pages = [];
+    for (let i = 0; i < items.length; i += 30) pages.push(items.slice(i, i + 30));
+    const css = 'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1a1a1a;margin:0;}'
+      + '.pg{break-after:page;}.pg:last-child{break-after:auto;}'
+      + 'h1{font-size:15px;margin:0 0 2px;}.mt{font-size:10px;color:#666;margin-bottom:6px;}'
+      + '.g{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}'
+      + '.c{border:1px solid #ddd;border-radius:6px;padding:4px;break-inside:avoid;display:flex;flex-direction:column;gap:1px;min-width:0;}'
+      + '.im{height:16mm;display:flex;align-items:center;justify-content:center;background:#f6f6f6;border-radius:4px;overflow:hidden;}'
+      + '.im img{max-width:100%;max-height:100%;object-fit:contain;}.im span{font-size:8px;color:#999;}'
+      + '.hd{display:flex;justify-content:space-between;gap:4px;font-size:9.5px;}.hd i{font-style:normal;color:#555;font-size:8px;overflow-wrap:anywhere;}'
+      + '.ds{font-size:7.5px;line-height:1.2;color:#333;max-height:2.4em;overflow:hidden;}'
+      + '.pr{display:flex;gap:4px;align-items:baseline;flex-wrap:wrap;font-size:8px;}.pr s{color:#777;text-decoration-color:#e1261c;}.pr em{font-style:normal;font-weight:800;color:#c8102e;font-size:9.5px;}.pr u{text-decoration:none;font-weight:700;color:#fff;background:#c8102e;border-radius:99px;padding:0 4px;}.pr strong{font-size:9.5px;}'
+      + '.q{font-size:8px;color:#444;}';
+    const body = pages.map((p, i) => '<div class="pg"><h1>' + esc(title) + '</h1><div class="mt">' + items.length + ' SKUs · Page ' + (i + 1) + ' of ' + pages.length + ' · ' + today + '</div><div class="g">' + p.map(cell).join('') + '</div></div>').join('');
+    const fileTitle = ('Preview-' + title + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    this.printHtmlInPage(css, body, fileTitle, () => this.setState({ pvBusy: '' }));
+  }
+  async pvExportImage() {
+    this.setState({ pvBusy: 'img' });
+    try {
+      const all = this.pvItems(), per = 30;
+      const pages = Math.max(1, Math.ceil(all.length / per));
+      const pg = Math.min(pages, Math.max(1, this.state.pvPage || 1));
+      const items = all.slice((pg - 1) * per, pg * per);
+      const S = 2, W = 1240, PAD = 32, GAP = 14, COLS = 4;
+      const CW = (W - PAD * 2 - GAP * (COLS - 1)) / COLS, IMG = CW - 20, CH = IMG + 150;
+      const rowsN = Math.ceil(items.length / COLS), HEAD = 90;
+      const H = PAD + HEAD + rowsN * CH + (rowsN - 1) * GAP + PAD;
+      const font = (w, s) => w + ' ' + s + 'px Figtree, "Noto Sans Arabic", system-ui, sans-serif';
+      const loadImg = (src, anon) => new Promise(res => { if (!src) return res(null); const im = new Image(); if (anon) im.crossOrigin = 'anonymous'; const to = setTimeout(() => res(null), 8000); im.onload = () => { clearTimeout(to); res(im); }; im.onerror = () => { clearTimeout(to); res(null); }; im.src = src; });
+      const getImg = async src => src ? ((await loadImg(src, true)) || (await loadImg('https://images.weserv.nl/?url=' + encodeURIComponent(src.replace(/^https?:\/\//, '')) + '&w=400&output=png', true))) : null;
+      const imgs = await Promise.all(items.map(it => getImg(it.image)));
+      const c = document.createElement('canvas'); c.width = W * S; c.height = H * S;
+      const g = c.getContext('2d'); g.scale(S, S);
+      g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+      const clip = (t, f, mw) => { g.font = f; t = String(t || ''); if (g.measureText(t).width <= mw) return t; while (t && g.measureText(t + '…').width > mw) t = t.slice(0, -1); return t + '…'; };
+      g.fillStyle = '#1a1a1a'; g.font = font(800, 30); g.fillText(clip(this.pvTitle(), font(800, 30), W - PAD * 2), PAD, PAD + 32);
+      g.fillStyle = '#666'; g.font = font(600, 18); g.fillText(all.length + ' SKUs · Page ' + pg + ' of ' + pages + ' · ' + new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }), PAD, PAD + 64);
+      items.forEach((it, i) => {
+        const x = PAD + (i % COLS) * (CW + GAP), y = PAD + HEAD + Math.floor(i / COLS) * (CH + GAP);
+        g.strokeStyle = '#dddddd'; g.lineWidth = 1; g.beginPath(); g.roundRect(x, y, CW, CH, 10); g.stroke();
+        g.fillStyle = '#f6f6f6'; g.beginPath(); g.roundRect(x + 10, y + 10, IMG, IMG, 6); g.fill();
+        const im = imgs[i];
+        if (im) { const r = Math.min((IMG - 8) / im.width, (IMG - 8) / im.height), iw = im.width * r, ih = im.height * r; g.drawImage(im, x + 10 + (IMG - iw) / 2, y + 10 + (IMG - ih) / 2, iw, ih); }
+        else { g.fillStyle = '#999'; g.font = font(600, 14); g.textAlign = 'center'; g.fillText('No image', x + 10 + IMG / 2, y + 10 + IMG / 2); g.textAlign = 'left'; }
+        let ty = y + 10 + IMG + 26;
+        g.fillStyle = '#1a1a1a'; g.font = font(800, 20); g.fillText(it.itemNo, x + 10, ty);
+        g.fillStyle = '#555'; g.textAlign = 'right'; g.fillText(clip(it.partNo, font(600, 14), CW / 2 - 14), x + CW - 10, ty); g.textAlign = 'left';
+        ty += 24; g.fillStyle = '#333'; g.fillText(clip(it.description2, font(500, 14), CW - 20), x + 10, ty);
+        ty += 32;
+        if (it.now) {
+          g.font = font(600, 15); g.fillStyle = '#777'; const w = 'Was ' + (it.was || it.rsp); g.fillText(w, x + 10, ty);
+          const ww = g.measureText(w).width; g.strokeStyle = '#e1261c'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x + 10, ty - 5); g.lineTo(x + 10 + ww, ty - 5); g.stroke();
+          let px = x + 10 + ww + 8; g.font = font(800, 19); g.fillStyle = '#c8102e'; const n = 'Now ' + it.now; g.fillText(n, px, ty); px += g.measureText(n).width + 8;
+          if (it.pct) { g.font = font(800, 13); const tw = g.measureText(it.pct).width; if (px + tw + 14 > x + CW - 6) { px = x + 10; ty += 4; } g.fillStyle = '#c8102e'; g.beginPath(); g.roundRect(px, ty - 16, tw + 14, 21, 99); g.fill(); g.fillStyle = '#fff'; g.fillText(it.pct, px + 7, ty); }
+        } else { g.font = font(800, 19); g.fillStyle = '#1a1a1a'; g.fillText('RSP ' + (it.rsp || '—'), x + 10, ty); }
+        ty += 28; g.font = font(600, 15); g.fillStyle = '#444'; g.fillText('Total qty: ' + (it.totalQty || 0), x + 10, ty);
+      });
+      let blob = null;
+      try { blob = await new Promise(res => c.toBlob(res, 'image/png')); } catch (e) { blob = null; }
+      if (!blob) { alert('Could not create the image (a product photo blocked export). Try PDF instead.'); return; }
+      const name = ('preview-page-' + pg + '-of-' + pages + '.png');
+      try { const file = new File([blob], name, { type: 'image/png' }); if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Preview' }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    } finally { this.setState({ pvBusy: '' }); }
+  }
   exportSkuListXlsx(rows) {
     if (!rows || !rows.length) return;
     const stores = [];
@@ -6388,6 +6535,31 @@ class Component extends DCLogic {
       showSkuShareAll: !!this._skuMulti && skuMatches.length > 0,
       onSkuShareAll: () => this.shareSkuListImage(skuMatches.map(x => x.shareRow)),
       onSkuExportXlsx: () => this.exportSkuListXlsx(skuMatches.map(x => x.shareRow)),
+      pvAllowed: s.isAdmin === undefined ? true : !!s.isAdmin,
+      pv: (() => {
+        if (!s.pvOpen) return { open: false, cells: [] };
+        const all = this.pvItems(), per = 30;
+        const pages = Math.max(1, Math.ceil(all.length / per));
+        const pg = Math.min(pages, Math.max(1, s.pvPage || 1));
+        return {
+          open: true, title: this.pvTitle(), count: all.length, page: pg, pages, atFirst: pg <= 1, atLast: pg >= pages,
+          busy: !!s.pvBusy, pdfLabel: s.pvBusy === 'pdf' ? 'Preparing…' : 'Export PDF', imgLabel: s.pvBusy === 'img' ? 'Preparing…' : 'Export image (this page)',
+          cells: all.slice((pg - 1) * per, pg * per).map(r => ({
+            itemNo: r.itemNo, partNo: r.partNo || '', description: r.description2 || r.description || '',
+            image: r.image || '', hasImg: !!r.image, noImg: !r.image,
+            hasDisc: !!r.now, noDisc: !r.now, rsp: r.rsp || '—', was: r.was || r.rsp || '', now: r.now || '', pct: r.pct || '',
+            totalQty: r.totalQty || 0,
+          })),
+        };
+      })(),
+      pvScroll: this._pvRef || (this._pvRef = React.createRef()),
+      onSkuPreviewOpen: () => this.setState({ pvOpen: true, pvSource: 'sku', pvPage: 1 }),
+      onStorePreviewOpen: () => this.setState({ pvOpen: true, pvSource: 'store', pvPage: 1 }),
+      onPvClose: () => this.setState({ pvOpen: false }),
+      onPvPrev: () => { this.setState(st => ({ pvPage: Math.max(1, (st.pvPage || 1) - 1) })); if (this._pvRef.current) this._pvRef.current.scrollTop = 0; },
+      onPvNext: () => { this.setState(st => ({ pvPage: (st.pvPage || 1) + 1 })); if (this._pvRef.current) this._pvRef.current.scrollTop = 0; },
+      onPvPdf: () => this.pvExportPdf(),
+      onPvImage: () => this.pvExportImage(),
       skuMultiInfo: this._skuMulti ? ('Showing ' + this._skuMulti.found + ' of ' + this._skuMulti.total + ' SKUs' + (this._skuMulti.capped ? ' (limit 150)' : '')) : '',
       skuMultiMissing: this._skuMulti && this._skuMulti.missing.length ? ('Not found: ' + this._skuMulti.missing.join(', ')) : '',
       skuQuery: s.skuQuery,
