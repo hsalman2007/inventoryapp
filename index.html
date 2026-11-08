@@ -1491,9 +1491,7 @@
           <span style="flex: 1;"></span>
           <button class="btn btn-primary" onClick="{{onPvPdf}}" disabled="{{pv.busy}}" style="font-size: 13px; padding: 6px 12px;">{{pv.pdfLabel}}</button>
           <button class="btn btn-secondary" onClick="{{onPvImage}}" disabled="{{pv.busy}}" style="font-size: 13px; padding: 6px 12px;">{{pv.imgLabel}}</button>
-          <button class="btn btn-secondary" onClick="{{onPvPrev}}" disabled="{{pv.atFirst}}" style="font-size: 13px; padding: 6px 12px;">‹ Prev</button>
-          <span style="font-size: 13px; color: #444; min-width: 90px; text-align: center;">Page {{pv.page}} of {{pv.pages}}</span>
-          <button class="btn btn-secondary" onClick="{{onPvNext}}" disabled="{{pv.atLast}}" style="font-size: 13px; padding: 6px 12px;">Next ›</button>
+          <span style="font-size: 13px; color: #444; text-align: center;">{{pv.count}} items</span>
         </div>
         <div ref="{{pvScroll}}" style="flex: 1; overflow: auto; padding: 16px;">
           <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; max-width: 1400px; margin: 0 auto;">
@@ -5841,9 +5839,9 @@ class Component extends DCLogic {
   async pvExportImage() {
     this.setState({ pvBusy: 'img' });
     try {
-      const all = this.pvItems(), per = 30;
+      const all = this.pvItems(), per = 60;
       const pages = Math.max(1, Math.ceil(all.length / per));
-      const pg = Math.min(pages, Math.max(1, this.state.pvPage || 1));
+      for (let pg = 1; pg <= pages; pg++) {
       const items = all.slice((pg - 1) * per, pg * per);
       const S = 2, W = 1240, PAD = 32, GAP = 14, COLS = 4;
       const CW = (W - PAD * 2 - GAP * (COLS - 1)) / COLS, IMG = CW - 20, CH = IMG + 150;
@@ -5858,7 +5856,7 @@ class Component extends DCLogic {
       g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
       const clip = (t, f, mw) => { g.font = f; t = String(t || ''); if (g.measureText(t).width <= mw) return t; while (t && g.measureText(t + '…').width > mw) t = t.slice(0, -1); return t + '…'; };
       g.fillStyle = '#1a1a1a'; g.font = font(800, 30); g.fillText(clip(this.pvTitle(), font(800, 30), W - PAD * 2), PAD, PAD + 32);
-      g.fillStyle = '#666'; g.font = font(600, 18); g.fillText(all.length + ' SKUs · Page ' + pg + ' of ' + pages + ' · ' + new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }), PAD, PAD + 64);
+      g.fillStyle = '#666'; g.font = font(600, 18); g.fillText(all.length + ' SKUs' + (pages > 1 ? ' · Part ' + pg + ' of ' + pages : '') + ' · ' + new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }), PAD, PAD + 64);
       items.forEach((it, i) => {
         const x = PAD + (i % COLS) * (CW + GAP), y = PAD + HEAD + Math.floor(i / COLS) * (CH + GAP);
         g.strokeStyle = '#dddddd'; g.lineWidth = 1; g.beginPath(); g.roundRect(x, y, CW, CH, 10); g.stroke();
@@ -5882,10 +5880,12 @@ class Component extends DCLogic {
       let blob = null;
       try { blob = await new Promise(res => c.toBlob(res, 'image/png')); } catch (e) { blob = null; }
       if (!blob) { alert('Could not create the image (a product photo blocked export). Try PDF instead.'); return; }
-      const name = ('preview-page-' + pg + '-of-' + pages + '.png');
-      try { const file = new File([blob], name, { type: 'image/png' }); if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Preview' }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+      const name = pages > 1 ? ('preview-part-' + pg + '-of-' + pages + '.png') : 'preview.png';
+      if (pages === 1) { try { const file = new File([blob], name, { type: 'image/png' }); if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Preview' }); return; } } catch (e) { if (e && e.name === 'AbortError') return; } }
       const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = name; a.click();
       setTimeout(() => URL.revokeObjectURL(url), 4000);
+      if (pg < pages) await new Promise(r => setTimeout(r, 600));
+      }
     } finally { this.setState({ pvBusy: '' }); }
   }
   exportSkuListXlsx(rows) {
@@ -6543,8 +6543,8 @@ class Component extends DCLogic {
         const pg = Math.min(pages, Math.max(1, s.pvPage || 1));
         return {
           open: true, title: this.pvTitle(), count: all.length, page: pg, pages, atFirst: pg <= 1, atLast: pg >= pages,
-          busy: !!s.pvBusy, pdfLabel: s.pvBusy === 'pdf' ? 'Preparing…' : 'Export PDF', imgLabel: s.pvBusy === 'img' ? 'Preparing…' : 'Export image (this page)',
-          cells: all.slice((pg - 1) * per, pg * per).map(r => ({
+          busy: !!s.pvBusy, pdfLabel: s.pvBusy === 'pdf' ? 'Preparing…' : 'Export PDF', imgLabel: s.pvBusy === 'img' ? 'Preparing…' : 'Export image',
+          cells: all.map(r => ({
             itemNo: r.itemNo, partNo: r.partNo || '', description: r.description2 || r.description || '',
             image: r.image || '', hasImg: !!r.image, noImg: !r.image,
             hasDisc: !!r.now, noDisc: !r.now, rsp: r.rsp || '—', was: r.was || r.rsp || '', now: r.now || '', pct: r.pct || '',
