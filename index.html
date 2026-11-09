@@ -567,6 +567,7 @@
 
             <button class="btn btn-primary btn-block" onClick="{{onPcPdf}}" disabled="{{pc.exportDisabled}}">{{pc.pdfLabel}}</button>
             <button class="btn btn-secondary btn-block" onClick="{{onPcExcel}}" disabled="{{pc.exportDisabled}}">Download Excel</button>
+            <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
             <div style="display: flex; flex-direction: column; gap: var(--space-2); border-top: 1px solid var(--color-neutral-300); padding-top: var(--space-3);">
               <div style="font-size: 13px; font-weight: 700; color: var(--color-text);">Backup &amp; move between devices</div>
               <span style="font-size: 12px; color: var(--color-neutral-700);">Download a backup file, then restore it on another phone. Restoring merges — for an item counted on both, the latest count wins.</span>
@@ -581,6 +582,7 @@
                 <span style="font-size: 12px; color: var(--color-accent-700); font-weight: 600;">{{pc.restoreMsg}}</span>
               </sc-if>
             </div>
+            </sc-if>
             <button class="btn btn-ghost btn-block" onClick="{{onPcClear}}" disabled="{{pc.clearDisabled}}">Clear counts for this store</button>
           </div>
         </sc-if>
