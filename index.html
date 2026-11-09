@@ -410,6 +410,8 @@
                 <option value="subCategory">Sub-category</option>
                 <option value="brand">Brand</option>
                 <option value="desc">Description (A → Z)</option>
+                <option value="rspDesc">RSP (high → low)</option>
+                <option value="rspAsc">RSP (low → high)</option>
                 <option value="sysDesc">System qty (high → low)</option>
                 <option value="sysAsc">System qty (low → high)</option>
                 <option value="varAsc">Variance (most short first)</option>
@@ -4284,6 +4286,8 @@ class Component extends DCLogic {
     if (!key) return all;
     const txt = f => (a, b) => naturalCompare(String(a[f] || '~'), String(b[f] || '~'));
     const bySku = (a, b) => naturalCompare(a.itemNo, b.itemNo);
+    const rmap = st.parsed ? st.parsed.retailMap : null;
+    const rspOf = r => { const rr = rmap && rmap.get(r.itemNo); const v = parseFloat(String((rr && rr.rsp) || '').replace(/[^0-9.\-]/g, '')); return isFinite(v) ? v : 0; };
     const vr = r => r.count === undefined ? null : r.count - r.sys;
     const vcmp = dir => (a, b) => { const x = vr(a), y = vr(b); if (x === null && y === null) return bySku(a, b); if (x === null) return 1; if (y === null) return -1; return (dir * (x - y)) || bySku(a, b); };
     const cmp = {
@@ -4292,6 +4296,8 @@ class Component extends DCLogic {
       partNo: (a, b) => txt('partNo')(a, b) || bySku(a, b),
       brand: (a, b) => txt('brand')(a, b) || bySku(a, b),
       desc: (a, b) => txt('desc')(a, b) || bySku(a, b),
+      rspDesc: (a, b) => (rspOf(b) - rspOf(a)) || bySku(a, b),
+      rspAsc: (a, b) => { const x = rspOf(a), y = rspOf(b); if (!x && y) return 1; if (x && !y) return -1; return (x - y) || bySku(a, b); },
       sysDesc: (a, b) => (b.sys - a.sys) || bySku(a, b),
       sysAsc: (a, b) => (a.sys - b.sys) || bySku(a, b),
       varAsc: vcmp(1),
@@ -4479,11 +4485,13 @@ class Component extends DCLogic {
     if (!rows.length) return;
     const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     const counted = rows.filter(r => r.count !== undefined);
+    const rmapX = this.state.parsed ? this.state.parsed.retailMap : null;
+    const rspOf = no => { const rr = rmapX && rmapX.get(no); const v = parseFloat(String((rr && rr.rsp) || '').replace(/[^0-9.\-]/g, '')); return isFinite(v) && v ? v : ''; };
     const aoa = [
       [{ v: 'Physical count · ' + this.pcStoreLabel(), s: 1 }],
       [this.pcScopeLabel() + ' · counted ' + counted.length + ' of ' + rows.length + ' · ' + today],
       [],
-      ['Item No.', 'Part No.', 'Barcode', 'Description 2', 'Brand', 'Category', 'Sub-category', 'System Qty', 'Physical Count', 'Variance', 'Counted On', 'System Qty at Count', 'Note'].map(h => ({ v: h, s: 5 })),
+      ['Item No.', 'Part No.', 'Barcode', 'Description 2', 'Brand', 'Category', 'Sub-category', 'RSP', 'System Qty', 'Physical Count', 'Variance', 'Counted On', 'System Qty at Count', 'Note'].map(h => ({ v: h, s: 5 })),
     ];
     let sysT = 0, cntT = 0, varT = 0;
     for (const r of rows) {
@@ -4491,10 +4499,10 @@ class Component extends DCLogic {
       const s = d !== '' && d !== 0 ? 3 : 0;
       sysT += r.sys; if (r.count !== undefined) { cntT += r.count; varT += d; }
       const note = [r.notInSystem ? 'Not in system' : r.added ? 'Added by search' : '', r.liveSys < 0 ? 'Negative stock' : '', r.sysChanged ? 'Inventory changed after new snapshot (' + r.sysAtCount + ' at count → ' + r.sys + ' now)' : '', r.count === undefined ? 'Not counted' : ''].filter(Boolean).join(' · ');
-      aoa.push([{ v: r.itemNo, t: 's', s }, { v: r.partNo, t: 's', s }, { v: r.barcode, t: 's', s }, { v: r.desc, t: 's', s }, { v: r.brand, t: 's', s }, { v: r.category, t: 's', s }, { v: r.subCategory, t: 's', s }, { v: r.sys, s }, { v: r.count === undefined ? '' : r.count, s }, { v: d, s }, { v: r.countedAt ? this.pcFmtAt(r.countedAt) : '', t: 's', s }, { v: r.sysAtCount, s }, { v: note, t: 's', s }]);
+      aoa.push([{ v: r.itemNo, t: 's', s }, { v: r.partNo, t: 's', s }, { v: r.barcode, t: 's', s }, { v: r.desc, t: 's', s }, { v: r.brand, t: 's', s }, { v: r.category, t: 's', s }, { v: r.subCategory, t: 's', s }, { v: rspOf(r.itemNo), s }, { v: r.sys, s }, { v: r.count === undefined ? '' : r.count, s }, { v: d, s }, { v: r.countedAt ? this.pcFmtAt(r.countedAt) : '', t: 's', s }, { v: r.sysAtCount, s }, { v: note, t: 's', s }]);
     }
-    aoa.push([{ v: 'Total · ' + rows.length + ' items', s: 5 }].concat(Array(6).fill(0).map(() => ({ v: '', s: 5 }))).concat([{ v: sysT, s: 5 }, { v: cntT, s: 5 }, { v: varT, s: 5 }, { v: '', s: 5 }, { v: '', s: 5 }, { v: '', s: 5 }]));
-    const cols = [{ width: 16 }, { width: 18 }, { width: 16 }, { width: 44 }, { width: 18 }, { width: 22 }, { width: 22 }, { width: 14 }, { width: 14 }, { width: 11 }, { width: 20 }, { width: 14 }, { width: 40 }];
+    aoa.push([{ v: 'Total · ' + rows.length + ' items', s: 5 }].concat(Array(7).fill(0).map(() => ({ v: '', s: 5 }))).concat([{ v: sysT, s: 5 }, { v: cntT, s: 5 }, { v: varT, s: 5 }, { v: '', s: 5 }, { v: '', s: 5 }, { v: '', s: 5 }]));
+    const cols = [{ width: 16 }, { width: 18 }, { width: 16 }, { width: 44 }, { width: 18 }, { width: 22 }, { width: 22 }, { width: 12 }, { width: 14 }, { width: 14 }, { width: 11 }, { width: 20 }, { width: 14 }, { width: 40 }];
     downloadXlsx(aoa, ('Physical-Count-' + this.pcStoreLabel() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-'), { sheetName: 'Physical Count', cols });
   }
   onPcPdf() {
@@ -4505,6 +4513,8 @@ class Component extends DCLogic {
     const fmt = v => Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
     const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     const counted = rows.filter(r => r.count !== undefined);
+    const rmapX = this.state.parsed ? this.state.parsed.retailMap : null;
+    const rspOf = no => { const rr = rmapX && rmapX.get(no); const v = parseFloat(String((rr && rr.rsp) || '').replace(/[^0-9.\-]/g, '')); return isFinite(v) && v ? v : ''; };
     let sysT = 0, cntT = 0, varT = 0;
     const rowsHtml = rows.map(r => {
       const d = r.count === undefined ? null : r.count - r.sys;
@@ -4513,6 +4523,7 @@ class Component extends DCLogic {
         + '<td class="pic">' + (r.image ? '<img src="' + esc(r.image) + '" alt="" loading="eager" referrerpolicy="no-referrer" onerror="if(!this.dataset.p){this.dataset.p=1;this.src=\'https://images.weserv.nl/?url=\'+encodeURIComponent(this.src.replace(/^https?:\\/\\//,\'\'))+\'&w=200&output=jpg\';}else{this.style.visibility=\'hidden\';}">' : '') + '</td>'
         + '<td class="itemno">' + esc(r.itemNo) + (r.notInSystem ? ' <span class="tag">not in system</span>' : r.added ? ' <span class="tag">added</span>' : '') + (r.partNo ? '<div class="part">' + esc(r.partNo) + '</div>' : '') + (r.barcode ? '<div class="sub">' + esc(r.barcode) + '</div>' : '') + '</td>'
         + '<td>' + esc(r.desc) + (r.sysChanged ? '<div class="chg">Inventory changed after new snapshot: ' + fmt(r.sysAtCount) + ' at count → ' + fmt(r.sys) + ' now</div>' : '') + '</td>'
+        + '<td class="num">' + (rspOf(r.itemNo) === '' ? '<span class="muted">–</span>' : fmt(rspOf(r.itemNo))) + '</td>'
         + '<td class="num"' + (r.sys < 0 ? ' style="color:#8b1a1a;font-weight:700;"' : '') + '>' + fmt(r.sys) + '</td>'
         + '<td class="num">' + (d === null ? '<span class="muted">–</span>' : fmt(r.count)) + '</td>'
         + '<td class="num" style="font-weight:700;' + (d ? (d < 0 ? 'color:#8b1a1a;' : 'color:#1b6b34;') : '') + '">' + (d === null ? '' : (d > 0 ? '+' : '') + fmt(d)) + '</td>'
@@ -4532,10 +4543,10 @@ class Component extends DCLogic {
       + '.sign{display:flex;gap:40px;margin-top:36px;font-size:12px;color:#6b6360;}.sign div{flex:1;border-top:1px solid #201e1d;padding-top:4px;}';
     const bodyHtml = '<h1>Physical count · ' + esc(this.pcStoreLabel()) + '</h1>'
       + '<div class="meta">' + esc(this.pcScopeLabel()) + ' · counted ' + counted.length + ' of ' + rows.length + ' items · ' + today + '</div>'
-      + '<table><colgroup><col style="width:9%"><col style="width:16%"><col style="width:31%"><col style="width:9%"><col style="width:9%"><col style="width:10%"><col style="width:16%"></colgroup>'
-      + '<tbody><tr><th></th><th>Item No.</th><th>Description 2</th><th class="num">System</th><th class="num">Count</th><th class="num">Variance</th><th>Counted on</th></tr>'
+      + '<table><colgroup><col style="width:9%"><col style="width:15%"><col style="width:27%"><col style="width:9%"><col style="width:8%"><col style="width:8%"><col style="width:9%"><col style="width:15%"></colgroup>'
+      + '<tbody><tr><th></th><th>Item No.</th><th>Description 2</th><th class="num">RSP</th><th class="num">System</th><th class="num">Count</th><th class="num">Variance</th><th>Counted on</th></tr>'
       + rowsHtml
-      + '<tr class="tot"><td colspan="3">Total · ' + rows.length + ' items</td><td class="num">' + fmt(sysT) + '</td><td class="num">' + fmt(cntT) + '</td><td class="num">' + (varT > 0 ? '+' : '') + fmt(varT) + '</td><td></td></tr>'
+      + '<tr class="tot"><td colspan="4">Total · ' + rows.length + ' items</td><td class="num">' + fmt(sysT) + '</td><td class="num">' + fmt(cntT) + '</td><td class="num">' + (varT > 0 ? '+' : '') + fmt(varT) + '</td><td></td></tr>'
       + '</tbody></table>'
       + '<div class="sign"><div>Counted by</div><div>Checked by</div><div>Date</div></div>';
     const fileTitle = ('Physical-Count-' + this.pcStoreLabel() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
@@ -5923,7 +5934,7 @@ class Component extends DCLogic {
       tot.qty += r.totalQty || 0;
       aoa.push([r.itemNo, r.partNo || '', r.description2 || '', num(r.rsp), num(r.was), num(r.now), r.pct || '', r.totalQty || 0].concat(sq));
     }
-    aoa.push([{ v: 'Total · ' + rows.length + ' SKUs', s: 5 }].concat(Array(6).fill(0).map(() => ({ v: '', s: 5 }))).concat([{ v: tot.qty, s: 5 }]).concat(tot.st.map(q => ({ v: q, s: 5 }))));
+    aoa.push([{ v: 'Total · ' + rows.length + ' SKUs', s: 5 }].concat(Array(7).fill(0).map(() => ({ v: '', s: 5 }))).concat([{ v: tot.qty, s: 5 }]).concat(tot.st.map(q => ({ v: q, s: 5 }))));
     const cols = [{ width: 14 }, { width: 18 }, { width: 44 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 11 }, { width: 10 }].concat(stores.map(() => ({ width: 11 })));
     downloadXlsx(aoa, ('SKU-Stock-' + rows.length + '-SKUs-' + dName + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-'), { sheetName: 'SKU Stock', cols });
   }
