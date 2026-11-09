@@ -4493,6 +4493,7 @@ class Component extends DCLogic {
       const d = r.count === undefined ? null : r.count - r.sys;
       sysT += r.sys; if (d !== null) { cntT += r.count; varT += d; }
       return '<tr' + (d ? ' style="background:#fbe1de;"' : '') + '>'
+        + '<td class="pic">' + (r.image ? '<img src="' + esc(r.image) + '" alt="" loading="eager" referrerpolicy="no-referrer" onerror="this.style.visibility=\'hidden\'">' : '') + '</td>'
         + '<td class="itemno">' + esc(r.itemNo) + (r.notInSystem ? ' <span class="tag">not in system</span>' : r.added ? ' <span class="tag">added</span>' : '') + (r.partNo ? '<div class="part">' + esc(r.partNo) + '</div>' : '') + (r.barcode ? '<div class="sub">' + esc(r.barcode) + '</div>' : '') + '</td>'
         + '<td>' + esc(r.desc) + (r.sysChanged ? '<div class="chg">Inventory changed after new snapshot: ' + fmt(r.sysAtCount) + ' at count → ' + fmt(r.sys) + ' now</div>' : '') + '</td>'
         + '<td class="num"' + (r.sys < 0 ? ' style="color:#8b1a1a;font-weight:700;"' : '') + '>' + fmt(r.sys) + '</td>'
@@ -4509,15 +4510,15 @@ class Component extends DCLogic {
       + 'td{padding:6px 4px;border-bottom:1px solid #e6ddd2;overflow-wrap:break-word;vertical-align:middle;}'
       + 'td.itemno{font-weight:700;}.part{font-weight:700;font-size:10.5px;}.sub{font-weight:400;font-size:10px;color:#6b6360;}td.at{font-size:10px;color:#6b6360;}'
       + '.chg{font-size:10px;font-weight:600;color:#8a5a00;margin-top:2px;}'
-      + '.muted{color:#b8afa6;}.tag{font-size:9px;font-weight:600;color:#6b6360;border:1px solid #b8afa6;border-radius:3px;padding:0 3px;}'
+      + '.muted{color:#b8afa6;}td.pic{padding:3px;text-align:center;}td.pic img{width:48px;height:48px;object-fit:contain;display:block;margin:0 auto;}.tag{font-size:9px;font-weight:600;color:#6b6360;border:1px solid #b8afa6;border-radius:3px;padding:0 3px;}'
       + 'tr.tot td{border-top:2px solid #201e1d;border-bottom:none;font-weight:700;padding-top:8px;}'
       + '.sign{display:flex;gap:40px;margin-top:36px;font-size:12px;color:#6b6360;}.sign div{flex:1;border-top:1px solid #201e1d;padding-top:4px;}';
     const bodyHtml = '<h1>Physical count · ' + esc(this.pcStoreLabel()) + '</h1>'
       + '<div class="meta">' + esc(this.pcScopeLabel()) + ' · counted ' + counted.length + ' of ' + rows.length + ' items · ' + today + '</div>'
-      + '<table><colgroup><col style="width:17%"><col style="width:37%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:16%"></colgroup>'
-      + '<tbody><tr><th>Item No.</th><th>Description 2</th><th class="num">System</th><th class="num">Count</th><th class="num">Variance</th><th>Counted on</th></tr>'
+      + '<table><colgroup><col style="width:9%"><col style="width:16%"><col style="width:31%"><col style="width:9%"><col style="width:9%"><col style="width:10%"><col style="width:16%"></colgroup>'
+      + '<tbody><tr><th></th><th>Item No.</th><th>Description 2</th><th class="num">System</th><th class="num">Count</th><th class="num">Variance</th><th>Counted on</th></tr>'
       + rowsHtml
-      + '<tr class="tot"><td colspan="2">Total · ' + rows.length + ' items</td><td class="num">' + fmt(sysT) + '</td><td class="num">' + fmt(cntT) + '</td><td class="num">' + (varT > 0 ? '+' : '') + fmt(varT) + '</td><td></td></tr>'
+      + '<tr class="tot"><td colspan="3">Total · ' + rows.length + ' items</td><td class="num">' + fmt(sysT) + '</td><td class="num">' + fmt(cntT) + '</td><td class="num">' + (varT > 0 ? '+' : '') + fmt(varT) + '</td><td></td></tr>'
       + '</tbody></table>'
       + '<div class="sign"><div>Counted by</div><div>Checked by</div><div>Date</div></div>';
     const fileTitle = ('Physical-Count-' + this.pcStoreLabel() + '-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
