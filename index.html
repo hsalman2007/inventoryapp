@@ -502,6 +502,7 @@
                 <tbody>
                   <tr>
                     <th style="text-align: left;">Item</th>
+                    <th style="text-align: right; width: 64px;">RSP</th>
                     <th style="text-align: right; width: 56px;">System</th>
                     <th style="text-align: center; width: 84px;">Count</th>
                     <th style="text-align: right; width: 52px;">Var.</th>
@@ -544,6 +545,7 @@
                           </div>
                         </div>
                       </td>
+                      <td style="text-align: right; white-space: nowrap;">{{row.rspText}}</td>
                       <td style="text-align: right; font-weight: 600; color: {{row.sysColor}};">{{row.sysText}}</td>
                       <td style="text-align: center;">
                         <input class="input" type="number" inputmode="numeric" min="0" placeholder="–" value="{{row.countVal}}" onChange="{{row.onCount}}" aria-label="Physical count" style="width: 76px; padding: 6px 8px; text-align: center; font-size: 14px;">
@@ -4342,6 +4344,7 @@ class Component extends DCLogic {
       const d = r.count === undefined ? null : r.count - r.sys;
       return {
         itemNo: r.itemNo, desc: r.desc, added: r.added, addedOnly: r.added && !r.notInSystem, notInSystem: r.notInSystem, image: r.image, partNo: r.partNo, barcode: r.barcode,
+        rspText: (() => { const rr = st.parsed && st.parsed.retailMap.get(r.itemNo); const v = parseFloat(String((rr && rr.rsp) || '').replace(/[^0-9.\-]/g, '')); return isFinite(v) && v ? v.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'; })(),
         sysNeg: r.liveSys < 0, sysColor: r.sys < 0 ? '#b3261e' : 'var(--color-text)',
         countedAtText: r.countedAt ? 'Counted ' + this.pcFmtAt(r.countedAt) : '',
         sysChangedText: r.sysChanged ? 'Inventory changed after new snapshot: ' + fmt(r.sysAtCount) + ' at count → ' + fmt(r.sys) + ' now' : '',
