@@ -3007,6 +3007,17 @@ class Component extends DCLogic {
   }
 
   async componentDidMount() {
+    if (!window.__imgProxyFallback) {
+      window.__imgProxyFallback = true;
+      document.addEventListener('error', e => {
+        const im = e.target;
+        if (!im || im.tagName !== 'IMG') return;
+        const src = im.getAttribute('src') || '';
+        if (!/^https?:\/\//.test(src) || im.dataset.proxied) return;
+        im.dataset.proxied = '1';
+        im.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(src.replace(/^https?:\/\//, '')) + '&w=400&output=jpg';
+      }, true);
+    }
     this.loadNsDefault(); this.loadBarcodes();
     try {
       const dataUrl = (window.__resources && window.__resources['data-json']) || './inventory-data.json';
@@ -4493,7 +4504,7 @@ class Component extends DCLogic {
       const d = r.count === undefined ? null : r.count - r.sys;
       sysT += r.sys; if (d !== null) { cntT += r.count; varT += d; }
       return '<tr' + (d ? ' style="background:#fbe1de;"' : '') + '>'
-        + '<td class="pic">' + (r.image ? '<img src="' + esc(r.image) + '" alt="" loading="eager" referrerpolicy="no-referrer" onerror="this.style.visibility=\'hidden\'">' : '') + '</td>'
+        + '<td class="pic">' + (r.image ? '<img src="' + esc(r.image) + '" alt="" loading="eager" referrerpolicy="no-referrer" onerror="if(!this.dataset.p){this.dataset.p=1;this.src=\'https://images.weserv.nl/?url=\'+encodeURIComponent(this.src.replace(/^https?:\\/\\//,\'\'))+\'&w=200&output=jpg\';}else{this.style.visibility=\'hidden\';}">' : '') + '</td>'
         + '<td class="itemno">' + esc(r.itemNo) + (r.notInSystem ? ' <span class="tag">not in system</span>' : r.added ? ' <span class="tag">added</span>' : '') + (r.partNo ? '<div class="part">' + esc(r.partNo) + '</div>' : '') + (r.barcode ? '<div class="sub">' + esc(r.barcode) + '</div>' : '') + '</td>'
         + '<td>' + esc(r.desc) + (r.sysChanged ? '<div class="chg">Inventory changed after new snapshot: ' + fmt(r.sysAtCount) + ' at count → ' + fmt(r.sys) + ' now</div>' : '') + '</td>'
         + '<td class="num"' + (r.sys < 0 ? ' style="color:#8b1a1a;font-weight:700;"' : '') + '>' + fmt(r.sys) + '</td>'
