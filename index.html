@@ -1830,11 +1830,11 @@
                 </sc-if>
                 <sc-if value="{{item.hasNatMargin}}" hint-placeholder-val="{{false}}">
                   <div style="display: flex; flex-direction: column;">
-                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">Nat. Day price</span>
-                    <span style="font-size: 13px; font-weight: 700; color: var(--color-accent-800);">{{item.natNow}}</span>
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">{{item.promoPriceLabel}}</span>
+                    <span style="font-size: 13px; font-weight: 700; color: var(--color-accent-800);">{{item.promoNow}}</span>
                   </div>
                   <div style="display: flex; flex-direction: column;">
-                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">Margin after Nat. Day</span>
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">{{item.promoMarginLabel}}</span>
                     <span style="font-size: 13px; font-weight: 700; color: var(--color-accent-800);">{{item.natMarginText}}</span>
                   </div>
                 </sc-if>
@@ -5994,7 +5994,9 @@ class Component extends DCLogic {
       const exp = expandAll || s.skuExpanded === it.itemNo;
       const dv = s.skuFalcon ? 'falcon' : (s.skuDiscView || 'falcon');
       const metrics = this.costMetrics(it.itemNo, (s.skuFalcon && fal && fal.was) || it.rsp, s.skuFalcon ? fal : disc);
-      const natMetrics = nat ? this.costMetrics(it.itemNo, nat.was || it.rsp, nat) : null;
+      const selE = dv === 'national' ? nat : dv === 'falcon' ? fal : dv === 'newstore' ? nsE : dv === 'seasonal' ? disc : null;
+      const promoShort = { national: 'Nat. Day', falcon: 'Ageing', newstore: this.nsName(), seasonal: 'Seasonal' }[dv] || '';
+      const natMetrics = selE && (selE.now || selE.pct) ? this.costMetrics(it.itemNo, selE.was || it.rsp, selE) : null;
       return {
         itemNo: it.itemNo,
         description2: r.description2 || it.description2,
@@ -6016,6 +6018,9 @@ class Component extends DCLogic {
         falNow: fal ? fal.now : '',
         falPct: fal ? fal.pct : '',
         natMarginText: (natMetrics && natMetrics.discMarginText) || '',
+        promoNow: selE ? (selE.now || '') : '',
+        promoPriceLabel: promoShort + ' price',
+        promoMarginLabel: 'Margin after ' + promoShort,
         hasNatMargin: !!(exp && natMetrics && natMetrics.showCost && natMetrics.discMarginText),
         image: r.image && r.image !== '(blank)' ? r.image : '',
         storeRows,
