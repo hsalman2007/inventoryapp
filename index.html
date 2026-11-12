@@ -73,6 +73,9 @@
         <button class="btn btn-secondary btn-block" onClick="{{onGoPhysCount}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Physical Count</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoFalcon}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Ageing Clearance</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoNegInv}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Negative Inv</button>
+        <sc-if value="{{isAdmin}}" hint-placeholder-val="{{false}}">
+          <button class="btn btn-secondary btn-block" onClick="{{onGoDsr}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">DSR</button>
+        </sc-if>
         <button class="btn btn-secondary btn-block" onClick="{{onGoDistribution}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Distribution</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoWhStores}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">WH vs Stores</button>
         <button class="btn btn-secondary btn-block" onClick="{{onGoPriceTags}}" style="padding: var(--space-4); font-size: 16px; justify-content: flex-start; text-align: left;">Price Tags</button>
@@ -714,6 +717,97 @@
         <button class="btn btn-primary btn-block" onClick="{{onDownloadMultiLocPdf}}" disabled="{{mlExportDisabled}}">{{mlPdfLabel}}</button>
         <button class="btn btn-secondary btn-block" onClick="{{onDownloadMultiLocExcel}}" disabled="{{mlExportDisabled}}">Download Excel</button>
         <button class="btn btn-ghost btn-block" onClick="{{onBackFromMultiLoc}}">← Back</button>
+      </div>
+    </sc-if>
+
+    <!-- DSR SCREEN -->
+    <sc-if value="{{isDsr}}" hint-placeholder-val="{{false}}">
+      <div class="card elev-sm" style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4);">
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onClick="{{onBackFromDsr}}" style="flex: none;">← Back</button>
+          <div class="card-title" style="font-size: 18px; align-self: center;">DSR — Daily sales</div>
+        </div>
+
+        <label style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 600; color: var(--color-text);">Transaction Sales Entries (.xlsx)</span>
+          <span style="font-size: 12px; color: var(--color-neutral-700);">{{dsr.fileNote}}</span>
+          <input type="file" accept=".xlsx" onChange="{{onDsrFile}}" style="font-size: 13px;">
+        </label>
+        <sc-if value="{{dsr.error}}" hint-placeholder-val="{{false}}">
+          <div style="background: var(--color-accent-100); color: var(--color-accent-800); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-size: 13px;">{{dsr.error}}</div>
+        </sc-if>
+
+        <sc-if value="{{dsr.has}}" hint-placeholder-val="{{false}}">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: var(--space-3);">
+            <div class="field">
+              <label for="dsr-region">Region</label>
+              <select id="dsr-region" class="input" value="{{dsr.region}}" onChange="{{onDsrRegion}}">
+                <option value="">All regions</option>
+                <sc-for list="{{dsr.regionOptions}}" as="o" hint-placeholder-count="3">
+                  <option value="{{o}}">{{o}}</option>
+                </sc-for>
+              </select>
+            </div>
+            <div class="field">
+              <label for="dsr-cat">Category</label>
+              <select id="dsr-cat" class="input" value="{{dsr.cat}}" onChange="{{onDsrCat}}">
+                <option value="">All categories</option>
+                <sc-for list="{{dsr.catOptions}}" as="o" hint-placeholder-count="3">
+                  <option value="{{o}}">{{o}}</option>
+                </sc-for>
+              </select>
+            </div>
+            <div class="field">
+              <label for="dsr-sub">Sub-category</label>
+              <select id="dsr-sub" class="input" value="{{dsr.sub}}" onChange="{{onDsrSub}}">
+                <option value="">All sub-categories</option>
+                <sc-for list="{{dsr.subOptions}}" as="o" hint-placeholder-count="3">
+                  <option value="{{o}}">{{o}}</option>
+                </sc-for>
+              </select>
+            </div>
+            <div class="field">
+              <label for="dsr-brand">Brand</label>
+              <select id="dsr-brand" class="input" value="{{dsr.brand}}" onChange="{{onDsrBrand}}">
+                <option value="">All brands</option>
+                <sc-for list="{{dsr.brandOptions}}" as="o" hint-placeholder-count="3">
+                  <option value="{{o}}">{{o}}</option>
+                </sc-for>
+              </select>
+            </div>
+          </div>
+
+          <div style="font-size: 12px; color: var(--color-neutral-700);">{{dsr.summary}}</div>
+          <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; font-size: 13px;">
+              <tbody>
+                <tr>
+                  <th onClick="{{onDsrSortStore}}" style="text-align: left; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{dsr.hdStore}}</th>
+                  <th onClick="{{onDsrSortNet}}" style="text-align: right; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{dsr.hdNet}}</th>
+                  <th onClick="{{onDsrSortTotal}}" style="text-align: right; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{dsr.hdTotal}}</th>
+                  <th onClick="{{onDsrSortQty}}" style="text-align: right; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{dsr.hdQty}}</th>
+                </tr>
+                <sc-for list="{{dsr.rows}}" as="row" hint-placeholder-count="6">
+                  <tr>
+                    <td>
+                      <div style="font-weight: 600;">{{row.label}}</div>
+                      <div style="font-size: 11px; color: var(--color-neutral-700);">{{row.sub}}</div>
+                    </td>
+                    <td style="text-align: right; white-space: nowrap; color: {{row.netColor}};">{{row.netText}}</td>
+                    <td style="text-align: right; white-space: nowrap; font-weight: 700; color: {{row.totalColor}};">{{row.totalText}}</td>
+                    <td style="text-align: right; white-space: nowrap;">{{row.qtyText}}</td>
+                  </tr>
+                </sc-for>
+                <tr>
+                  <td style="font-weight: 700; border-top: 2px solid var(--color-text);">Total · {{dsr.storeCount}} stores</td>
+                  <td style="text-align: right; font-weight: 700; white-space: nowrap; border-top: 2px solid var(--color-text);">{{dsr.netTotal}}</td>
+                  <td style="text-align: right; font-weight: 700; white-space: nowrap; border-top: 2px solid var(--color-text);">{{dsr.totalTotal}}</td>
+                  <td style="text-align: right; font-weight: 700; white-space: nowrap; border-top: 2px solid var(--color-text);">{{dsr.qtyTotal}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
       </div>
     </sc-if>
 
@@ -4119,6 +4213,97 @@ class Component extends DCLogic {
     downloadXlsx(aoa, fileTitle, { sheetName: sheet, cols: cols });
   }
 
+  async parseDsrFile(file) {
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const u32 = o => (buf[o] | (buf[o + 1] << 8) | (buf[o + 2] << 16) | (buf[o + 3] << 24)) >>> 0, u16 = o => buf[o] | (buf[o + 1] << 8);
+    let e = -1; for (let i = buf.length - 22; i >= 0; i--) if (u32(i) === 0x06054b50) { e = i; break; }
+    if (e < 0) throw new Error('not an .xlsx file');
+    const n = u16(e + 10); let p = u32(e + 16); const ents = {}; const td = new TextDecoder();
+    for (let k = 0; k < n; k++) { const nl = u16(p + 28), xl = u16(p + 30), cl = u16(p + 32); ents[td.decode(buf.subarray(p + 46, p + 46 + nl))] = { method: u16(p + 10), csize: u32(p + 20), off: u32(p + 42) }; p += 46 + nl + xl + cl; }
+    const get = async name => {
+      const en = ents[name]; if (!en) return '';
+      const start = en.off + 30 + u16(en.off + 26) + u16(en.off + 28); const data = buf.subarray(start, start + en.csize);
+      if (en.method === 0) return td.decode(data);
+      return td.decode(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+    };
+    const dec = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (m, c) => String.fromCharCode(+c)).replace(/&amp;/g, '&');
+    const tText = inner => { let t = ''; inner.replace(/<(?:\w+:)?t(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?t>/g, (m, x) => { t += x; return m; }); return dec(t); };
+    const ss = []; (await get('xl/sharedStrings.xml')).replace(/<(?:\w+:)?si\b[^>]*>([\s\S]*?)<\/(?:\w+:)?si>/g, (m, inner) => { ss.push(tText(inner)); return m; });
+    const sheet = Object.keys(ents).find(k => /^xl\/worksheets\/sheet\d+\.xml$/.test(k));
+    const xml = await get(sheet);
+    const colIdx = ref => { const m = ref.match(/^[A-Z]+/)[0]; let v = 0; for (const ch of m) v = v * 26 + ch.charCodeAt(0) - 64; return v - 1; };
+    let hdr = null; const agg = new Map(); let dMin = Infinity, dMax = -Infinity, lines = 0;
+    const rowRe = /<(?:\w+:)?row\b[^>]*>([\s\S]*?)<\/(?:\w+:)?row>/g, cRe = /<(?:\w+:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:\w+:)?c>)/g;
+    let rm;
+    while ((rm = rowRe.exec(xml))) {
+      const vals = []; let cm; cRe.lastIndex = 0;
+      while ((cm = cRe.exec(rm[1]))) {
+        const at = cm[1], body = cm[2] || ''; const r = (at.match(/\br="([A-Z]+)\d*"/) || [])[1]; if (!r) continue;
+        const t = (at.match(/\bt="(\w+)"/) || [])[1];
+        let v = '';
+        if (t === 'inlineStr') v = tText(body);
+        else { const vm = body.match(/<(?:\w+:)?v>([\s\S]*?)<\/(?:\w+:)?v>/); v = vm ? dec(vm[1]) : ''; if (t === 's') v = ss[+v] || ''; }
+        vals[colIdx(r)] = v;
+      }
+      if (!hdr) {
+        if (vals.some(v => String(v || '').trim() === 'Item No.')) { hdr = {}; vals.forEach((v, i) => { if (v) hdr[String(v).trim()] = i; }); }
+        continue;
+      }
+      const g = k => vals[hdr[k]] ?? '';
+      const store = String(g('Store No.')).trim(), item = String(g('Item No.')).trim();
+      if (!store || !item) continue;
+      const num = k => { const x = parseFloat(String(g(k)).replace(/,/g, '')); return isFinite(x) ? x : 0; };
+      const key = store + '|' + item;
+      let a = agg.get(key); if (!a) { a = { store, item, net: 0, total: 0, qty: 0, cat: String(g('Item Category Code')).trim(), sub: String(g('Retail Product Code')).trim() }; agg.set(key, a); }
+      a.net -= num('Net Amount'); a.total -= num('Total Rounded Amt.'); a.qty -= num('Quantity'); lines++;
+      const dt = parseFloat(g('Date')); if (isFinite(dt) && dt > 20000) { dMin = Math.min(dMin, dt); dMax = Math.max(dMax, dt); }
+    }
+    if (!hdr) throw new Error('no "Item No." header found');
+    const fd = s => new Date(Date.UTC(1899, 11, 30) + s * 864e5).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+    return { fileName: file.name, rows: Array.from(agg.values()), lines, period: isFinite(dMin) ? (dMin === dMax ? fd(dMin) : fd(dMin) + ' – ' + fd(dMax)) : '' };
+  }
+  async loadDsr(file) {
+    if (!file) return;
+    this.setState({ dsrBusy: true, dsrError: '' });
+    try { const dsr = await this.parseDsrFile(file); this.setState({ dsr, dsrBusy: false, dsrRegion: '', dsrCat: '', dsrSub: '', dsrBrand: '' }); }
+    catch (err) { this.setState({ dsrBusy: false, dsrError: 'Could not read the DSR file: ' + (err && err.message || err) }); }
+  }
+  getDsrView() {
+    const st = this.state, d = st.dsr;
+    const base = { has: false, error: st.dsrError || '', fileNote: st.dsrBusy ? 'Reading file…' : d ? (d.fileName + ' · ' + d.lines.toLocaleString() + ' lines' + (d.period ? ' · ' + d.period : '')) : 'Not mandatory — upload to see sales by store', rows: [], regionOptions: [], catOptions: [], subOptions: [], brandOptions: [], region: st.dsrRegion || '', cat: st.dsrCat || '', sub: st.dsrSub || '', brand: st.dsrBrand || '' };
+    if (!d) return base;
+    const rmap = st.parsed ? st.parsed.retailMap : new Map();
+    const byCode = new Map();
+    if (st.storeInfoMap) for (const v of st.storeInfoMap.values()) { if (!v) continue; byCode.set(String(v.name || '').toUpperCase(), v); if (v.shortName) byCode.set(v.shortName.toUpperCase(), v); if (v.code) byCode.set(v.code.toUpperCase(), v); }
+    const meta = new Map();
+    const rows = d.rows.map(r => {
+      const ri = rmap.get(r.item) || {}, info = byCode.get(r.store.toUpperCase()) || null;
+      return { ...r, cat: String(ri.category || r.cat || '').trim(), subc: String(ri.subCategory || r.sub || '').trim(), brand: String(ri.brand || '').trim(), region: info ? String(info.region || '').trim() : '', label: info ? (info.shortName || info.name) : r.store };
+    });
+    const uniq = arr => Array.from(new Set(arr.filter(Boolean))).sort((a, b) => a.localeCompare(b));
+    const f = rows.filter(r => (!base.region || r.region === base.region) && (!base.cat || r.cat === base.cat) && (!base.sub || r.subc === base.sub) && (!base.brand || r.brand === base.brand));
+    const by = new Map();
+    for (const r of f) { let a = by.get(r.store); if (!a) { a = { store: r.store, label: r.label, region: r.region, net: 0, total: 0, qty: 0 }; by.set(r.store, a); } a.net += r.net; a.total += r.total; a.qty += r.qty; }
+    const list = Array.from(by.values());
+    const sk = st.dsrSort || 'net', sd = st.dsrDir === 'asc' ? 1 : -1;
+    list.sort((a, b) => (sk === 'store' ? -sd * naturalCompare(a.label, b.label) : sd * (a[sk] - b[sk])) || naturalCompare(a.label, b.label));
+    const m = v => v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const q = v => Math.round(v).toLocaleString();
+    const col = v => v < 0 ? '#b3261e' : 'inherit';
+    const hd = (k, t) => t + (sk === k ? (st.dsrDir === 'asc' ? ' ▲' : ' ▼') : '');
+    const tn = list.reduce((s, r) => s + r.net, 0), tt = list.reduce((s, r) => s + r.total, 0), tq = list.reduce((s, r) => s + r.qty, 0);
+    return Object.assign(base, {
+      has: true,
+      regionOptions: uniq(rows.map(r => r.region)),
+      catOptions: uniq(rows.filter(r => !base.region || r.region === base.region).map(r => r.cat)),
+      subOptions: uniq(rows.filter(r => (!base.region || r.region === base.region) && (!base.cat || r.cat === base.cat)).map(r => r.subc)),
+      brandOptions: uniq(rows.filter(r => (!base.region || r.region === base.region) && (!base.cat || r.cat === base.cat) && (!base.sub || r.subc === base.sub)).map(r => r.brand)),
+      rows: list.map(r => ({ label: r.label, sub: [r.label !== r.store ? r.store : '', r.region].filter(Boolean).join(' · '), netText: m(r.net), totalText: m(r.total), qtyText: q(r.qty), netColor: col(r.net), totalColor: col(r.total) })),
+      storeCount: list.length, netTotal: m(tn), totalTotal: m(tt), qtyTotal: q(tq),
+      summary: f.length.toLocaleString() + ' item lines · tap a header to sort',
+      hdStore: hd('store', 'Store'), hdNet: hd('net', 'Net sales'), hdTotal: hd('total', 'Total sales'), hdQty: hd('qty', 'Sold qty'),
+    });
+  }
   onGoNegInv() { this.setState({ screen: 'neginv' }); }
   onBackFromNegInv() { this.setState({ screen: 'menu', negInvModalOpen: false }); }
   onOpenNegInvModal(name) { this.setState({ negInvLocation: name, negInvModalOpen: true }); }
@@ -6533,6 +6718,19 @@ class Component extends DCLogic {
       whPdfLabel: s.whPdfDownloading ? 'Downloading…' : 'Download PDF',
       wh: s.screen === 'whstores' ? this.getWhView() : { rows: [], has: false, empty: false, summary: '', scopeName: '', pageLabel: '', showPager: false, prevDisabled: true, nextDisabled: true },
 
+      isDsr: s.screen === 'dsr',
+      dsr: s.screen === 'dsr' ? this.getDsrView() : { has: false, rows: [], regionOptions: [], catOptions: [], subOptions: [], brandOptions: [] },
+      onGoDsr: () => this.setState({ screen: 'dsr' }),
+      onBackFromDsr: () => this.setState({ screen: 'menu' }),
+      onDsrFile: e => { const fl = e.target.files[0]; if (fl) { this.setState(st => ({ files: { ...st.files, dsr: fl } })); this.loadDsr(fl); } },
+      onDsrRegion: e => this.setState({ dsrRegion: e.target.value, dsrCat: '', dsrSub: '', dsrBrand: '' }),
+      onDsrCat: e => this.setState({ dsrCat: e.target.value, dsrSub: '' }),
+      onDsrSub: e => this.setState({ dsrSub: e.target.value }),
+      onDsrBrand: e => this.setState({ dsrBrand: e.target.value }),
+      onDsrSortStore: () => this.setState(st => ({ dsrSort: 'store', dsrDir: st.dsrSort === 'store' && st.dsrDir === 'asc' ? 'desc' : 'asc' })),
+      onDsrSortNet: () => this.setState(st => ({ dsrSort: 'net', dsrDir: (st.dsrSort || 'net') === 'net' && st.dsrDir !== 'asc' ? 'asc' : 'desc' })),
+      onDsrSortTotal: () => this.setState(st => ({ dsrSort: 'total', dsrDir: st.dsrSort === 'total' && st.dsrDir !== 'asc' ? 'asc' : 'desc' })),
+      onDsrSortQty: () => this.setState(st => ({ dsrSort: 'qty', dsrDir: st.dsrSort === 'qty' && st.dsrDir !== 'asc' ? 'asc' : 'desc' })),
       isNegInv: s.screen === 'neginv',
       negInvByStore: negInvByStore,
       hasNegInvStores: negInvByStore.length > 0,
