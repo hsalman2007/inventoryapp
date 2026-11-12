@@ -631,14 +631,18 @@
                 {{nsName}}
               </label>
             </sc-if>
-            <sc-if value="{{hasNsFile}}" hint-placeholder-val="{{false}}">
-              <label class="seg-opt">
-                <input type="radio" name="discountToggle" checked="{{newStoreChecked}}" onChange="{{onNewStoreOn}}">
-                {{nsName}}
-              </label>
-            </sc-if>
           </div>
         </sc-if>
+
+        <div class="field">
+          <label for="ml-region">Region</label>
+          <select id="ml-region" class="input" value="{{mlRegion}}" onChange="{{onMlRegion}}">
+            <option value="">All regions</option>
+            <sc-for list="{{mlRegionOptions}}" as="rg" hint-placeholder-count="3">
+              <option value="{{rg}}">{{rg}}</option>
+            </sc-for>
+          </select>
+        </div>
 
         <div class="field">
           <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
@@ -2951,6 +2955,7 @@ class Component extends DCLogic {
     storeStockCategory: '',
     storeStockSubCategory: '',
     mlLocations: [],
+    mlRegion: '',
     mlPriceSource: 'falcon',
     mlBrand: '',
     mlCategory: '',
@@ -4595,11 +4600,12 @@ class Component extends DCLogic {
       if (isTmst01(name, info)) { stores.push({ name, short: displayName, label: displayName, isWarehouse: false }); continue; }
       if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) continue;
       if (EXCLUDED_STORES.has(displayName.toLowerCase()) || EXCLUDED_STORES.has(lc)) continue;
-      stores.push({ name, short: displayName, label: info.region ? displayName + ' — ' + info.region : displayName, isWarehouse: false });
+      stores.push({ name, short: displayName, label: info.region ? displayName + ' — ' + info.region : displayName, region: String(info.region || '').trim(), isWarehouse: false });
     }
     stores.sort((a, b) => naturalCompare(a.label, b.label));
     warehouses.sort((a, b) => naturalCompare(a.label, b.label));
-    return stores.concat(warehouses);
+    const rg = st.mlRegion;
+    return (rg ? stores.filter(o => o.region === rg) : stores).concat(warehouses);
   }
 
   getMlSubCategoryOptions() {
@@ -6457,6 +6463,9 @@ class Component extends DCLogic {
       mlLocationOptions: mlLocationOptions,
       mlCountLabel: mlSelectedCount === 0 ? 'None selected' : mlSelectedCount + ' selected',
       onMlClearLocations: () => this.onMlClearLocations(),
+      mlRegion: s.mlRegion || '',
+      mlRegionOptions: s.screen === 'multiloc' ? Array.from(new Set((s.storeOptions || []).map(o => { const inf = s.storeInfoMap && s.storeInfoMap.get(o.name); return String((inf && inf.region) || '').trim(); }).filter(Boolean))).sort() : [],
+      onMlRegion: e => { const v = e.target.value; this.setState(st => ({ mlRegion: v, mlLocations: !v ? st.mlLocations : (st.mlLocations || []).filter(n => { const inf = st.storeInfoMap && st.storeInfoMap.get(n); const lc = n.trim().toLowerCase(); const dn = ((inf && inf.shortName) || n).trim().toLowerCase(); return STORE_STOCK_WH_LOCATIONS_LC.has(lc) || STORE_STOCK_WH_LOCATIONS_LC.has(dn) || String((inf && inf.region) || '').trim() === v; }) })); },
       onMlSelectAllStores: () => this.onMlSelectAllStores(),
       onMlSelectWarehouses: () => this.onMlSelectWarehouses(),
       mlBrand: s.mlBrand,
