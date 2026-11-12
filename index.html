@@ -1903,6 +1903,7 @@
               <option value="national" hidden="{{natOptHidden}}" disabled="{{natOptHidden}}">National Day 2026</option>
               <option value="falcon">Ageing Clearance</option>
               <option value="newstore" hidden="{{nsOptHidden}}" disabled="{{nsOptHidden}}">{{nsName}}</option>
+              <option value="weekly" hidden="{{wkOptHidden}}" disabled="{{wkOptHidden}}">{{wkOptLabel}}</option>
               <option value="none">Original RSP only</option>
             </select>
           </div>
@@ -1960,6 +1961,14 @@
                     <div style="font-size: 12px; color: var(--color-neutral-700);">Was {{item.nsWas}}</div>
                     <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Now {{item.nsNow}}</div>
                     <div style="font-size: 11px; font-weight: 700; color: #fff; background: var(--color-accent-800); border-radius: 999px; padding: 1px 7px;">{{item.nsPct}}</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{item.hasWeekly}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                    <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">{{item.wkLabel}}</div>
+                    <div style="font-size: 12px; color: var(--color-neutral-700);">Was {{item.wkWas}}</div>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Now {{item.wkNow}}</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #fff; background: var(--color-accent-800); border-radius: 999px; padding: 1px 7px;">{{item.wkPct}}</div>
                   </div>
                 </sc-if>
                 <sc-if value="{{item.hasFalcon}}" hint-placeholder-val="{{false}}">
@@ -3284,6 +3293,7 @@ class Component extends DCLogic {
   }
 
   async componentDidMount() {
+    this.restoreWeekly();
     if (!window.__imgProxyFallback) {
       window.__imgProxyFallback = true;
       document.addEventListener('error', e => {
@@ -3547,6 +3557,78 @@ class Component extends DCLogic {
       const res = await fetch(url);
       if (res.ok) this.setState({ falconMap: new Map(await res.json()) });
     } catch (e) {}
+  }
+  wkMap() { return this.state.weeklyMap || new Map(); }
+  wkLabel() {
+    const m = this.wkMap(), deals = [], durs = [];
+    for (const v of m.values()) { if (v.deal && deals.indexOf(v.deal) < 0) deals.push(v.deal); if (v.dur && durs.indexOf(v.dur) < 0) durs.push(v.dur); }
+    const fix = d => { const p = d.split(' – '); return p.length === 2 && p[0].toLowerCase() === p[1].toLowerCase() ? p[0] : d; };
+    const name = deals.join(' / ') || 'Weekly Deals';
+    return durs.length ? name + ' (' + durs.map(fix).join(', ') + ')' : name;
+  }
+  restoreWeekly() {
+    try { const j = JSON.parse(localStorage.getItem('inv-weekly-deals') || 'null'); if (j && j.rows && j.rows.length) this.setState({ weeklyMap: new Map(j.rows), weeklyName: j.name || '' }); } catch (e) {}
+  }
+  async parseWeeklyFile(file) {
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const u32 = o => (buf[o] | (buf[o + 1] << 8) | (buf[o + 2] << 16) | (buf[o + 3] << 24)) >>> 0, u16 = o => buf[o] | (buf[o + 1] << 8);
+    let e = -1; for (let i = buf.length - 22; i >= 0; i--) if (u32(i) === 0x06054b50) { e = i; break; }
+    if (e < 0) throw new Error('not an .xlsx file');
+    const n = u16(e + 10); let p = u32(e + 16); const ents = {}; const td = new TextDecoder();
+    for (let k = 0; k < n; k++) { const nl = u16(p + 28), xl = u16(p + 30), cl = u16(p + 32); ents[td.decode(buf.subarray(p + 46, p + 46 + nl))] = { method: u16(p + 10), csize: u32(p + 20), off: u32(p + 42) }; p += 46 + nl + xl + cl; }
+    const get = async name => {
+      const en = ents[name]; if (!en) return '';
+      const start = en.off + 30 + u16(en.off + 26) + u16(en.off + 28); const data = buf.subarray(start, start + en.csize);
+      if (en.method === 0) return td.decode(data);
+      return td.decode(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+    };
+    const dec = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (m, c) => String.fromCharCode(+c)).replace(/&amp;/g, '&');
+    const tText = inner => { let t = ''; inner.replace(/<(?:\w+:)?t(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?t>/g, (m, x) => { t += x; return m; }); return dec(t); };
+    const ss = []; (await get('xl/sharedStrings.xml')).replace(/<(?:\w+:)?si\b[^>]*>([\s\S]*?)<\/(?:\w+:)?si>/g, (m, inner) => { ss.push(tText(inner)); return m; });
+    const sheet = Object.keys(ents).filter(k => /^xl\/worksheets\/sheet\d+\.xml$/.test(k)).sort()[0];
+    const xml = await get(sheet);
+    const colIdx = ref => { let v = 0; for (const ch of ref) v = v * 26 + ch.charCodeAt(0) - 64; return v - 1; };
+    const norm = s => String(s).toLowerCase().replace(/[^a-z0-9%]/g, '');
+    const SKU_KEYS = ['sku', 'skuno', 'itemno', 'item', 'itemcode', 'itemnumber', 'no', 'code', 'productcode'];
+    const rowRe = /<(?:\w+:)?row\b[^>]*>([\s\S]*?)<\/(?:\w+:)?row>/g, cRe = /<(?:\w+:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:\w+:)?c>)/g;
+    let hdr = null, rm; const map = new Map();
+    while ((rm = rowRe.exec(xml))) {
+      const vals = []; let cm; cRe.lastIndex = 0;
+      while ((cm = cRe.exec(rm[1]))) {
+        const at = cm[1], body = cm[2] || ''; const r = (at.match(/\br="([A-Z]+)\d*"/) || [])[1]; if (!r) continue;
+        const t = (at.match(/\bt="(\w+)"/) || [])[1];
+        let v = '';
+        if (t === 'inlineStr') v = tText(body);
+        else { const vm = body.match(/<(?:\w+:)?v>([\s\S]*?)<\/(?:\w+:)?v>/); v = vm ? dec(vm[1]) : ''; if (t === 's') v = ss[+v] || ''; }
+        vals[colIdx(r)] = String(v).trim();
+      }
+      if (!hdr) {
+        const si = vals.findIndex(v => v && SKU_KEYS.includes(norm(v)));
+        if (si >= 0) { hdr = { sku: si }; vals.forEach((v, i) => { const k = norm(v || ''); if (['was', 'rsp', 'wasprice', 'oldprice', 'before'].includes(k) && hdr.was == null) hdr.was = i; else if (['now', 'nowprice', 'newprice', 'promoprice', 'after', 'dealprice'].includes(k) && hdr.now == null) hdr.now = i; else if (['discount', 'disc', '%', 'pct', 'percent', 'off', 'discount%', 'discountpct'].includes(k) && hdr.pct == null) hdr.pct = i; else if (['dealtype', 'deal', 'dealname', 'promotion', 'promo', 'promoname'].includes(k) && hdr.deal == null) hdr.deal = i; else if (['fromto', 'duration', 'period', 'validity', 'dates', 'date', 'validfromto'].includes(k) && hdr.dur == null) hdr.dur = i; }); }
+        continue;
+      }
+      const sku = vals[hdr.sku]; if (!sku) continue;
+      const fmt = x => { const f = parseFloat(String(x || '').replace(/,/g, '')); return isFinite(f) ? String(Math.round(f * 100) / 100) : (x || ''); };
+      const was = hdr.was != null ? fmt(vals[hdr.was]) : '', now = hdr.now != null ? fmt(vals[hdr.now]) : '';
+      const pr = hdr.pct != null ? String(vals[hdr.pct] || '') : '', pn = parseFloat(pr.replace('%', ''));
+      let pct = '';
+      if (pr && isFinite(pn)) pct = Math.round(pn <= 1 ? pn * 100 : pn) + '%';
+      else { const w = parseFloat(was), nw = parseFloat(now); if (isFinite(w) && isFinite(nw) && w > 0) pct = Math.round((1 - nw / w) * 100) + '%'; }
+      const deal = hdr.deal != null ? String(vals[hdr.deal] || '').trim() : '', dur = hdr.dur != null ? String(vals[hdr.dur] || '').replace(/\s*-\s*/g, ' – ').trim() : '';
+      map.set(sku, { was, now, pct, hasPct: !!pct, deal, dur });
+    }
+    if (!hdr) throw new Error('no SKU column header found');
+    return map;
+  }
+  async onFileWeekly(e) {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    try {
+      const m = await this.parseWeeklyFile(f);
+      if (!m.size) throw new Error('the file has no SKU rows');
+      const name = f.name.replace(/\.[^.]+$/, '');
+      try { localStorage.setItem('inv-weekly-deals', JSON.stringify({ name, rows: [...m.entries()] })); } catch (er) {}
+      this.setState({ weeklyMap: m, weeklyName: name, weeklyError: '', skuDiscView: 'weekly', skuQuery: [...m.keys()].join(', '), skuExpanded: '' });
+    } catch (er) { this.setState({ weeklyError: 'Could not read Weekly Deals file: ' + er.message }); e.target.value = ''; }
   }
   nsName() { const p = this.state.parsed; return (p && p.nsMap && p.nsMap.size && p.nsName) || this.state.nsDefaultName || 'New Store'; }
   nsMap() { const p = this.state.parsed; return (p && p.nsMap && p.nsMap.size) ? p.nsMap : (this.state.nsDefaultMap || new Map()); }
@@ -6002,7 +6084,7 @@ class Component extends DCLogic {
     const m = document.createElement('canvas').getContext('2d');
     const clip = (t, f, maxW) => { m.font = f; t = String(t || ''); if (m.measureText(t).width <= maxW) return t; while (t && m.measureText(t + '…').width > maxW) t = t.slice(0, -1); return t + '…'; };
     const dv = this.state.skuFalcon ? 'falcon' : (this.state.skuDiscView || 'falcon');
-    const viewName = { seasonal: 'Seasonal discounts', national: 'National Day 2026', falcon: 'Ageing Clearance', newstore: this.nsName(), none: 'Original RSP' }[dv];
+    const viewName = { seasonal: 'Seasonal discounts', national: 'National Day 2026', falcon: 'Ageing Clearance', newstore: this.nsName(), weekly: this.wkLabel(), none: 'Original RSP' }[dv];
     const loadImg = (src, anon) => new Promise(res => {
       if (!src) return res(null);
       const im = new Image(); if (anon) im.crossOrigin = 'anonymous';
@@ -6309,7 +6391,7 @@ class Component extends DCLogic {
     for (const r of rows) for (const sr of (r.storeRows || [])) if (stores.indexOf(sr.label) < 0) stores.push(sr.label);
     const num = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, '')); return isNaN(n) ? '' : n; };
     const dv = this.state.skuFalcon ? 'falcon' : (this.state.skuDiscView || 'falcon');
-    const dName = { falcon: 'Ageing Clearance', seasonal: 'Seasonal Discounts', national: 'National Day 2026', newstore: this.nsName() }[dv] || '';
+    const dName = { falcon: 'Ageing Clearance', seasonal: 'Seasonal Discounts', national: 'National Day 2026', newstore: this.nsName(), weekly: this.wkLabel() }[dv] || '';
     const today = new Date().toISOString().slice(0, 10);
     const head = ['SKU', 'Part#', 'Description', 'RSP', 'Was', 'Now', 'Discount %', 'Total qty'].concat(stores);
     const aoa = [[{ v: 'SKU stock across stores · ' + dName + (this.state.skuRegion ? ' · ' + this.state.skuRegion : '') + ' · ' + today, s: 1 }], head.map(h => ({ v: h, s: 4 }))];
@@ -6405,11 +6487,12 @@ class Component extends DCLogic {
       const nat = nationalMap ? nationalMap.get(it.itemNo) : null;
       const fal = this.getFalconMap().get(it.itemNo) || null;
       const nsE = this.nsMap().get(it.itemNo) || null;
+      const wkE = this.wkMap().get(it.itemNo) || null;
       const exp = expandAll || s.skuExpanded === it.itemNo;
       const dv = s.skuFalcon ? 'falcon' : (s.skuDiscView || 'falcon');
       const metrics = this.costMetrics(it.itemNo, (s.skuFalcon && fal && fal.was) || it.rsp, s.skuFalcon ? fal : disc);
-      const selE = dv === 'national' ? nat : dv === 'falcon' ? fal : dv === 'newstore' ? nsE : dv === 'seasonal' ? disc : null;
-      const promoShort = { national: 'Nat. Day', falcon: 'Ageing', newstore: this.nsName(), seasonal: 'Seasonal' }[dv] || '';
+      const selE = dv === 'national' ? nat : dv === 'falcon' ? fal : dv === 'newstore' ? nsE : dv === 'weekly' ? wkE : dv === 'seasonal' ? disc : null;
+      const promoShort = { national: 'Nat. Day', falcon: 'Ageing', newstore: this.nsName(), weekly: (this.wkMap().size && [...this.wkMap().values()][0].deal) || 'Weekly', seasonal: 'Seasonal' }[dv] || '';
       const natMetrics = selE && (selE.now || selE.pct) ? this.costMetrics(it.itemNo, selE.was || it.rsp, selE) : null;
       return {
         itemNo: it.itemNo,
@@ -6425,6 +6508,11 @@ class Component extends DCLogic {
         hasFalcon: dv === 'falcon' && !!(fal && (fal.now || fal.pct)),
         hasNs: dv === 'newstore' && !!(nsE && (nsE.now || nsE.pct)),
         nsLabel: this.nsName(),
+        hasWeekly: dv === 'weekly' && !!(wkE && (wkE.now || wkE.pct)),
+        wkLabel: this.wkLabel(),
+        wkWas: wkE ? wkE.was : '',
+        wkNow: wkE ? wkE.now : '',
+        wkPct: wkE ? wkE.pct : '',
         nsWas: nsE ? nsE.was : '',
         nsNow: nsE ? nsE.now : '',
         nsPct: nsE ? nsE.pct : '',
@@ -6450,9 +6538,9 @@ class Component extends DCLogic {
           description2: r.description2 || it.description2,
           partNo: r.partNo || (fal && fal.partNo) || '',
           rsp: it.rsp || '',
-          was: dv === 'national' ? (nat && nat.was) || '' : dv === 'falcon' ? (fal && fal.was) || '' : dv === 'newstore' ? (nsE && nsE.was) || '' : '',
-          now: dv === 'seasonal' ? (disc && disc.now) || '' : dv === 'national' ? (nat && nat.now) || '' : dv === 'falcon' ? (fal && fal.now) || '' : dv === 'newstore' ? (nsE && nsE.now) || '' : '',
-          pct: dv === 'seasonal' ? (disc && disc.pct) || '' : dv === 'national' ? (nat && nat.pct) || '' : dv === 'falcon' ? (fal && fal.pct) || '' : dv === 'newstore' ? (nsE && nsE.pct) || '' : '',
+          was: dv === 'national' ? (nat && nat.was) || '' : dv === 'falcon' ? (fal && fal.was) || '' : dv === 'newstore' ? (nsE && nsE.was) || '' : dv === 'weekly' ? (wkE && wkE.was) || '' : '',
+          now: dv === 'seasonal' ? (disc && disc.now) || '' : dv === 'national' ? (nat && nat.now) || '' : dv === 'falcon' ? (fal && fal.now) || '' : dv === 'newstore' ? (nsE && nsE.now) || '' : dv === 'weekly' ? (wkE && wkE.now) || '' : '',
+          pct: dv === 'seasonal' ? (disc && disc.pct) || '' : dv === 'national' ? (nat && nat.pct) || '' : dv === 'falcon' ? (fal && fal.pct) || '' : dv === 'newstore' ? (nsE && nsE.pct) || '' : dv === 'weekly' ? (wkE && wkE.pct) || '' : '',
           totalQty,
           storeRows,
         },
@@ -6460,8 +6548,8 @@ class Component extends DCLogic {
           itemNo: it.itemNo,
           description2: r.description2 || it.description2,
           rsp: it.rsp || '',
-          now: dv === 'seasonal' ? (disc && disc.now) || '' : dv === 'national' ? (nat && nat.now) || '' : dv === 'falcon' ? (fal && fal.now) || '' : dv === 'newstore' ? (nsE && nsE.now) || '' : '',
-          pct: dv === 'seasonal' ? (disc && disc.pct) || '' : dv === 'national' ? (nat && nat.pct) || '' : dv === 'falcon' ? (fal && fal.pct) || '' : dv === 'newstore' ? (nsE && nsE.pct) || '' : '',
+          now: dv === 'seasonal' ? (disc && disc.now) || '' : dv === 'national' ? (nat && nat.now) || '' : dv === 'falcon' ? (fal && fal.now) || '' : dv === 'newstore' ? (nsE && nsE.now) || '' : dv === 'weekly' ? (wkE && wkE.now) || '' : '',
+          pct: dv === 'seasonal' ? (disc && disc.pct) || '' : dv === 'national' ? (nat && nat.pct) || '' : dv === 'falcon' ? (fal && fal.pct) || '' : dv === 'newstore' ? (nsE && nsE.pct) || '' : dv === 'weekly' ? (wkE && wkE.pct) || '' : '',
           image: r.image && r.image !== '(blank)' ? r.image : '',
           storeRows, totalQty,
         }),
@@ -7024,13 +7112,21 @@ class Component extends DCLogic {
       skuMultiMissing: this._skuMulti && this._skuMulti.missing.length ? ('Not found: ' + this._skuMulti.missing.join(', ')) : '',
       skuQuery: s.skuQuery,
       skuQueryTooShort: s.screen === 'skulookup' && !/[,\n;]/.test(s.skuQuery) && s.skuQuery.trim().length > 0 && s.skuQuery.trim().length < 2,
-      skuDiscColLabel: ({ national: 'Nat. Day price', falcon: 'Ageing price', newstore: (this.nsName ? this.nsName() : 'New store') + ' price', seasonal: 'Seasonal price' })[s.skuFalcon ? 'falcon' : (s.skuDiscView || 'falcon')] || 'Disc. price',
+      skuDiscColLabel: ({ national: 'Nat. Day price', falcon: 'Ageing price', newstore: (this.nsName ? this.nsName() : 'New store') + ' price', weekly: ((this.wkMap().size && [...this.wkMap().values()][0].deal) || 'Weekly') + ' price', seasonal: 'Seasonal price' })[s.skuFalcon ? 'falcon' : (s.skuDiscView || 'falcon')] || 'Disc. price',
       skuMatches: skuMatches,
       skuSingle: (skuMatches || []).length === 1,
       skuMulti: (skuMatches || []).length > 1,
       showSkuDiscView: !s.skuFalcon,
       skuDiscView: s.skuDiscView || 'falcon',
-      onSkuDiscViewChange: e => this.setState({ skuDiscView: e.target.value }),
+      onSkuDiscViewChange: e => { const v = e.target.value, m = this.wkMap(); this.setState(st => v === 'weekly' && m.size && !String(st.skuQuery || '').trim() ? { skuDiscView: v, skuQuery: [...m.keys()].join(', '), skuExpanded: '' } : { skuDiscView: v }); },
+      wkOptHidden: !(s.weeklyMap && s.weeklyMap.size),
+      wkOptLabel: this.wkLabel(),
+      onFileWeekly: e => this.onFileWeekly(e),
+      weeklyLoaded: !!(s.weeklyMap && s.weeklyMap.size),
+      weeklyStatusColor: s.weeklyError ? '#8b1a1a' : 'var(--color-neutral-700)',
+      weeklyStatus: s.weeklyError || (s.weeklyMap && s.weeklyMap.size ? 'Loaded: ' + this.wkLabel() + ' · ' + s.weeklyMap.size + ' SKUs' : 'No file loaded'),
+      onWeeklyShow: () => { const m = this.wkMap(); if (m.size) this.setState({ skuDiscView: 'weekly', skuQuery: [...m.keys()].join(', '), skuExpanded: '' }); },
+      onWeeklyClear: () => { try { localStorage.removeItem('inv-weekly-deals'); } catch (er) {} this.setState(st => ({ weeklyMap: null, weeklyName: '', weeklyError: '', skuDiscView: st.skuDiscView === 'weekly' ? 'falcon' : st.skuDiscView })); },
       skuNoMatches: s.screen === 'skulookup' && s.skuQuery.trim().length >= 2 && skuMatches.length === 0,
       onDownloadPdf: () => this.onDownloadPdf(),
       onDownloadExcel: () => this.onDownloadExcel(),
