@@ -1359,6 +1359,12 @@
               <input type="radio" name="tagPriceSource" checked="{{tagFalconChecked}}" onChange="{{onTagFalcon}}">
               Ageing Clearance
             </label>
+            <sc-for list="{{wkDealOpts}}" as="o" hint-placeholder-count="0">
+              <label class="seg-opt">
+                <input type="radio" name="tagPriceSource" checked="{{o.tagChecked}}" onChange="{{o.onTag}}">
+                {{o.label}}
+              </label>
+            </sc-for>
             <sc-if value="{{hasNsFile}}" hint-placeholder-val="{{false}}">
               <label class="seg-opt">
                 <input type="radio" name="tagPriceSource" checked="{{tagNsChecked}}" onChange="{{onTagNs}}">
@@ -1898,12 +1904,14 @@
         <sc-if value="{{showSkuDiscView}}" hint-placeholder-val="{{true}}">
           <div class="field">
             <label for="sku-disc-view">Discount type</label>
-            <select id="sku-disc-view" class="input" value="{{skuDiscView}}" onChange="{{onSkuDiscViewChange}}">
+            <select id="sku-disc-view" class="input" value="{{skuDiscSel}}" onChange="{{onSkuDiscViewChange}}">
               <option value="seasonal" hidden="{{natOptHidden}}" disabled="{{natOptHidden}}">Seasonal discounts</option>
               <option value="national" hidden="{{natOptHidden}}" disabled="{{natOptHidden}}">National Day 2026</option>
               <option value="falcon">Ageing Clearance</option>
               <option value="newstore" hidden="{{nsOptHidden}}" disabled="{{nsOptHidden}}">{{nsName}}</option>
-              <option value="weekly" hidden="{{wkOptHidden}}" disabled="{{wkOptHidden}}">{{wkOptLabel}}</option>
+              <sc-for list="{{wkDealOpts}}" as="o" hint-placeholder-count="0">
+                <option value="{{o.value}}" style="font-weight: 700; color: {{o.color}};">{{o.label}}</option>
+              </sc-for>
               <option value="none">Original RSP only</option>
             </select>
           </div>
@@ -1968,7 +1976,6 @@
                     <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">{{item.wkLabel}}</div>
                     <div style="font-size: 12px; color: var(--color-neutral-700);">Was {{item.wkWas}}</div>
                     <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Now {{item.wkNow}}</div>
-                    <div style="font-size: 11px; font-weight: 700; color: #fff; background: var(--color-accent-800); border-radius: 999px; padding: 1px 7px;">{{item.wkPct}}</div>
                   </div>
                 </sc-if>
                 <sc-if value="{{item.hasFalcon}}" hint-placeholder-val="{{false}}">
@@ -2415,6 +2422,16 @@ class Component extends DCLogic {
     "Standard columns": "الأعمدة الأساسية",
     "Include discount pricing": "إضافة أسعار الخصم",
     "Seasonal Discounts": "الخصومات الموسمية",
+    "Seasonal discounts": "الخصومات الموسمية",
+    "Original RSP only": "سعر البيع الأصلي فقط",
+    "Weekly Deals": "العروض الأسبوعية",
+    "Discount type": "نوع الخصم",
+    "Physical Count": "الجرد الفعلي",
+    "Physical count": "الجرد الفعلي",
+    "DSR": "تقرير المبيعات اليومي",
+    "Upload different files": "رفع ملفات أخرى",
+    "Export snapshot for public page": "تصدير نسخة للصفحة العامة",
+    "Weekly Deals (.xlsx) — optional": "العروض الأسبوعية (.xlsx) — اختياري",
     "Addnl. 1500": "1500 صنف إضافي",
     "National Day 2026": "اليوم الوطني 2026",
     "Ageing Clearance": "تصفية المخزون القديم",
@@ -3088,10 +3105,24 @@ class Component extends DCLogic {
     return Component.AR[k] || s;
   }
 
+  static trDeal(key) {
+    const MON = { jan: 'يناير', feb: 'فبراير', mar: 'مارس', apr: 'أبريل', may: 'مايو', jun: 'يونيو', jul: 'يوليو', aug: 'أغسطس', sep: 'سبتمبر', oct: 'أكتوبر', nov: 'نوفمبر', dec: 'ديسمبر' };
+    const DAY = { sun: 'الأحد', mon: 'الاثنين', tue: 'الثلاثاء', wed: 'الأربعاء', thu: 'الخميس', fri: 'الجمعة', sat: 'السبت' };
+    const NAMES = { 'weekly deals': 'العروض الأسبوعية', 'weekly': 'أسبوعي', 'camping friday': 'جمعة التخييم', 'sleeping bags': 'أكياس النوم', 'bbq grills': 'شوايات', 'wander burners': 'مواقد واندر', 'stanley': 'ستانلي' };
+    const date = s => s.replace(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3})[a-z]*(?:\s+([A-Za-z]{3})[a-z]*)?/g, (m, d, mo, dy) => { const mm = MON[mo.toLowerCase()]; if (!mm) return m; const dd = dy && DAY[dy.toLowerCase()]; return (dd ? dd + ' ' : '') + d + ' ' + mm; });
+    const name = n => { n = n.trim(); const w = n.match(/^DoW\s*WK\s*(\d+)\s*[-–]\s*(.+)$/i); if (w) return 'عرض الأسبوع ' + w[1] + ' - ' + (NAMES[w[2].trim().toLowerCase()] || w[2].trim()); return NAMES[n.toLowerCase()] || null; };
+    let m = key.match(/^(.+?)\s*\(([^()]*\d[^()]*)\)$/);
+    if (m) { const nm = name(m[1]), dt = date(m[2]); if (nm || dt !== m[2]) return (nm || m[1]) + ' (' + dt + ')'; }
+    m = key.match(/^(.+) price$/);
+    if (m && name(m[1])) return 'سعر ' + name(m[1]);
+    const nm = name(key);
+    return nm && /^DoW/i.test(key) || ['camping friday', 'weekly deals'].includes(key.toLowerCase()) ? nm : null;
+  }
   static translate(raw) {
     const key = String(raw).replace(/\s+/g, ' ').trim();
     if (!key || !/[A-Za-z]/.test(key)) return null;
     if (Component.AR[key]) return Component.AR[key];
+    { const d = Component.trDeal(key); if (d) return d; }
     for (const [re, fn] of Component.AR_PATS) {
       const m = key.match(re);
       if (m) {
@@ -3343,6 +3374,7 @@ class Component extends DCLogic {
         storeOptions,
         selectedStore: storeOptions[0] ? storeOptions[0].name : '',
         screen: 'menu',
+        ...(snap.weeklyRows && snap.weeklyRows.length ? { weeklyRows: snap.weeklyRows.map(([k, v]) => [k, { ...v, pct: '', hasPct: false }]), weeklyName: snap.weeklyName || '', weeklyDeal: '' } : {}),
       });
     } catch (err) {
       this.setState({ loading: false, loadError: 'Could not load store data: ' + err.message, screen: 'error' });
@@ -3558,16 +3590,37 @@ class Component extends DCLogic {
       if (res.ok) this.setState({ falconMap: new Map(await res.json()) });
     } catch (e) {}
   }
-  wkMap() { return this.state.weeklyMap || new Map(); }
-  wkLabel() {
-    const m = this.wkMap(), deals = [], durs = [];
-    for (const v of m.values()) { if (v.deal && deals.indexOf(v.deal) < 0) deals.push(v.deal); if (v.dur && durs.indexOf(v.dur) < 0) durs.push(v.dur); }
+  wkGroups() {
+    const rows = this.state.weeklyRows || [];
+    if (this._wkGrpSrc === rows) return this._wkGrp;
     const fix = d => { const p = d.split(' – '); return p.length === 2 && p[0].toLowerCase() === p[1].toLowerCase() ? p[0] : d; };
-    const name = deals.join(' / ') || 'Weekly Deals';
-    return durs.length ? name + ' (' + durs.map(fix).join(', ') + ')' : name;
+    const by = new Map();
+    for (const [sku, v] of rows) {
+      const k = v.deal || 'Weekly Deals';
+      let g = by.get(k); if (!g) { g = { deal: k, dur: v.dur ? fix(v.dur) : '', map: new Map() }; by.set(k, g); }
+      g.map.set(sku, v);
+    }
+    const out = [...by.values()].map(g => ({ ...g, label: g.dur ? g.deal + ' (' + g.dur + ')' : g.deal }));
+    this._wkGrpSrc = rows; this._wkGrp = out;
+    return out;
   }
+  wkOngoing(g) {
+    const MON = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+    const parts = String(g.dur || '').split(/\s+[–-]\s+/);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const pd = s => { const m = String(s || '').match(/(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3})[a-z]*(?:\s+(\d{4}))?/i); if (!m || MON[m[2].toLowerCase()] == null) return null; return new Date(m[3] ? +m[3] : today.getFullYear(), MON[m[2].toLowerCase()], +m[1]); };
+    const a = pd(parts[0]); let b = pd(parts[1] || parts[0]);
+    if (!a || !b) return false;
+    if (b < a) b.setFullYear(b.getFullYear() + 1);
+    if (today.getMonth() <= 1 && a.getMonth() >= 10) { a.setFullYear(a.getFullYear() - 1); b.setFullYear(b.getFullYear() - 1); }
+    return today >= a && today <= b;
+  }
+  wkGroup() { const gs = this.wkGroups(); return gs.find(g => g.deal === this.state.weeklyDeal) || gs[0] || null; }
+  wkMap() { const g = this.wkGroup(); return g ? g.map : new Map(); }
+  wkLabel() { const g = this.wkGroup(); return g ? g.label : 'Weekly Deals'; }
   restoreWeekly() {
-    try { const j = JSON.parse(localStorage.getItem('inv-weekly-deals') || 'null'); if (j && j.rows && j.rows.length) this.setState({ weeklyMap: new Map(j.rows), weeklyName: j.name || '' }); } catch (e) {}
+    return;
+    try { const j = JSON.parse(localStorage.getItem('inv-weekly-deals') || 'null'); if (j && j.rows && j.rows.length) this.setState({ weeklyRows: j.rows.map(([k, v]) => [k, { ...v, pct: '', hasPct: false }]), weeklyName: j.name || '' }); } catch (e) {}
   }
   async parseWeeklyFile(file) {
     const buf = new Uint8Array(await file.arrayBuffer());
@@ -3591,7 +3644,7 @@ class Component extends DCLogic {
     const norm = s => String(s).toLowerCase().replace(/[^a-z0-9%]/g, '');
     const SKU_KEYS = ['sku', 'skuno', 'itemno', 'item', 'itemcode', 'itemnumber', 'no', 'code', 'productcode'];
     const rowRe = /<(?:\w+:)?row\b[^>]*>([\s\S]*?)<\/(?:\w+:)?row>/g, cRe = /<(?:\w+:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:\w+:)?c>)/g;
-    let hdr = null, rm; const map = new Map();
+    let hdr = null, rm; const map = [];
     while ((rm = rowRe.exec(xml))) {
       const vals = []; let cm; cRe.lastIndex = 0;
       while ((cm = cRe.exec(rm[1]))) {
@@ -3615,7 +3668,7 @@ class Component extends DCLogic {
       if (pr && isFinite(pn)) pct = Math.round(pn <= 1 ? pn * 100 : pn) + '%';
       else { const w = parseFloat(was), nw = parseFloat(now); if (isFinite(w) && isFinite(nw) && w > 0) pct = Math.round((1 - nw / w) * 100) + '%'; }
       const deal = hdr.deal != null ? String(vals[hdr.deal] || '').trim() : '', dur = hdr.dur != null ? String(vals[hdr.dur] || '').replace(/\s*-\s*/g, ' – ').trim() : '';
-      map.set(sku, { was, now, pct, hasPct: !!pct, deal, dur });
+      map.push([sku, { was, now, pct: '', hasPct: false, deal, dur }]);
     }
     if (!hdr) throw new Error('no SKU column header found');
     return map;
@@ -3624,10 +3677,10 @@ class Component extends DCLogic {
     const f = e.target.files && e.target.files[0]; if (!f) return;
     try {
       const m = await this.parseWeeklyFile(f);
-      if (!m.size) throw new Error('the file has no SKU rows');
+      if (!m.length) throw new Error('the file has no SKU rows');
       const name = f.name.replace(/\.[^.]+$/, '');
-      try { localStorage.setItem('inv-weekly-deals', JSON.stringify({ name, rows: [...m.entries()] })); } catch (er) {}
-      this.setState({ weeklyMap: m, weeklyName: name, weeklyError: '', skuDiscView: 'weekly', skuQuery: [...m.keys()].join(', '), skuExpanded: '' });
+      try { localStorage.setItem('inv-weekly-deals', JSON.stringify({ name, rows: m })); } catch (er) {}
+      this.setState({ weeklyRows: m, weeklyName: name, weeklyError: '', weeklyDeal: '' }, () => this.setState({ skuDiscView: 'weekly', weeklyDeal: (this.wkGroup() || {}).deal || '', skuQuery: [...this.wkMap().keys()].join(', '), skuExpanded: '' }));
     } catch (er) { this.setState({ weeklyError: 'Could not read Weekly Deals file: ' + er.message }); e.target.value = ''; }
   }
   nsName() { const p = this.state.parsed; return (p && p.nsMap && p.nsMap.size && p.nsName) || this.state.nsDefaultName || 'New Store'; }
@@ -5394,10 +5447,11 @@ class Component extends DCLogic {
     const nat = s.tagPriceSource === 'national';
     const fal = s.tagPriceSource === 'falcon';
     const ns = s.tagPriceSource === 'newstore';
-    const name = ns ? this.nsName() : fal ? 'Ageing Clearance' : nat ? 'National Day 2026' : 'Seasonal Discounts';
-    const map = ns ? this.nsMap() : fal ? this.getFalconMap() : s.parsed && (nat ? s.parsed.nationalMap : s.parsed.discountMap);
+    const wk = s.tagPriceSource === 'weekly';
+    const name = wk ? this.wkLabel() : ns ? this.nsName() : fal ? 'Ageing Clearance' : nat ? 'National Day 2026' : 'Seasonal Discounts';
+    const map = wk ? this.wkMap() : ns ? this.nsMap() : fal ? this.getFalconMap() : s.parsed && (nat ? s.parsed.nationalMap : s.parsed.discountMap);
     if (!map || !map.size) return name + ' file not loaded — tags print the current price only.';
-    return 'Was / now / % taken from ' + name + '.';
+    return (wk ? 'Was / now taken from ' : 'Was / now / % taken from ') + name + '.';
   }
   onTagSkuChange(i, e) {
     const v = e.target.value;
@@ -5445,7 +5499,7 @@ class Component extends DCLogic {
       if (!it && !r) { card.note = 'SKU not found'; return card; }
       const itemNo = it ? it.itemNo : q;
       const nat = s.tagPriceSource === 'national';
-      const primary = s.tagPriceSource === 'rsp' ? null : s.tagPriceSource === 'newstore' ? this.nsMap() : s.tagPriceSource === 'falcon' ? this.getFalconMap() : (nat ? parsed.nationalMap : parsed.discountMap);
+      const primary = s.tagPriceSource === 'rsp' ? null : s.tagPriceSource === 'weekly' ? this.wkMap() : s.tagPriceSource === 'newstore' ? this.nsMap() : s.tagPriceSource === 'falcon' ? this.getFalconMap() : (nat ? parsed.nationalMap : parsed.discountMap);
       const disc = (primary && primary.get(itemNo)) || null;
       const was = disc && disc.was ? disc.was : ((it && it.rsp) || (r && r.rsp) || '');
       const now = disc && disc.now ? disc.now : '';
@@ -5479,7 +5533,7 @@ class Component extends DCLogic {
       card.description = ((r && r.description2) || (it && it.description2) || '').toUpperCase();
       card.wasText = this.tagMoney(was);
       card.nowText = this.tagMoney(now);
-      card.pctText = s.tagPriceSource === 'falcon' ? '' : (/%$/.test(pct) ? pct : '');
+      card.pctText = s.tagPriceSource === 'falcon' || s.tagPriceSource === 'weekly' ? '' : (/%$/.test(pct) ? pct : '');
       card.hasPct = !!card.pctText;
       if (!card.wasText && !card.nowText) {
         card.found = false;
@@ -7008,6 +7062,8 @@ class Component extends DCLogic {
       onNewStoreOn: () => this.onNewStoreOn(),
       tagNsChecked: s.tagPriceSource === 'newstore',
       onTagNs: () => this.setState({ tagPriceSource: 'newstore' }),
+      tagWkChecked: s.tagPriceSource === 'weekly',
+      onTagWk: () => this.setState({ tagPriceSource: 'weekly' }),
       mlNsChecked: s.mlPriceSource === 'newstore',
       onMlNs: () => this.setState({ mlPriceSource: 'newstore' }),
       falconChecked: s.storeStockFalcon,
@@ -7118,15 +7174,15 @@ class Component extends DCLogic {
       skuMulti: (skuMatches || []).length > 1,
       showSkuDiscView: !s.skuFalcon,
       skuDiscView: s.skuDiscView || 'falcon',
-      onSkuDiscViewChange: e => { const v = e.target.value, m = this.wkMap(); this.setState(st => v === 'weekly' && m.size && !String(st.skuQuery || '').trim() ? { skuDiscView: v, skuQuery: [...m.keys()].join(', '), skuExpanded: '' } : { skuDiscView: v }); },
-      wkOptHidden: !(s.weeklyMap && s.weeklyMap.size),
-      wkOptLabel: this.wkLabel(),
+      onSkuDiscViewChange: e => { const v = e.target.value; if (v.indexOf('wk::') === 0) { const g = this.wkGroups()[+v.slice(4)]; if (g) this.setState({ skuDiscView: 'weekly', weeklyDeal: g.deal, skuQuery: [...g.map.keys()].join(', '), skuExpanded: '' }); } else this.setState({ skuDiscView: v }); },
+      skuDiscSel: (s.skuDiscView || 'falcon') === 'weekly' ? 'wk::' + Math.max(0, this.wkGroups().indexOf(this.wkGroup())) : (s.skuDiscView || 'falcon'),
+      wkDealOpts: this.wkGroups().map((g, i) => ({ value: 'wk::' + i, label: g.label, color: this.wkOngoing(g) ? '#1e7b34' : '#c2560c', tagChecked: s.tagPriceSource === 'weekly' && this.wkGroup() === g, onTag: () => this.setState({ tagPriceSource: 'weekly', weeklyDeal: g.deal }) })),
       onFileWeekly: e => this.onFileWeekly(e),
-      weeklyLoaded: !!(s.weeklyMap && s.weeklyMap.size),
+      weeklyLoaded: !!(s.weeklyRows && s.weeklyRows.length),
       weeklyStatusColor: s.weeklyError ? '#8b1a1a' : 'var(--color-neutral-700)',
-      weeklyStatus: s.weeklyError || (s.weeklyMap && s.weeklyMap.size ? 'Loaded: ' + this.wkLabel() + ' · ' + s.weeklyMap.size + ' SKUs' : 'No file loaded'),
+      weeklyStatus: s.weeklyError || (s.weeklyRows && s.weeklyRows.length ? 'Loaded: ' + this.wkGroups().length + ' deal' + (this.wkGroups().length === 1 ? '' : 's') + ' · ' + s.weeklyRows.length + ' SKUs' : 'No file loaded'),
       onWeeklyShow: () => { const m = this.wkMap(); if (m.size) this.setState({ skuDiscView: 'weekly', skuQuery: [...m.keys()].join(', '), skuExpanded: '' }); },
-      onWeeklyClear: () => { try { localStorage.removeItem('inv-weekly-deals'); } catch (er) {} this.setState(st => ({ weeklyMap: null, weeklyName: '', weeklyError: '', skuDiscView: st.skuDiscView === 'weekly' ? 'falcon' : st.skuDiscView })); },
+      onWeeklyClear: () => { try { localStorage.removeItem('inv-weekly-deals'); } catch (er) {} this.setState(st => ({ weeklyRows: null, weeklyDeal: '', weeklyName: '', weeklyError: '', skuDiscView: st.skuDiscView === 'weekly' ? 'falcon' : st.skuDiscView })); },
       skuNoMatches: s.screen === 'skulookup' && s.skuQuery.trim().length >= 2 && skuMatches.length === 0,
       onDownloadPdf: () => this.onDownloadPdf(),
       onDownloadExcel: () => this.onDownloadExcel(),
