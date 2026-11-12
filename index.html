@@ -6531,7 +6531,7 @@ class Component extends DCLogic {
       storeStockSort: s.storeStockSort || '',
       storeStockRegion: s.storeStockRegion || '',
       skuRegion: s.skuRegion || '',
-      skuRegionOptions: s.screen === 'skulookup' && s.parsed ? Array.from(new Set(s.parsed.matrix.storeNames.map(n => { const inf = s.storeInfoMap && s.storeInfoMap.get(n); return String((inf && inf.region) || '').trim(); }).filter(Boolean))).sort() : [],
+      skuRegionOptions: s.screen === 'skulookup' ? Array.from(new Set((s.storeOptions || []).map(o => { const inf = s.storeInfoMap && s.storeInfoMap.get(o.name); return String((inf && inf.region) || '').trim(); }).filter(Boolean))).sort() : [],
       onSkuRegion: e => this.setState({ skuRegion: e.target.value }),
       storeStockAllLabel: s.storeStockRegion ? 'All stores in ' + s.storeStockRegion : 'All stores',
       storeStockRegionOptions: s.screen === 'storestock' ? Array.from(new Set((s.storeOptions || []).map(o => { const inf = s.storeInfoMap && s.storeInfoMap.get(o.name); return String((inf && inf.region) || '').trim(); }).filter(Boolean))).sort() : [],
