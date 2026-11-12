@@ -1782,6 +1782,121 @@
           <div class="card" style="padding: var(--space-4); text-align: center; color: var(--color-neutral-700);">No SKUs match "{{skuQuery}}".</div>
         </sc-if>
 
+        <sc-if value="{{skuSingle}}" hint-placeholder-val="{{false}}">
+        <sc-for list="{{skuMatches}}" as="item" hint-placeholder-count="0">
+          <div style="display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-lg); padding: var(--space-3); background: #fff;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <sc-if value="{{item.image}}" hint-placeholder-val="{{false}}">
+                <img src="{{item.image}}" style="width: 62px; height: 62px; object-fit: contain; border-radius: 5px; background: var(--color-neutral-100); flex: none;">
+              </sc-if>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <div style="font-weight: 700; font-size: 13px; color: var(--color-text);">{{item.itemNo}}</div>
+                <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                  <sc-if value="{{item.rsp}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--color-accent-700);">RSP {{item.rsp}}</div>
+                  </sc-if>
+                  <sc-if value="{{item.now}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size: 12px; font-weight: 700; color: #8b1a1a;">Now {{item.now}}</div>
+                  </sc-if>
+                  <sc-if value="{{item.pct}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size: 11px; font-weight: 700; color: #fff; background: #8b1a1a; border-radius: 999px; padding: 1px 7px;">{{item.pct}}</div>
+                  </sc-if>
+                </div>
+                <sc-if value="{{item.hasNational}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                    <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">National Day</div>
+                    <div style="font-size: 12px; color: var(--color-neutral-700);">Was {{item.natWas}}</div>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Now {{item.natNow}}</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #fff; background: var(--color-accent-800); border-radius: 999px; padding: 1px 7px;">{{item.natPct}}</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{item.hasNs}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                    <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">{{item.nsLabel}}</div>
+                    <div style="font-size: 12px; color: var(--color-neutral-700);">Was {{item.nsWas}}</div>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Now {{item.nsNow}}</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #fff; background: var(--color-accent-800); border-radius: 999px; padding: 1px 7px;">{{item.nsPct}}</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{item.hasFalcon}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                    <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">Ageing Clearance</div>
+                    <div style="font-size: 12px; color: var(--color-neutral-700);">Was {{item.falWas}}</div>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--color-text);">Now {{item.falNow}}</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #fff; background: var(--color-accent-800); border-radius: 999px; padding: 1px 7px;">{{item.falPct}}</div>
+                  </div>
+                </sc-if>
+                <div style="font-size: 12px; color: var(--color-neutral-700);">{{item.description2}}</div>
+                <sc-if value="{{item.partNo}}" hint-placeholder-val="{{false}}">
+                  <div style="font-size: 11.5px; color: var(--color-neutral-700);">Part No. {{item.partNo}}</div>
+                </sc-if>
+              </div>
+            </div>
+            <sc-if value="{{item.showCostPanel}}" hint-placeholder-val="{{false}}">
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; background: var(--color-accent-2-100); border: 1px solid var(--color-accent-2-300); border-radius: var(--radius-md); padding: 8px 10px;">
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Cost incl. VAT</span>
+                  <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{item.costText}}</span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-2-800);">Markup vs RSP</span>
+                  <span style="font-size: 13px; font-weight: 700; color: var(--color-text);">{{item.markupText}}</span>
+                </div>
+                <sc-if value="{{item.hasDiscMargin}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #8b1a1a;">Now price</span>
+                    <span style="font-size: 13px; font-weight: 700; color: #8b1a1a;">{{item.nowText}}</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #8b1a1a;">Margin after disc.</span>
+                    <span style="font-size: 13px; font-weight: 700; color: #8b1a1a;">{{item.discMarginText}}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{item.hasNatMargin}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">{{item.promoPriceLabel}}</span>
+                    <span style="font-size: 13px; font-weight: 700; color: var(--color-accent-800);">{{item.promoNow}}</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-accent-800);">{{item.promoMarginLabel}}</span>
+                    <span style="font-size: 13px; font-weight: 700; color: var(--color-accent-800);">{{item.natMarginText}}</span>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{item.expanded}}" hint-placeholder-val="{{false}}">
+              <div style="overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--color-neutral-200);">
+                <table class="table" style="width: 100%; border-collapse: collapse; font-size: 14.5px; font-weight: 700;">
+                  <thead>
+                    <tr><th>Store</th><th style="text-align: right;">الفرع</th><th style="text-align: center;">Qty available</th></tr>
+                  </thead>
+                  <tbody>
+                    <sc-for list="{{item.storeRows}}" as="sr" hint-placeholder-count="3">
+                      <tr>
+                        <td style="padding: 6px 6px; font-weight: 700;">{{sr.label}}</td>
+                        <td dir="rtl" style="padding: 6px 6px; text-align: right; font-weight: 700; color: var(--color-neutral-800);">{{sr.labelAr}}</td>
+                        <td style="padding: 6px 6px; text-align: center; font-weight: 800; color: {{sr.qtyColor}};">{{sr.qty}}</td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                  <tfoot>
+                    <tr style="border-top: 1px solid var(--color-neutral-300);">
+                      <td style="padding: 6px; font-weight: 700; color: var(--color-text);">Total</td>
+                      <td dir="rtl" style="padding: 6px; text-align: right; font-weight: 700; color: var(--color-text);">الإجمالي</td>
+                      <td style="padding: 6px; text-align: center; font-weight: 700; color: var(--color-text);">{{item.totalQty}}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <button class="btn btn-primary" onClick="{{item.onShare}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">Share as image</button>
+            </sc-if>
+            <sc-if value="{{item.collapsed}}" hint-placeholder-val="{{false}}">
+              <button class="btn btn-ghost" onClick="{{item.onToggle}}" style="align-self: flex-start; font-size: 12px; padding: 4px 12px;">Show store stock ({{item.totalQty}} total) →</button>
+            </sc-if>
+          </div>
+        </sc-for>
+        </sc-if>
+        <sc-if value="{{skuMulti}}" hint-placeholder-val="{{false}}">
         <div style="overflow-x: auto; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-lg); background: #fff;">
         <table class="table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
           <thead>
@@ -1885,6 +2000,7 @@
           </tbody>
         </table>
         </div>
+        </sc-if>
       </div>
     </sc-if>
 
@@ -6619,6 +6735,8 @@ class Component extends DCLogic {
       skuQueryTooShort: s.screen === 'skulookup' && !/[,\n;]/.test(s.skuQuery) && s.skuQuery.trim().length > 0 && s.skuQuery.trim().length < 2,
       skuDiscColLabel: ({ national: 'Nat. Day price', falcon: 'Ageing price', newstore: (this.nsName ? this.nsName() : 'New store') + ' price', seasonal: 'Seasonal price' })[s.skuFalcon ? 'falcon' : (s.skuDiscView || 'falcon')] || 'Disc. price',
       skuMatches: skuMatches,
+      skuSingle: (skuMatches || []).length === 1,
+      skuMulti: (skuMatches || []).length > 1,
       showSkuDiscView: !s.skuFalcon,
       skuDiscView: s.skuDiscView || 'falcon',
       onSkuDiscViewChange: e => this.setState({ skuDiscView: e.target.value }),
