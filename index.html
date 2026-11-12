@@ -761,20 +761,58 @@
         <div class="dialog-backdrop" style="position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: var(--space-3); z-index: 60;">
           <div class="dialog" style="width: 100%; max-width: 460px; max-height: 88vh; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4);">
             <div class="dialog-title" style="font-size: 17px;">{{negInvModalTitle}}</div>
+            <sc-if value="{{negSubOpen}}" hint-placeholder-val="{{false}}">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <button class="btn btn-secondary" onClick="{{onNegSubBack}}" style="align-self: flex-start; font-size: 12px; padding: 4px 12px;">← Back to negative items</button>
+                <div style="font-size: 14px; font-weight: 700; color: var(--color-text);">{{negSubTitle}}</div>
+                <div style="font-size: 12px; color: var(--color-neutral-700);">{{negSubNote}}</div>
+              </div>
+              <div style="overflow: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-300);">
+                <table class="table" style="width: 100%; font-size: 12px;">
+                  <tbody>
+                    <tr>
+                      <th onClick="{{onNegSubSortItem}}" style="text-align: left; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{negSubItemHd}}</th>
+                      <th onClick="{{onNegSubSortRsp}}" style="text-align: right; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{negSubRspHd}}</th>
+                      <th onClick="{{onNegSubSortQty}}" style="text-align: right; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{negSubQtyHd}}</th>
+                    </tr>
+                    <sc-for list="{{negSubRows}}" as="row" hint-placeholder-count="6">
+                      <tr style="background: {{row.bg}};">
+                        <td>
+                          <div style="display: flex; gap: 8px; align-items: center;">
+                            <div style="width: 40px; height: 40px; flex: none; border-radius: 4px; background: var(--color-neutral-100); overflow: hidden;">
+                              <sc-if value="{{row.image}}" hint-placeholder-val="{{false}}">
+                                <img src="{{row.image}}" alt="" loading="lazy" style="width: 40px; height: 40px; object-fit: contain; display: block;">
+                              </sc-if>
+                            </div>
+                            <div>
+                              <div style="font-weight: 700;">{{row.itemNo}}</div>
+                              <div style="color: var(--color-neutral-700); font-size: 11.5px;">{{row.description2}}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style="text-align: right; white-space: nowrap;">{{row.rspText}}</td>
+                        <td style="text-align: right; font-weight: 700; color: {{row.qtyColor}};">{{row.qtyText}}</td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+            </sc-if>
+            <sc-if value="{{negMainOpen}}" hint-placeholder-val="{{true}}">
             <div style="font-size: 12.5px; color: var(--color-neutral-700);">{{negInvModalMeta}}</div>
 
             <div style="overflow: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-300);">
               <table class="table" style="width: 100%; font-size: 12px;">
                 <tbody>
                   <tr>
-                    <th style="text-align: left;">Item</th>
-                    <th style="text-align: right;">Qty</th>
-                    <th style="text-align: right;">Value</th>
+                    <th onClick="{{onNegMainSortItem}}" style="text-align: left; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{negMainItemHd}}</th>
+                    <th onClick="{{onNegMainSortQty}}" style="text-align: right; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{negMainQtyHd}}</th>
+                    <th onClick="{{onNegMainSortValue}}" style="text-align: right; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{negMainValueHd}}</th>
                   </tr>
                   <sc-for list="{{negInvModalRows}}" as="row" hint-placeholder-count="6">
-                    <tr>
+                    <tr onClick="{{row.onOpenSub}}" style="cursor: pointer;" style-hover="background: var(--color-accent-100);">
                       <td>
-                        <div style="font-weight: 700;">{{row.itemNo}}</div>
+                        <div style="font-weight: 700; color: var(--color-accent-700);">{{row.itemNo}} ›</div>
                         <div style="color: var(--color-neutral-700); font-size: 11.5px;">{{row.description2}}</div>
                         <div style="color: var(--color-neutral-700); font-size: 11px;">{{row.location}}</div>
                       </td>
@@ -788,6 +826,7 @@
 
             <sc-if value="{{negInvModalTruncated}}" hint-placeholder-val="{{false}}">
               <span style="font-size: 11.5px; color: var(--color-neutral-700);">{{negInvModalTruncatedNote}}</span>
+            </sc-if>
             </sc-if>
 
             <div class="dialog-actions" style="display: flex; flex-direction: column; gap: var(--space-2);">
@@ -4106,6 +4145,27 @@ class Component extends DCLogic {
     const title = st.negInvLocation === '__ALL__'
       ? 'All locations'
       : ((opts.find(o => o.name === st.negInvLocation) || {}).label || st.negInvLocation);
+    if (st.negSubItem) {
+      const { matrix, retailMap } = st.parsed;
+      const subOf = it => { const r = retailMap.get(it.itemNo) || {}; return String(r.subCategory || it.subCategory || '').trim(); };
+      const base = matrix.items.find(x => x.itemNo === st.negSubItem);
+      const sub = base ? subOf(base) : '';
+      const locs = st.negInvLocation === '__ALL__' ? opts.map(o => o.name) : [st.negInvLocation];
+      const list = (sub ? matrix.items.filter(x => subOf(x) === sub) : (base ? [base] : [])).map(it => {
+        const r = retailMap.get(it.itemNo) || {};
+        const q = locs.reduce((s2, n) => s2 + (Number(it.stores[n]) || 0), 0);
+        return { itemNo: it.itemNo, description2: r.description2 || it.description2 || '', image: r.image && r.image !== '(blank)' ? r.image : '', rsp: Number(String(r.rsp || it.rsp || '').replace(/[^0-9.\-]/g, '')) || 0, q, isBase: it.itemNo === st.negSubItem };
+      }).filter(x => x.q !== 0);
+      const sk = st.negSubSort || 'item', sd = st.negSubDir === 'desc' ? -1 : 1;
+      list.sort((a, b) => sd * (sk === 'rsp' ? (a.rsp - b.rsp) : sk === 'qty' ? (a.q - b.q) : 0) || sd * naturalCompare(a.itemNo, b.itemNo));
+      return {
+        title, meta: '', rows: [], truncated: false, truncatedNote: '',
+        sub: true,
+        subTitle: (sub || 'No sub-category') + ' · ' + list.length + ' items',
+        subNote: 'Stock at ' + title + ' for every item in the same sub-category as ' + st.negSubItem + '.',
+        subRows: list.map(x => ({ itemNo: x.itemNo, description2: x.description2, image: x.image, rspText: x.rsp ? x.rsp.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—', qtyText: x.q.toLocaleString(), qtyColor: x.q < 0 ? '#8b1a1a' : x.q > 0 ? '#1b7a3a' : 'var(--color-neutral-700)', bg: x.isBase ? 'var(--color-accent-100)' : 'transparent' })),
+      };
+    }
     const all = this.getNegInvRows();
     const LIMIT = 250;
     const shown = all.slice(0, LIMIT);
@@ -4115,6 +4175,7 @@ class Component extends DCLogic {
       title,
       meta: all.length.toLocaleString() + ' lines · qty ' + totalQty.toLocaleString() + ' · value ' + money(totalValue),
       rows: shown.map(r => ({
+        onOpenSub: () => this.setState({ negSubItem: r.itemNo }),
         itemNo: r.itemNo,
         description2: r.description2,
         location: r.location,
@@ -4178,7 +4239,8 @@ class Component extends DCLogic {
         });
       }
     }
-    rows.sort((a, b) => a.location.localeCompare(b.location) || a.qty - b.qty);
+    const sk = st.negMainSort || 'value', sd = st.negMainDir === 'desc' ? -1 : 1;
+    rows.sort((a, b) => sd * (sk === 'item' ? naturalCompare(a.itemNo, b.itemNo) : sk === 'qty' ? (a.qty - b.qty) : (a.value - b.value)) || a.value - b.value || naturalCompare(a.itemNo, b.itemNo));
     return rows;
   }
 
@@ -6473,10 +6535,28 @@ class Component extends DCLogic {
       negInvModalTitle: negInvModal.title,
       negInvModalMeta: negInvModal.meta,
       negInvModalRows: negInvModal.rows,
+      negSubOpen: !!negInvModal.sub,
+      negMainOpen: !negInvModal.sub,
+      negSubTitle: negInvModal.subTitle || '',
+      negSubNote: negInvModal.subNote || '',
+      negSubRows: negInvModal.subRows || [],
+      onNegSubBack: () => this.setState({ negSubItem: '' }),
+      negMainItemHd: 'Item' + (s.negMainSort === 'item' ? (s.negMainDir === 'desc' ? ' ▼' : ' ▲') : ''),
+      negMainQtyHd: 'Qty' + (s.negMainSort === 'qty' ? (s.negMainDir === 'desc' ? ' ▼' : ' ▲') : ''),
+      negMainValueHd: 'Value' + ((s.negMainSort || 'value') === 'value' ? (s.negMainDir === 'desc' ? ' ▼' : ' ▲') : ''),
+      onNegMainSortItem: () => this.setState(st => ({ negMainSort: 'item', negMainDir: st.negMainSort === 'item' && st.negMainDir !== 'desc' ? 'desc' : 'asc' })),
+      onNegMainSortQty: () => this.setState(st => ({ negMainSort: 'qty', negMainDir: st.negMainSort === 'qty' && st.negMainDir !== 'desc' ? 'desc' : 'asc' })),
+      onNegMainSortValue: () => this.setState(st => ({ negMainSort: 'value', negMainDir: (st.negMainSort || 'value') === 'value' && st.negMainDir !== 'desc' ? 'desc' : 'asc' })),
+      negSubItemHd: 'Item' + ((s.negSubSort || 'item') === 'item' ? (s.negSubDir === 'desc' ? ' ▼' : ' ▲') : ''),
+      negSubRspHd: 'RSP' + (s.negSubSort === 'rsp' ? (s.negSubDir === 'desc' ? ' ▼' : ' ▲') : ''),
+      negSubQtyHd: 'Qty' + (s.negSubSort === 'qty' ? (s.negSubDir === 'desc' ? ' ▼' : ' ▲') : ''),
+      onNegSubSortItem: () => this.setState(st => ({ negSubSort: 'item', negSubDir: (st.negSubSort || 'item') === 'item' && st.negSubDir !== 'desc' ? 'desc' : 'asc' })),
+      onNegSubSortRsp: () => this.setState(st => ({ negSubSort: 'rsp', negSubDir: st.negSubSort === 'rsp' && st.negSubDir !== 'desc' ? 'desc' : 'asc' })),
+      onNegSubSortQty: () => this.setState(st => ({ negSubSort: 'qty', negSubDir: st.negSubSort === 'qty' && st.negSubDir !== 'desc' ? 'desc' : 'asc' })),
       negInvModalTruncated: negInvModal.truncated,
       negInvModalTruncatedNote: negInvModal.truncatedNote,
       onOpenNegInvAll: () => this.onOpenNegInvModal('__ALL__'),
-      onCloseNegInvModal: () => this.onCloseNegInvModal(),
+      onCloseNegInvModal: () => { this.setState({ negSubItem: '' }); this.onCloseNegInvModal(); },
       onGoNegInv: () => this.onGoNegInv(),
       onBackFromNegInv: () => this.onBackFromNegInv(),
       onNegInvLocationChange: e => this.onNegInvLocationChange(e),
