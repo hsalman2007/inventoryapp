@@ -6128,7 +6128,6 @@ class Component extends DCLogic {
       this._skuMulti = null;
       matches = scored
         .sort((a, b) => a.rank - b.rank || naturalCompare(a.it.itemNo, b.it.itemNo))
-        .slice(0, 25)
         .map(x => x.it);
     }
     const expandAll = matches.length === 1;
