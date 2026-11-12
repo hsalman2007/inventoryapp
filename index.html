@@ -3011,7 +3011,8 @@ class Component extends DCLogic {
     }
   }
   onAdminSignOut() {
-    this.setState(s => ({ tagPriceSource: /^(discount|national)$/.test(s.tagPriceSource) ? 'falcon' : s.tagPriceSource, mlPriceSource: /^(discount|national)$/.test(s.mlPriceSource) ? 'falcon' : s.mlPriceSource, skuDiscView: /^(seasonal|national)$/.test(s.skuDiscView) ? 'falcon' : s.skuDiscView }));
+    this.setState(s => ({ tagPriceSource: /^(discount|national|newstore)$/.test(s.tagPriceSource) ? 'falcon' : s.tagPriceSource, mlPriceSource: /^(discount|national|newstore)$/.test(s.mlPriceSource) ? 'falcon' : s.mlPriceSource, skuDiscView: /^(seasonal|national|newstore)$/.test(s.skuDiscView) ? 'falcon' : s.skuDiscView }));
+    if (this.state.storeStockNewStore || this.state.storeStockShowDiscount || this.state.storeStockNationalDay) this.onDiscountOff();
     this.setState({ isAdmin: false, adminPromptOpen: false, adminPw: '', adminError: '', mkItems: [], mkRsp: {}, mkDisc: {}, mkQuery: '' });
     if (this.state.screen === 'markup') this.setState({ screen: 'menu' });
     try { localStorage.removeItem('inv-admin'); } catch (e) {}
@@ -6493,10 +6494,10 @@ class Component extends DCLogic {
       hasDiscountFile: !!(s.parsed && s.parsed.discountMap && s.parsed.discountMap.size),
       discountOnChecked: s.storeStockShowDiscount,
       discountOffChecked: !s.storeStockShowDiscount && !s.storeStockAddnl1500 && !s.storeStockNationalDay && !s.storeStockFalcon && !s.storeStockNewStore,
-      hasNsFile: true,
+      hasNsFile: !!s.isAdmin,
       ssDiscType: s.storeStockNewStore ? 'newstore' : s.storeStockFalcon ? 'falcon' : s.storeStockNationalDay ? 'national' : s.storeStockAddnl1500 ? 'addnl1500' : s.storeStockShowDiscount ? 'seasonal' : 'standard',
       onSsDiscType: e => { const v = e.target.value; ({ standard: () => this.onDiscountOff(), seasonal: () => this.onDiscountOn(), addnl1500: () => this.onAddnl1500On(), national: () => this.onNationalDayOn(), falcon: () => this.onFalconOn(), newstore: () => this.onNewStoreOn() }[v] || (() => {}))(); },
-      nsOptHidden: false,
+      nsOptHidden: !s.isAdmin,
       natOptHidden: !s.isAdmin,
       nsName: this.nsName(),
       newStoreChecked: !!s.storeStockNewStore,
