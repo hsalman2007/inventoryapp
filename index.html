@@ -806,16 +806,27 @@
                 <tbody>
                   <tr>
                     <th onClick="{{onNegMainSortItem}}" style="text-align: left; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{negMainItemHd}}</th>
+                    <th onClick="{{onNegMainSortRsp}}" style="text-align: right; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{negMainRspHd}}</th>
                     <th onClick="{{onNegMainSortQty}}" style="text-align: right; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{negMainQtyHd}}</th>
                     <th onClick="{{onNegMainSortValue}}" style="text-align: right; cursor: pointer; user-select: none; white-space: nowrap;" style-hover="color: var(--color-accent-700);">{{negMainValueHd}}</th>
                   </tr>
                   <sc-for list="{{negInvModalRows}}" as="row" hint-placeholder-count="6">
                     <tr onClick="{{row.onOpenSub}}" style="cursor: pointer;" style-hover="background: var(--color-accent-100);">
                       <td>
-                        <div style="font-weight: 700; color: var(--color-accent-700);">{{row.itemNo}} ›</div>
-                        <div style="color: var(--color-neutral-700); font-size: 11.5px;">{{row.description2}}</div>
-                        <div style="color: var(--color-neutral-700); font-size: 11px;">{{row.location}}</div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                          <div style="width: 40px; height: 40px; flex: none; border-radius: 4px; background: var(--color-neutral-100); overflow: hidden;">
+                            <sc-if value="{{row.image}}" hint-placeholder-val="{{false}}">
+                              <img src="{{row.image}}" alt="" loading="lazy" style="width: 40px; height: 40px; object-fit: contain; display: block;">
+                            </sc-if>
+                          </div>
+                          <div>
+                            <div style="font-weight: 700; color: var(--color-accent-700);">{{row.itemNo}} ›</div>
+                            <div style="color: var(--color-neutral-700); font-size: 11.5px;">{{row.description2}}</div>
+                            <div style="color: var(--color-neutral-700); font-size: 11px;">{{row.location}}</div>
+                          </div>
+                        </div>
                       </td>
+                      <td style="text-align: right; white-space: nowrap;">{{row.rspText}}</td>
                       <td style="text-align: right; font-weight: 700; color: #8b1a1a;">{{row.qtyText}}</td>
                       <td style="text-align: right; font-weight: 700; color: #8b1a1a;">{{row.valueText}}</td>
                     </tr>
@@ -4176,11 +4187,12 @@ class Component extends DCLogic {
       meta: all.length.toLocaleString() + ' lines · qty ' + totalQty.toLocaleString() + ' · value ' + money(totalValue),
       rows: shown.map(r => ({
         onOpenSub: () => this.setState({ negSubItem: r.itemNo }),
+        image: r.image && r.image !== '(blank)' ? r.image : '',
         itemNo: r.itemNo,
         description2: r.description2,
         location: r.location,
         qtyText: r.qty.toLocaleString(),
-        rspText: r.rsp ? money(r.rsp) : '',
+        rspText: r.rsp ? money(r.rsp) : '—',
         valueText: money(r.value),
       })),
       truncated: all.length > LIMIT,
@@ -4240,7 +4252,7 @@ class Component extends DCLogic {
       }
     }
     const sk = st.negMainSort || 'value', sd = st.negMainDir === 'desc' ? -1 : 1;
-    rows.sort((a, b) => sd * (sk === 'item' ? naturalCompare(a.itemNo, b.itemNo) : sk === 'qty' ? (a.qty - b.qty) : (a.value - b.value)) || a.value - b.value || naturalCompare(a.itemNo, b.itemNo));
+    rows.sort((a, b) => sd * (sk === 'item' ? naturalCompare(a.itemNo, b.itemNo) : sk === 'qty' ? (a.qty - b.qty) : sk === 'rsp' ? (a.rsp - b.rsp) : (a.value - b.value)) || a.value - b.value || naturalCompare(a.itemNo, b.itemNo));
     return rows;
   }
 
@@ -6542,6 +6554,8 @@ class Component extends DCLogic {
       negSubRows: negInvModal.subRows || [],
       onNegSubBack: () => this.setState({ negSubItem: '' }),
       negMainItemHd: 'Item' + (s.negMainSort === 'item' ? (s.negMainDir === 'desc' ? ' ▼' : ' ▲') : ''),
+      negMainRspHd: 'RSP' + (s.negMainSort === 'rsp' ? (s.negMainDir === 'desc' ? ' ▼' : ' ▲') : ''),
+      onNegMainSortRsp: () => this.setState(st => ({ negMainSort: 'rsp', negMainDir: st.negMainSort === 'rsp' && st.negMainDir !== 'desc' ? 'desc' : 'asc' })),
       negMainQtyHd: 'Qty' + (s.negMainSort === 'qty' ? (s.negMainDir === 'desc' ? ' ▼' : ' ▲') : ''),
       negMainValueHd: 'Value' + ((s.negMainSort || 'value') === 'value' ? (s.negMainDir === 'desc' ? ' ▼' : ' ▲') : ''),
       onNegMainSortItem: () => this.setState(st => ({ negMainSort: 'item', negMainDir: st.negMainSort === 'item' && st.negMainDir !== 'desc' ? 'desc' : 'asc' })),
