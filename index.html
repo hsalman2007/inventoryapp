@@ -1760,6 +1760,16 @@
           </div>
         </sc-if>
 
+        <div class="field">
+          <label for="sku-region">Region</label>
+          <select id="sku-region" class="input" value="{{skuRegion}}" onChange="{{onSkuRegion}}">
+            <option value="">All regions</option>
+            <sc-for list="{{skuRegionOptions}}" as="rg" hint-placeholder-count="3">
+              <option value="{{rg}}">{{rg}}</option>
+            </sc-for>
+          </select>
+        </div>
+
         <sc-if value="{{skuQueryTooShort}}" hint-placeholder-val="{{false}}">
           <div style="font-size: 13px; color: var(--color-neutral-700);">Type at least 2 characters to search.</div>
         </sc-if>
@@ -2946,6 +2956,7 @@ class Component extends DCLogic {
     storeStockBrand: '',
     storeStockSort: '',
     storeStockRegion: '',
+    skuRegion: '',
     storeStockCategory: '',
     storeStockSubCategory: '',
     mlLocations: [],
@@ -5836,7 +5847,7 @@ class Component extends DCLogic {
       const store = s.storeStockSelected, info = s.storeInfoMap && s.storeInfoMap.get(store);
       return (store === '__ALL__' ? (s.storeStockRegion ? 'All stores - ' + s.storeStockRegion : 'All stores') : (info ? (info.shortName || store) + ' — ' + info.region : store)) + ' · ' + this.storeStockModeName();
     }
-    return 'SKU stock across stores';
+    return 'SKU stock across stores' + (s.skuRegion ? ' · ' + s.skuRegion : '');
   }
   async pvExportPdf() {
     const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -5928,7 +5939,7 @@ class Component extends DCLogic {
     const dName = { falcon: 'Ageing Clearance', seasonal: 'Seasonal Discounts', national: 'National Day 2026', newstore: this.nsName() }[dv] || '';
     const today = new Date().toISOString().slice(0, 10);
     const head = ['SKU', 'Part#', 'Description', 'RSP', 'Was', 'Now', 'Discount %', 'Total qty'].concat(stores);
-    const aoa = [[{ v: 'SKU stock across stores · ' + dName + ' · ' + today, s: 1 }], head.map(h => ({ v: h, s: 4 }))];
+    const aoa = [[{ v: 'SKU stock across stores · ' + dName + (this.state.skuRegion ? ' · ' + this.state.skuRegion : '') + ' · ' + today, s: 1 }], head.map(h => ({ v: h, s: 4 }))];
     const tot = { qty: 0, st: stores.map(() => 0) };
     for (const r of rows) {
       const m = {}; for (const sr of (r.storeRows || [])) m[sr.label] = sr.qty;
@@ -5951,7 +5962,7 @@ class Component extends DCLogic {
       if (!info || (info.storeType !== 'Store' && info.storeType !== 'Warehouse')) return false;
       const displayName = (info.shortName || name).trim().toLowerCase();
       return !EXCLUDED_STORES.has(displayName);
-    });
+    }).filter(name => { if (!s.skuRegion) return true; const info = s.storeInfoMap && s.storeInfoMap.get(name); return String((info && info.region) || '').trim() === s.skuRegion; });
     const terms = q.split(/\s+/).filter(Boolean);
     const falconAll = this.getFalconMap();
     const scored = [];
@@ -6519,6 +6530,9 @@ class Component extends DCLogic {
       storeStockBrand: s.storeStockBrand,
       storeStockSort: s.storeStockSort || '',
       storeStockRegion: s.storeStockRegion || '',
+      skuRegion: s.skuRegion || '',
+      skuRegionOptions: s.screen === 'skulookup' && s.parsed ? Array.from(new Set(s.parsed.matrix.storeNames.map(n => { const inf = s.storeInfoMap && s.storeInfoMap.get(n); return String((inf && inf.region) || '').trim(); }).filter(Boolean))).sort() : [],
+      onSkuRegion: e => this.setState({ skuRegion: e.target.value }),
       storeStockAllLabel: s.storeStockRegion ? 'All stores in ' + s.storeStockRegion : 'All stores',
       storeStockRegionOptions: s.screen === 'storestock' ? Array.from(new Set((s.storeOptions || []).map(o => { const inf = s.storeInfoMap && s.storeInfoMap.get(o.name); return String((inf && inf.region) || '').trim(); }).filter(Boolean))).sort() : [],
       storeStockStoreOptions: !s.storeStockRegion ? (s.storeOptions || []) : (s.storeOptions || []).filter(o => { const inf = s.storeInfoMap && s.storeInfoMap.get(o.name); return String((inf && inf.region) || '').trim() === s.storeStockRegion; }),
