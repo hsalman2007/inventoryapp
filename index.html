@@ -2405,6 +2405,134 @@ function downloadXlsx(rows, filename, opts) {
 class Component extends DCLogic {
 
   static AR = {
+    "MASC HOLSTER": "ماسك هولستر",
+    "PRICE WESTERN": "برايس ويسترن",
+    "ACROPOLIS": "أكروبوليس",
+    "Snatch Ropes, Blocks & Shackles": "حبال السحب والبكرات والشناكل",
+    "Tag Cards, Logos & Stickers": "بطاقات الأسعار والشعارات والملصقات",
+    "Winchbars, Bumpers & Siderails": "قضبان الونش والصدامات والقضبان الجانبية",
+    "Sort rows by": "ترتيب الصفوف حسب",
+    "Sort by": "ترتيب حسب",
+    "Item number (A → Z)": "رقم الصنف (أ ← ي)",
+    "Part No. (A → Z)": "رقم القطعة (أ ← ي)",
+    "Total qty across selected (high → low)": "إجمالي الكمية في المواقع المحددة (من الأعلى إلى الأقل)",
+    "Select at least one location to enable the export.": "اختر موقعًا واحدًا على الأقل لتفعيل التصدير.",
+    "Pick two or more locations — the export puts one quantity column per location side by side, with Was / Now / % pricing.": "اختر موقعين أو أكثر — يضع التصدير عمود كمية لكل موقع جنبًا إلى جنب، مع السعر السابق / الحالي / النسبة.",
+    "GALCO": "جالكو",
+    "GIFT CARDS": "بطاقات الهدايا",
+    "GIFT CARD": "بطاقة هدية",
+    "GUN FLOWER": "جن فلاور",
+    "BENCHMADE": "بينش ميد",
+    "BUCK": "باك",
+    "CAMP CHEF": "كامب شيف",
+    "COLEMAN": "كولمان",
+    "CRKT": "سي آر كي تي",
+    "GERBER": "جيربر",
+    "JETBOIL": "جيت بويل",
+    "LIFESTRAW": "لايف سترو",
+    "MSR": "إم إس آر",
+    "NALGENE": "نالجين",
+    "OUTDOOR EDGE": "أوتدور إيدج",
+    "PELICAN": "بيليكان",
+    "PETZL": "بيتزل",
+    "SOG": "سوج",
+    "STREAMLIGHT": "ستريم لايت",
+    "SUREFIRE": "شور فاير",
+    "THERMOS": "ثيرموس",
+    "YETI": "يتي",
+    "VICTORINOX": "فكتورينوكس",
+    "WEBER": "ويبر",
+    "LEUPOLD": "ليوبولد",
+    "NIKON": "نيكون",
+    "SWAROVSKI": "سواروفسكي",
+    "PULSAR": "بولسار",
+    "HIKMICRO": "هيك مايكرو",
+    "ATN": "إيه تي إن",
+    "SIG SAUER": "سيج ساور",
+    "CROSMAN": "كروسمان",
+    "UMAREX": "أوماريكس",
+    "DAISY": "ديزي",
+    "BERETTA": "بيريتا",
+    "AIR ARMS": "إير آرمز",
+    "DAYSTATE": "داي ستيت",
+    "BSA": "بي إس إيه",
+    "NORICA": "نوريكا",
+    "ESBIT": "إسبت",
+    "FENIX": "فينكس",
+    "OLIGHT": "أو لايت",
+    "LEDLENSER": "ليد لنسر",
+    "MAGLITE": "ماج لايت",
+    "BLACK DIAMOND": "بلاك دايموند",
+    "HELINOX": "هيلينوكس",
+    "NATUREHIKE": "نيتشر هايك",
+    "CAMPINGMOON": "كامبينج مون",
+    "FOX": "فوكس",
+    "BROWNING": "براونينج",
+    "REMINGTON": "ريمنجتون",
+    "WINCHESTER": "وينشستر",
+    "MOSSBERG": "موسبيرج",
+    "BENJAMIN": "بنجامين",
+    "WALTHER": "والثر",
+    "HAWKE": "هوك",
+    "SPYPOINT": "سباي بوينت",
+    "GSI": "جي إس آي",
+    "TRANGIA": "ترانجيا",
+    "SEA TO SUMMIT": "سي تو سميت",
+    "ZIPPO": "زيبو",
+    "MORAKNIV": "موراكنيف",
+    "MORA": "مورا",
+    "ESEE": "إيسي",
+    "SPYDERCO": "سبايدركو",
+    "SMITH & WESSON": "سميث آند ويسون",
+    "MAGPUL": "ماجبول",
+    "PLANO": "بلانو",
+    "ALLEN": "ألين",
+    "HORNADY": "هورنادي",
+    "REALTREE": "ريل تري",
+    "MOSSY OAK": "موسي أوك",
+    "DOMETIC": "دومتيك",
+    "WAECO": "ويكو",
+    "ENGEL": "إنجل",
+    "IGLOO": "إجلو",
+    "CAMELBAK": "كاميل باك",
+    "CONTIGO": "كونتيجو",
+    "HYDRO FLASK": "هيدرو فلاسك",
+    "LODGE": "لودج",
+    "OUTWELL": "أوتويل",
+    "VANGO": "فانجو",
+    "EASY CAMP": "إيزي كامب",
+    "QUECHUA": "كيشوا",
+    "GO PRO": "جو برو",
+    "GOPRO": "جو برو",
+    "GARMIN": "جارمن",
+    "MOTOROLA": "موتورولا",
+    "COBRA": "كوبرا",
+    "ANKER": "أنكر",
+    "JACKERY": "جاكري",
+    "ECOFLOW": "إيكوفلو",
+    "BLUETTI": "بلوتي",
+    "GOAL ZERO": "جول زيرو",
+    "OTHER": "أخرى",
+    "MISC": "متفرقات",
+    "MISCELLANEOUS": "متفرقات",
+    "GIFT": "هدايا",
+    "GIFTS": "هدايا",
+    "PROMOTION": "عروض",
+    "PROMOTIONS": "عروض",
+    "ACCESSORIES": "إكسسوارات",
+    "AMMUNITION": "ذخيرة",
+    "OPTICS": "بصريات",
+    "CLOTHING": "ملابس",
+    "FOOTWEAR": "أحذية",
+    "COOKWARE": "أدوات الطبخ",
+    "COOLERS": "مبردات",
+    "STOVES": "مواقد",
+    "GRILLS": "شوايات",
+    "BACKPACKS": "حقائب ظهر",
+    "TOOLS": "أدوات",
+    "Type a SKU or barcode, scan, or paste up to 150…": "اكتب رمز الصنف أو الباركود، أو امسح، أو الصق حتى 150 صنفًا…",
+    "Scan": "مسح",
+    "Scan barcode": "مسح الباركود",
     "Share all as image": "مشاركة الكل كصورة",
     "Export to Excel": "تصدير إلى Excel",
     "Preview": "معاينة",
@@ -3028,6 +3156,8 @@ class Component extends DCLogic {
   };
 
   static AR_PATS = [
+    [/^([\\d,]+) SKUs across ([\\d,]+) locations? · (.+)$/, (m) => m[1] + ' صنف في ' + m[2] + ' موقع · ' + (Component.translate(m[3]) || m[3])],
+    [/^(.+) \\(high → low\\)$/, (m) => { const t = Component.trPlace(m[1]) || Component.AR[m[1]]; return t ? t + ' (من الأعلى إلى الأقل)' : null; }],
     [/^Showing (\\d+) of (\\d+) SKUs(.*)$/, (m) => 'عرض ' + m[1] + ' من ' + m[2] + ' صنف' + (/limit/.test(m[3]) ? ' (الحد 150)' : '')],
     [/^Page (\\d+) of (\\d+)$/, (m) => 'صفحة ' + m[1] + ' من ' + m[2]],
     [/^Showing ([\\d,]+)–([\\d,]+) of ([\\d,]+) — the Excel export contains all of them\\.$/, (m) => 'عرض ' + m[1] + '–' + m[2] + ' من ' + m[3] + ' — يحتوي ملف Excel على جميعها.'],
@@ -3066,6 +3196,17 @@ class Component extends DCLogic {
 
 
   static PLACES = {
+    "Temporary Seasonal Store": "المتجر الموسمي المؤقت",
+    "Wander DM1": "واندر الدمام 1",
+    "Wander DM": "واندر الدمام",
+    "Wander": "واندر",
+    "DM": "الدمام",
+    "DM1": "الدمام 1",
+    "RY": "الرياض",
+    "JD": "جدة",
+    "Temporary": "مؤقت",
+    "Seasonal": "موسمي",
+    "Store": "متجر",
     "Madina": "المدينة",
     "Madinah Munawarah": "المدينة المنورة",
     "Majma": "المجمعة",
@@ -3342,6 +3483,7 @@ class Component extends DCLogic {
     const key = String(raw).replace(/\s+/g, ' ').trim();
     if (!key || !/[A-Za-z]/.test(key)) return null;
     if (Component.AR[key]) return Component.AR[key];
+    if (/^[A-Za-z0-9 &'.\-\/+]+$/.test(key) && key !== key.toUpperCase() && Component.AR[key.toUpperCase()]) return Component.AR[key.toUpperCase()];
     { const d = Component.trDeal(key); if (d) return d; }
     for (const [re, fn] of Component.AR_PATS) {
       const m = key.match(re);
@@ -3350,7 +3492,15 @@ class Component extends DCLogic {
         if (out) return out;
       }
     }
-    return Component.trPlace(key);
+    const pl = Component.trPlace(key);
+    if (pl) return pl;
+    const dm = key.match(/^(.+?) — (.+)$/);
+    if (dm) {
+      const t = x => Component.AR[x] || Component.trPlace(x) || null;
+      const l = t(dm[1]), r = t(dm[2]);
+      if (l || r) return (l || dm[1]) + ' — ' + (r || dm[2]);
+    }
+    return null;
   }
 
   setLang(lang) {
