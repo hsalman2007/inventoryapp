@@ -282,6 +282,9 @@
               <option value="national" hidden="{{natOptHidden}}" disabled="{{natOptHidden}}">National Day 2026</option>
               <option value="falcon">Ageing Clearance</option>
               <option value="newstore" hidden="{{nsOptHidden}}" disabled="{{nsOptHidden}}">{{nsName}}</option>
+              <sc-for list="{{wkDealOpts}}" as="o" hint-placeholder-count="0">
+                <option value="{{o.value}}" style="font-weight: 700; color: {{o.color}};">{{o.label}}</option>
+              </sc-for>
             </select>
           </div>
         </sc-if>
@@ -1895,6 +1898,7 @@
           <sc-if value="{{showSkuShareAll}}" hint-placeholder-val="{{false}}">
             <button class="btn btn-primary" onClick="{{onSkuShareAll}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">Share all as image</button>
             <button class="btn btn-secondary" onClick="{{onSkuExportXlsx}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">Export to Excel</button>
+            <button class="btn btn-secondary" onClick="{{onSkuExportPdf}}" disabled="{{skuPdfBusy}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">{{skuPdfLabel}}</button>
             <sc-if value="{{pvAllowed}}" hint-placeholder-val="{{false}}">
               <button class="btn btn-secondary" onClick="{{onSkuPreviewOpen}}" style="align-self: flex-start; font-size: 12px; padding: 6px 14px;">Preview</button>
             </sc-if>
@@ -1935,6 +1939,20 @@
               <option value="{{so.name}}">{{so.label}}</option>
             </sc-for>
           </select>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3);">
+          <div class="seg" role="radiogroup" aria-label="Zero stock">
+            <label class="seg-opt">
+              <input type="radio" name="skuZero" checked="{{skuZeroAllChecked}}" onChange="{{onSkuZeroAll}}">
+              All
+            </label>
+            <label class="seg-opt">
+              <input type="radio" name="skuZero" checked="{{skuZeroHideChecked}}" onChange="{{onSkuZeroHide}}">
+              Hide zero stock
+            </label>
+          </div>
+          <span style="font-size: 12px; color: var(--color-neutral-700);">{{skuZeroHint}}</span>
         </div>
 
         <sc-if value="{{skuQueryTooShort}}" hint-placeholder-val="{{false}}">
@@ -2387,6 +2405,13 @@ function downloadXlsx(rows, filename, opts) {
 class Component extends DCLogic {
 
   static AR = {
+    "Export to PDF": "تصدير PDF",
+    "Preparing PDF…": "جارٍ تجهيز PDF…",
+    "Hide zero stock": "إخفاء المخزون الصفري",
+    "Showing all SKUs, including zero stock.": "عرض جميع الأصناف، بما فيها ذات المخزون الصفري.",
+    "Showing only SKUs with stock above 0.": "عرض الأصناف ذات المخزون فقط.",
+    "Showing only SKUs with stock above 0 in this store.": "عرض الأصناف ذات المخزون في هذا الفرع فقط.",
+    "Showing only SKUs with stock above 0 in this region.": "عرض الأصناف ذات المخزون في هذه المنطقة فقط.",
     "Stock Lookup": "استعلام المخزون",
     "Pick a store, and pull stock details.": "اختر فرعاً واستعرض تفاصيل المخزون.",
     "Upload your reports, pick a store, and pull a low-stock list in seconds.": "ارفع تقاريرك، اختر فرعاً، واحصل على قائمة المخزون المنخفض في ثوانٍ.",
@@ -2981,6 +3006,14 @@ class Component extends DCLogic {
     "Dammam": "الدمام",
     "Khamis Mushait": "خميس مشيط",
     "Central": "الوسطى",
+    "Damage WH": "مستودع التوالف",
+    "East": "الشرقية",
+    "Exhibition": "المعرض",
+    "North": "الشمالية",
+    "South": "الجنوبية",
+    "Technician": "الفنيين",
+    "Warehouse": "المستودع",
+    "West": "الغربية",
     "Eastern": "الشرقية",
     "Western": "الغربية",
     "Southern": "الجنوبية",
@@ -3029,6 +3062,87 @@ class Component extends DCLogic {
 
 
   static PLACES = {
+    "Haramain": "الحرمين",
+    "Andlous": "الأندلس",
+    "Andalus": "الأندلس",
+    "Jizan": "جيزان",
+    "Gizan": "جيزان",
+    "Tahlia": "التحلية",
+    "Rawdah": "الروضة",
+    "Rawda": "الروضة",
+    "Sari": "صاري",
+    "Obhur": "أبحر",
+    "Corniche": "الكورنيش",
+    "Hamra": "الحمراء",
+    "Safa": "الصفا",
+    "Marwah": "المروة",
+    "Faisaliah": "الفيصلية",
+    "Khurais": "خريص",
+    "Hittin": "حطين",
+    "Narjis": "النرجس",
+    "Malqa": "الملقا",
+    "Sahafa": "الصحافة",
+    "Aziziyah": "العزيزية",
+    "Shifa": "الشفا",
+    "Takhassusi": "التخصصي",
+    "Exhibition": "المعرض",
+    "Mall": "مول",
+    "Plaza": "بلازا",
+    "Park": "بارك",
+    "Center": "سنتر",
+    "Road": "طريق",
+    "Street": "شارع",
+    "North": "الشمال",
+    "South": "الجنوب",
+    "East": "الشرق",
+    "West": "الغرب",
+    "Main": "الرئيسي",
+    "Showroom": "صالة العرض",
+    "Outlet": "منفذ",
+    "Branch": "فرع",
+    "Baljurashi": "بلجرشي",
+    "Dawadmi": "الدوادمي",
+    "Quwayiyah": "القويعية",
+    "Afif": "عفيف",
+    "Shaqra": "شقراء",
+    "Hotat Bani Tamim": "حوطة بني تميم",
+    "Aflaj": "الأفلاج",
+    "Mahayel": "محايل",
+    "Mahail": "محايل",
+    "Sabya": "صبيا",
+    "Abu Arish": "أبو عريش",
+    "Qunfudah": "القنفذة",
+    "Rabigh": "رابغ",
+    "Khafji": "الخفجي",
+    "Qatif": "القطيف",
+    "Hofuf": "الهفوف",
+    "Mubarraz": "المبرز",
+    "Ras Tanura": "رأس تنورة",
+    "Dhahran": "الظهران",
+    "Qurayyat": "القريات",
+    "Turaif": "طريف",
+    "Rafha": "رفحاء",
+    "Dumat Al Jandal": "دومة الجندل",
+    "Namas": "النماص",
+    "Sarat Abidah": "سراة عبيدة",
+    "Ahad Rafidah": "أحد رفيدة",
+    "Tathleeth": "تثليث",
+    "Sharorah": "شرورة",
+    "Khulais": "خليص",
+    "Badr": "بدر",
+    "Umluj": "أملج",
+    "Wajh": "الوجه",
+    "Duba": "ضباء",
+    "Hanakiyah": "الحناكية",
+    "Mithnab": "المذنب",
+    "Bukairiyah": "البكيرية",
+    "Badaya": "البدائع",
+    "Guns": "الأسلحة",
+    "Check & Review": "الفحص والمراجعة",
+    "Inspection & Review": "الفحص والمراجعة",
+    "Exhibition": "المعرض",
+    "Online": "المتجر الإلكتروني",
+    "E-commerce": "المتجر الإلكتروني",
     "Al Falah": "الفلاح",
     "Aqiq": "العقيق",
     "Badia": "البادية",
@@ -3096,18 +3210,33 @@ class Component extends DCLogic {
   };
 
   static trPlace(key) {
-    const m = key.match(/^(.*?)\s*(\d+\s*x?|WH|Warehouse|Workshop)?$/i);
+    const m = key.match(/^(.*?)\s*(\d+\s*x?|WH|Warehouse|Workshop|Technician|Technicians)?$/i);
     if (!m) return null;
     let base = (m[1] || '').trim();
     const suffix = (m[2] || '').trim();
     if (!base) return null;
-    const hit = Component.PLACES[base] || Component.PLACES[base.replace(/^Al\s+/i, 'Al ')] || null;
-    if (!hit) return null;
+    const hit = Component.PLACES[base] || Component.PLACES[base.replace(/^Al\s+/i, 'Al ')] || Component.PLACES[base.replace(/^Al[\s-]+/i, '')] || null;
+    let hit2 = hit;
+    if (!hit2) {
+      const ws = base.split(/\s+/); const out = []; let i = 0;
+      while (i < ws.length) {
+        let j = ws.length, got = null;
+        for (; j > i; j--) { const p = ws.slice(i, j).join(' '); got = Component.PLACES[p] || Component.PLACES[p.replace(/^Al[\s-]+/i, '')]; if (got) break; }
+        if (!got) return null;
+        out.push(got); i = j;
+      }
+      hit2 = out.join(' ');
+    }
+    return Component.trPlaceSuffix(hit2, suffix);
+  }
+
+  static trPlaceSuffix(hit, suffix) {
     const suf = suffix.toLowerCase();
     if (!suffix) return hit;
     if (suf === 'wh' || suf === 'warehouse') return 'مستودع ' + hit;
     if (suf === 'workshop') return 'ورشة ' + hit;
-    return hit + ' ' + suffix;
+    if (suf.startsWith('technician')) return 'فني ' + hit;
+    return hit + ' ' + (/x$/i.test(suffix) ? '\u2066' + suffix.replace(/\s+/g, '') + '\u2069' : suffix);
   }
 
   static trWord(s) {
@@ -5312,6 +5441,7 @@ class Component extends DCLogic {
 
   storeStockModeName() {
     const s = this.state;
+    if (s.storeStockWeekly) { const g = this.wkGroups().find(x => x.deal === s.storeStockWeekly); if (g) return g.label; }
     if (s.storeStockNewStore) return this.nsName();
     if (s.storeStockFalcon) return 'Ageing Clearance';
     if (s.storeStockNationalDay) return 'National Day 2026';
@@ -5324,8 +5454,9 @@ class Component extends DCLogic {
     const st = this.state;
     const store = st.storeStockSelected;
     const { matrix, retailMap, discountMap, nationalMap } = st.parsed;
-    const priceMap = st.storeStockNewStore ? this.nsMap() : st.storeStockFalcon ? this.getFalconMap() : st.storeStockNationalDay ? (nationalMap || new Map()) : discountMap;
-    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay || st.storeStockFalcon || st.storeStockNewStore;
+    const wkG = st.storeStockWeekly ? this.wkGroups().find(g => g.deal === st.storeStockWeekly) : null;
+    const priceMap = wkG ? wkG.map : st.storeStockNewStore ? this.nsMap() : st.storeStockFalcon ? this.getFalconMap() : st.storeStockNationalDay ? (nationalMap || new Map()) : discountMap;
+    const showDiscount = !!wkG || st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay || st.storeStockFalcon || st.storeStockNewStore;
     const allStores = store === '__ALL__';
     const eligibleStores = matrix.storeNames.filter(name => {
           if (STORE_STOCK_WH_LOCATIONS_LC.has(name.trim().toLowerCase())) return false;
@@ -6020,7 +6151,7 @@ class Component extends DCLogic {
     const storeLabel = store === '__ALL__' ? (st.storeStockRegion ? 'All stores - ' + st.storeStockRegion : 'All stores') : (info ? (info.shortName || store) + ' — ' + info.region : store);
     const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     const rows = this.getStoreStockRows();
-    const showDiscount = st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay || st.storeStockFalcon;
+    const showDiscount = !!st.storeStockWeekly || st.storeStockShowDiscount || st.storeStockAddnl1500 || st.storeStockNationalDay || st.storeStockFalcon || st.storeStockNewStore;
     const num = v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? (v == null ? '' : v) : Number(v);
 
     const adm = !!st.isAdmin;
@@ -6140,6 +6271,34 @@ class Component extends DCLogic {
     this.setState({ skuQuery: v, skuExpanded: '' });
   }
 
+  async exportSkuListPdf(items) {
+    if (!items || !items.length) return;
+    const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    this.setState({ skuPdfBusy: true });
+    if (items.length <= 1500 && this.scaleRowImages) { try { items = await this.scaleRowImages(items); } catch (e) {} }
+    const dv = this.state.skuFalcon ? 'falcon' : (this.state.skuDiscView || 'falcon');
+    const viewName = { seasonal: 'Seasonal discounts', national: 'National Day 2026', falcon: 'Ageing Clearance', newstore: this.nsName(), weekly: this.wkLabel(), none: 'Original RSP' }[dv] || '';
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const row = (it, i) => '<tr' + (i % 2 === 0 ? ' class="t"' : '') + '>'
+      + '<td class="im">' + (it.image ? '<img src="' + esc(it.image) + '" referrerpolicy="no-referrer">' : '') + '</td>'
+      + '<td><b class="sk">' + esc(it.itemNo) + '</b><div class="ds">' + esc(it.description2) + (it.partNo ? '  ·  ' + esc(it.partNo) : '') + '</div></td>'
+      + '<td class="pr">' + (it.now ? '<span class="was">Was ' + esc(it.was || it.rsp) + '</span> <span class="now">Now ' + esc(it.now) + '</span>' + (it.pct ? '<div><span class="pct">' + esc(it.pct) + '</span></div>' : '') : (it.rsp ? '<span class="rsp">RSP ' + esc(it.rsp) + '</span>' : '')) + '</td>'
+      + '<td class="q">' + esc(it.totalQty || 0) + '</td></tr>';
+    const css = 'body{font-family:Figtree,"Noto Sans Arabic",system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#201e1d;margin:0;}'
+      + 'h1{font-size:22px;font-weight:800;margin:0 0 4px;}.mt{font-size:12px;font-weight:600;color:#645c50;margin-bottom:10px;}'
+      + 'table{width:100%;border-collapse:collapse;}thead{display:table-header-group;}'
+      + 'th{font-size:10px;font-weight:800;color:#645c50;text-align:left;padding:6px;border-bottom:1px solid #e2dbcd;letter-spacing:.02em;}th.q{text-align:right;}'
+      + 'tr{break-inside:avoid;}tr.t td{background:#faf6ee;}td{padding:5px 6px;vertical-align:middle;}'
+      + 'td.im{width:14mm;}td.im img{width:12mm;height:12mm;object-fit:contain;background:#fff;border:1px solid #e2dbcd;border-radius:4px;display:block;}'
+      + '.sk{font-size:13px;font-weight:800;}.ds{font-size:10px;font-weight:600;color:#645c50;}'
+      + 'td.pr{width:46mm;font-size:11px;}.was{color:#645c50;font-weight:600;}.now{color:#8b1a1a;font-weight:800;font-size:12px;}.rsp{color:#c67139;font-weight:800;font-size:12px;}'
+      + '.pct{display:inline-block;background:#8b1a1a;color:#fff;font-weight:800;font-size:9px;border-radius:99px;padding:1px 6px;margin-top:2px;}'
+      + 'td.q{width:22mm;text-align:right;font-size:15px;font-weight:800;}';
+    const body = '<h1>Stock summary</h1><div class="mt">' + items.length + ' SKU' + (items.length === 1 ? '' : 's') + ' · ' + esc(viewName) + ' · ' + today + '</div>'
+      + '<table><thead><tr><th></th><th>SKU / DESCRIPTION</th><th>PRICE</th><th class="q">TOTAL STOCK</th></tr></thead><tbody>' + items.map(row).join('') + '</tbody></table>';
+    const fileTitle = ('stock-summary-' + items.length + '-skus-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+    this.printHtmlInPage(css, body, fileTitle, () => this.setState({ skuPdfBusy: false }));
+  }
   async shareSkuListImage(items) {
     if (!items || !items.length) return;
     const S = 2, W = 1080, PAD = 40;
@@ -6535,6 +6694,7 @@ class Component extends DCLogic {
         .sort((a, b) => a.rank - b.rank || naturalCompare(a.it.itemNo, b.it.itemNo))
         .map(x => x.it);
     }
+    if (s.skuHideZero) matches = matches.filter(it => storeCols.some(n => (Number(it.stores[n] || 0) || 0) > 0));
     const expandAll = matches.length === 1;
     return matches.map(it => {
       const r = retailMap.get(it.itemNo) || {};
@@ -7063,8 +7223,8 @@ class Component extends DCLogic {
       discountOnChecked: s.storeStockShowDiscount,
       discountOffChecked: !s.storeStockShowDiscount && !s.storeStockAddnl1500 && !s.storeStockNationalDay && !s.storeStockFalcon && !s.storeStockNewStore,
       hasNsFile: !!s.isAdmin,
-      ssDiscType: s.storeStockNewStore ? 'newstore' : s.storeStockFalcon ? 'falcon' : s.storeStockNationalDay ? 'national' : s.storeStockAddnl1500 ? 'addnl1500' : s.storeStockShowDiscount ? 'seasonal' : 'standard',
-      onSsDiscType: e => { const v = e.target.value; ({ standard: () => this.onDiscountOff(), seasonal: () => this.onDiscountOn(), addnl1500: () => this.onAddnl1500On(), national: () => this.onNationalDayOn(), falcon: () => this.onFalconOn(), newstore: () => this.onNewStoreOn() }[v] || (() => {}))(); },
+      ssDiscType: s.storeStockWeekly && this.wkGroups().some(g => g.deal === s.storeStockWeekly) ? 'wk::' + this.wkGroups().findIndex(g => g.deal === s.storeStockWeekly) : s.storeStockNewStore ? 'newstore' : s.storeStockFalcon ? 'falcon' : s.storeStockNationalDay ? 'national' : s.storeStockAddnl1500 ? 'addnl1500' : s.storeStockShowDiscount ? 'seasonal' : 'standard',
+      onSsDiscType: e => { const v = e.target.value; if (v.indexOf('wk::') === 0) { const g = this.wkGroups()[+v.slice(4)]; if (g) { this.onDiscountOff(); this.setState({ storeStockWeekly: g.deal, storeStockPctRange: '' }); } return; } this.setState({ storeStockWeekly: '' }); ({ standard: () => this.onDiscountOff(), seasonal: () => this.onDiscountOn(), addnl1500: () => this.onAddnl1500On(), national: () => this.onNationalDayOn(), falcon: () => this.onFalconOn(), newstore: () => this.onNewStoreOn() }[v] || (() => {}))(); },
       nsOptHidden: !s.isAdmin,
       natOptHidden: !s.isAdmin,
       nsName: this.nsName(),
@@ -7088,8 +7248,8 @@ class Component extends DCLogic {
       onInvScopeAll: () => this.setState({ storeStockAllInv: true }),
       onInvScopeXAll: () => this.setState({ storeStockAllInv: false }),
       onGoFalcon: () => this.onGoFalcon(),
-      hasPricingFile: !s.storeStockFalconScreen && !!(s.parsed && ((s.parsed.nsMap && s.parsed.nsMap.size) || (s.parsed.discountMap && s.parsed.discountMap.size) || (s.parsed.nationalMap && s.parsed.nationalMap.size) || this.getFalconMap().size)),
-      showDiscountRange: s.storeStockShowDiscount || s.storeStockAddnl1500 || s.storeStockNationalDay || s.storeStockFalcon || s.storeStockNewStore,
+      hasPricingFile: !s.storeStockFalconScreen && !!((s.weeklyRows && s.weeklyRows.length) || s.parsed && ((s.parsed.nsMap && s.parsed.nsMap.size) || (s.parsed.discountMap && s.parsed.discountMap.size) || (s.parsed.nationalMap && s.parsed.nationalMap.size) || this.getFalconMap().size)),
+      showDiscountRange: !s.storeStockWeekly && (s.storeStockShowDiscount || s.storeStockAddnl1500 || s.storeStockNationalDay || s.storeStockFalcon || s.storeStockNewStore),
       storeStockPctRange: s.storeStockPctRange,
       storeStockBrand: s.storeStockBrand,
       storeStockSort: s.storeStockSort || '',
@@ -7100,6 +7260,11 @@ class Component extends DCLogic {
       skuStore: s.skuStore || '',
       skuStoreOptions: s.screen === 'skulookup' ? (s.storeOptions || []).filter(o => { if (!s.skuRegion) return true; const inf = s.storeInfoMap && s.storeInfoMap.get(o.name); return String((inf && inf.region) || '').trim() === s.skuRegion; }).map(o => { const inf = s.storeInfoMap && s.storeInfoMap.get(o.name); return { name: o.name, label: (inf && inf.shortName) || o.label || o.name }; }).sort((a, b) => a.label.localeCompare(b.label)) : [],
       onSkuStore: e => this.setState({ skuStore: e.target.value, skuExpanded: '' }),
+      skuZeroAllChecked: !s.skuHideZero,
+      skuZeroHideChecked: !!s.skuHideZero,
+      skuZeroHint: s.skuHideZero ? 'Showing only SKUs with stock above 0' + (s.skuStore ? ' in this store.' : s.skuRegion ? ' in this region.' : '.') : 'Showing all SKUs, including zero stock.',
+      onSkuZeroAll: () => this.setState({ skuHideZero: false }),
+      onSkuZeroHide: () => this.setState({ skuHideZero: true, skuExpanded: '' }),
       skuStockColLabel: s.skuStore ? (((s.storeInfoMap && s.storeInfoMap.get(s.skuStore)) || {}).shortName || s.skuStore) + ' stock' : 'Total stock',
       storeStockAllLabel: s.storeStockRegion ? 'All stores in ' + s.storeStockRegion : 'All stores',
       storeStockRegionOptions: s.screen === 'storestock' ? Array.from(new Set((s.storeOptions || []).map(o => { const inf = s.storeInfoMap && s.storeInfoMap.get(o.name); return String((inf && inf.region) || '').trim(); }).filter(Boolean))).sort() : [],
@@ -7177,6 +7342,9 @@ class Component extends DCLogic {
       onPvPrev: () => { this.setState(st => ({ pvPage: Math.max(1, (st.pvPage || 1) - 1) })); if (this._pvRef.current) this._pvRef.current.scrollTop = 0; },
       onPvNext: () => { this.setState(st => ({ pvPage: (st.pvPage || 1) + 1 })); if (this._pvRef.current) this._pvRef.current.scrollTop = 0; },
       onPvPdf: () => this.pvExportPdf(),
+      onSkuExportPdf: () => this.exportSkuListPdf(skuMatches.map(x => x.shareRow)),
+      skuPdfBusy: !!s.skuPdfBusy,
+      skuPdfLabel: s.skuPdfBusy ? 'Preparing PDF…' : 'Export to PDF',
       onPvImage: () => this.pvExportImage(),
       skuMultiInfo: this._skuMulti ? ('Showing ' + this._skuMulti.found + ' of ' + this._skuMulti.total + ' SKUs' + (this._skuMulti.capped ? ' (limit 150)' : '')) : '',
       skuMultiMissing: this._skuMulti && this._skuMulti.missing.length ? ('Not found: ' + this._skuMulti.missing.join(', ')) : '',
