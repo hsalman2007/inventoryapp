@@ -2405,7 +2405,10 @@ function downloadXlsx(rows, filename, opts) {
 class Component extends DCLogic {
 
   static AR = {
-    "Export to PDF": "تصدير PDF",
+    "Share all as image": "مشاركة الكل كصورة",
+    "Export to Excel": "تصدير إلى Excel",
+    "Preview": "معاينة",
+    "Export to PDF": "تصدير إلى PDF",
     "Preparing PDF…": "جارٍ تجهيز PDF…",
     "Hide zero stock": "إخفاء المخزون الصفري",
     "Showing all SKUs, including zero stock.": "عرض جميع الأصناف، بما فيها ذات المخزون الصفري.",
@@ -3025,6 +3028,7 @@ class Component extends DCLogic {
   };
 
   static AR_PATS = [
+    [/^Showing (\\d+) of (\\d+) SKUs(.*)$/, (m) => 'عرض ' + m[1] + ' من ' + m[2] + ' صنف' + (/limit/.test(m[3]) ? ' (الحد 150)' : '')],
     [/^Page (\\d+) of (\\d+)$/, (m) => 'صفحة ' + m[1] + ' من ' + m[2]],
     [/^Showing ([\\d,]+)–([\\d,]+) of ([\\d,]+) — the Excel export contains all of them\\.$/, (m) => 'عرض ' + m[1] + '–' + m[2] + ' من ' + m[3] + ' — يحتوي ملف Excel على جميعها.'],
     [/^Showing first ([\\d,]+) of ([\\d,]+) lines — the PDF and Excel contain all of them\\.$/, (m) => 'عرض أول ' + m[1] + ' من ' + m[2] + ' سطر — تحتوي ملفات PDF وExcel على جميعها.'],
@@ -3062,6 +3066,83 @@ class Component extends DCLogic {
 
 
   static PLACES = {
+    "Madina": "المدينة",
+    "Madinah Munawarah": "المدينة المنورة",
+    "Majma": "المجمعة",
+    "Majmaa": "المجمعة",
+    "Muhayil": "محايل",
+    "Muhayil Aseer": "محايل عسير",
+    "Mahayel Aseer": "محايل عسير",
+    "Aseer": "عسير",
+    "Asir": "عسير",
+    "Refrigeration": "التبريد",
+    "Sabia": "صبيا",
+    "Sabya": "صبيا",
+    "Tabarjal": "طبرجل",
+    "Makkah": "مكة",
+    "Mecca": "مكة",
+    "Unayzah": "عنيزة",
+    "Onaizah": "عنيزة",
+    "Buraydah": "بريدة",
+    "Kharj": "الخرج",
+    "Jouf": "الجوف",
+    "Hofuf": "الهفوف",
+    "Hasa": "الأحساء",
+    "Ras Tanura": "رأس تنورة",
+    "Wadi Al Dawasir": "وادي الدواسر",
+    "Al Kharj": "الخرج",
+    "Qurayat": "القريات",
+    "Qurayyat": "القريات",
+    "Rafha": "رفحاء",
+    "Turaif": "طريف",
+    "Al Wajh": "الوجه",
+    "Dumah": "دومة الجندل",
+    "Bisha": "بيشة",
+    "Tathlith": "تثليث",
+    "Sarat Ubaidah": "سراة عبيدة",
+    "Ahad Al Masarihah": "أحد المسارحة",
+    "Samtah": "صامطة",
+    "Baish": "بيش",
+    "Darb": "الدرب",
+    "Qunfudhah": "القنفذة",
+    "Laith": "الليث",
+    "Lith": "الليث",
+    "Khurma": "الخرمة",
+    "Ranyah": "رنية",
+    "Turabah": "تربة",
+    "Muwayh": "المويه",
+    "Ula": "العلا",
+    "Khaybar": "خيبر",
+    "Tayma": "تيماء",
+    "Haql": "حقل",
+    "Nairiyah": "النعيرية",
+    "Abqaiq": "بقيق",
+    "Safwa": "صفوى",
+    "Seihat": "سيهات",
+    "Saihat": "سيهات",
+    "Jubail Industrial": "الجبيل الصناعية",
+    "Hawtat Sudair": "حوطة سدير",
+    "Sudair": "سدير",
+    "Ghat": "الغاط",
+    "Rumah": "رماح",
+    "Thadiq": "ثادق",
+    "Huraymila": "حريملاء",
+    "Uyaynah": "العيينة",
+    "Durma": "ضرما",
+    "Quwayiyah": "القويعية",
+    "Sulayyil": "السليل",
+    "Layla": "ليلى",
+    "Hariq": "الحريق",
+    "Unaizah": "عنيزة",
+    "Bukayriyah": "البكيرية",
+    "Midhnab": "المذنب",
+    "Uyun Al Jiwa": "عيون الجواء",
+    "Shimasiyah": "الشماسية",
+    "Badaye": "البدائع",
+    "Baqaa": "بقعاء",
+    "Shinan": "الشنان",
+    "Ghazalah": "الغزالة",
+    "Hulayfah": "الحليفة",
     "Haramain": "الحرمين",
     "Andlous": "الأندلس",
     "Andalus": "الأندلس",
@@ -6271,32 +6352,38 @@ class Component extends DCLogic {
     this.setState({ skuQuery: v, skuExpanded: '' });
   }
 
-  async exportSkuListPdf(items) {
+  async exportSkuListPdf(items, discLabel, stockLabel) {
     if (!items || !items.length) return;
     const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     this.setState({ skuPdfBusy: true });
     if (items.length <= 1500 && this.scaleRowImages) { try { items = await this.scaleRowImages(items); } catch (e) {} }
-    const dv = this.state.skuFalcon ? 'falcon' : (this.state.skuDiscView || 'falcon');
+    const st = this.state;
+    const dv = st.skuFalcon ? 'falcon' : (st.skuDiscView || 'falcon');
     const viewName = { seasonal: 'Seasonal discounts', national: 'National Day 2026', falcon: 'Ageing Clearance', newstore: this.nsName(), weekly: this.wkLabel(), none: 'Original RSP' }[dv] || '';
+    const showDisc = dv !== 'none';
     const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const scope = [st.skuRegion, st.skuStore ? (((st.storeInfoMap && st.storeInfoMap.get(st.skuStore)) || {}).shortName || st.skuStore) : ''].filter(Boolean).join(' · ');
     const row = (it, i) => '<tr' + (i % 2 === 0 ? ' class="t"' : '') + '>'
       + '<td class="im">' + (it.image ? '<img src="' + esc(it.image) + '" referrerpolicy="no-referrer">' : '') + '</td>'
-      + '<td><b class="sk">' + esc(it.itemNo) + '</b><div class="ds">' + esc(it.description2) + (it.partNo ? '  ·  ' + esc(it.partNo) : '') + '</div></td>'
-      + '<td class="pr">' + (it.now ? '<span class="was">Was ' + esc(it.was || it.rsp) + '</span> <span class="now">Now ' + esc(it.now) + '</span>' + (it.pct ? '<div><span class="pct">' + esc(it.pct) + '</span></div>' : '') : (it.rsp ? '<span class="rsp">RSP ' + esc(it.rsp) + '</span>' : '')) + '</td>'
-      + '<td class="q">' + esc(it.totalQty || 0) + '</td></tr>';
+      + '<td class="sk">' + esc(it.itemNo) + '</td>'
+      + '<td class="pn">' + esc(it.partNo || '') + '</td>'
+      + '<td class="ds">' + esc(it.description2 || '') + '</td>'
+      + '<td class="n">' + esc(it.was || it.rsp || '') + '</td>'
+      + (showDisc ? '<td class="n now">' + (it.now ? esc(it.now) + (it.pct ? '<div><span class="pct">' + esc(it.pct) + '</span></div>' : '') : '<span class="na">—</span>') + '</td>' : '')
+      + '<td class="n q' + (Number(it.totalQty) < 0 ? ' neg' : '') + '">' + esc(it.totalQty || 0) + '</td></tr>';
     const css = 'body{font-family:Figtree,"Noto Sans Arabic",system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#201e1d;margin:0;}'
-      + 'h1{font-size:22px;font-weight:800;margin:0 0 4px;}.mt{font-size:12px;font-weight:600;color:#645c50;margin-bottom:10px;}'
+      + 'h1{font-size:20px;font-weight:800;margin:0 0 4px;}.mt{font-size:11px;font-weight:600;color:#645c50;margin-bottom:10px;}'
       + 'table{width:100%;border-collapse:collapse;}thead{display:table-header-group;}'
-      + 'th{font-size:10px;font-weight:800;color:#645c50;text-align:left;padding:6px;border-bottom:1px solid #e2dbcd;letter-spacing:.02em;}th.q{text-align:right;}'
-      + 'tr{break-inside:avoid;}tr.t td{background:#faf6ee;}td{padding:5px 6px;vertical-align:middle;}'
-      + 'td.im{width:14mm;}td.im img{width:12mm;height:12mm;object-fit:contain;background:#fff;border:1px solid #e2dbcd;border-radius:4px;display:block;}'
-      + '.sk{font-size:13px;font-weight:800;}.ds{font-size:10px;font-weight:600;color:#645c50;}'
-      + 'td.pr{width:46mm;font-size:11px;}.was{color:#645c50;font-weight:600;}.now{color:#8b1a1a;font-weight:800;font-size:12px;}.rsp{color:#c67139;font-weight:800;font-size:12px;}'
-      + '.pct{display:inline-block;background:#8b1a1a;color:#fff;font-weight:800;font-size:9px;border-radius:99px;padding:1px 6px;margin-top:2px;}'
-      + 'td.q{width:22mm;text-align:right;font-size:15px;font-weight:800;}';
-    const body = '<h1>Stock summary</h1><div class="mt">' + items.length + ' SKU' + (items.length === 1 ? '' : 's') + ' · ' + esc(viewName) + ' · ' + today + '</div>'
-      + '<table><thead><tr><th></th><th>SKU / DESCRIPTION</th><th>PRICE</th><th class="q">TOTAL STOCK</th></tr></thead><tbody>' + items.map(row).join('') + '</tbody></table>';
-    const fileTitle = ('stock-summary-' + items.length + '-skus-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
+      + 'th{font-size:9px;font-weight:800;color:#645c50;text-align:left;text-transform:uppercase;letter-spacing:.06em;padding:6px;border-bottom:1px solid #e2dbcd;}th.n{text-align:right;}'
+      + 'tr{break-inside:avoid;}tr.t td{background:#faf6ee;}td{padding:4px 6px;vertical-align:middle;font-size:10px;border-bottom:1px solid #f0ebe1;}'
+      + 'td.im{width:12mm;}td.im img{width:10mm;height:10mm;object-fit:contain;background:#fff;border-radius:3px;display:block;}'
+      + 'td.sk{font-weight:800;font-size:11px;white-space:nowrap;}td.pn{color:#645c50;white-space:nowrap;}td.ds{text-transform:uppercase;}'
+      + 'td.n{text-align:right;white-space:nowrap;}td.now{color:#8b1a1a;font-weight:800;font-size:11px;}td.q{color:#c67139;font-weight:800;font-size:11px;}td.q.neg{color:#8b1a1a;}.na{color:#b5ad9f;font-weight:400;}'
+      + '.pct{display:inline-block;background:#8b1a1a;color:#fff;font-weight:800;font-size:8px;border-radius:99px;padding:0 5px;margin-top:2px;}';
+    const head = '<tr><th></th><th>SKU</th><th>Part #</th><th>Description</th><th class="n">RSP</th>' + (showDisc ? '<th class="n">' + esc(discLabel || 'Special price') + '</th>' : '') + '<th class="n">' + esc(stockLabel || 'Total stock') + '</th></tr>';
+    const body = '<h1>SKU stock across stores</h1><div class="mt">' + items.length + ' SKU' + (items.length === 1 ? '' : 's') + ' · ' + esc(viewName) + (scope ? ' · ' + esc(scope) : '') + ' · ' + today + '</div>'
+      + '<table><thead>' + head + '</thead><tbody>' + items.map(row).join('') + '</tbody></table>';
+    const fileTitle = ('sku-stock-' + items.length + '-skus-' + today).replace(/[^a-z0-9\-_.]+/gi, '-');
     this.printHtmlInPage(css, body, fileTitle, () => this.setState({ skuPdfBusy: false }));
   }
   async shareSkuListImage(items) {
@@ -7342,7 +7429,7 @@ class Component extends DCLogic {
       onPvPrev: () => { this.setState(st => ({ pvPage: Math.max(1, (st.pvPage || 1) - 1) })); if (this._pvRef.current) this._pvRef.current.scrollTop = 0; },
       onPvNext: () => { this.setState(st => ({ pvPage: (st.pvPage || 1) + 1 })); if (this._pvRef.current) this._pvRef.current.scrollTop = 0; },
       onPvPdf: () => this.pvExportPdf(),
-      onSkuExportPdf: () => this.exportSkuListPdf(skuMatches.map(x => x.shareRow)),
+      onSkuExportPdf: () => { const dv = s.skuFalcon ? 'falcon' : (s.skuDiscView || 'falcon'); const lbl = ({ national: 'Nat. Day price', falcon: 'Ageing price', newstore: this.nsName() + ' price', weekly: ((this.wkMap().size && [...this.wkMap().values()][0].deal) || 'Weekly') + ' price', seasonal: 'Seasonal price' })[dv] || 'Disc. price'; const stk = s.skuStore ? (((s.storeInfoMap && s.storeInfoMap.get(s.skuStore)) || {}).shortName || s.skuStore) + ' stock' : 'Total stock'; this.exportSkuListPdf(skuMatches.map(x => x.shareRow), lbl, stk); },
       skuPdfBusy: !!s.skuPdfBusy,
       skuPdfLabel: s.skuPdfBusy ? 'Preparing PDF…' : 'Export to PDF',
       onPvImage: () => this.pvExportImage(),
