@@ -3302,6 +3302,9 @@ class Component extends DCLogic {
 
 
   static PLACES = {
+    "Khamis": "خميس مشيط",
+    "Khamis Mushayt": "خميس مشيط",
+    "Mushait": "مشيط",
     "Temporary Seasonal Store": "المتجر الموسمي المؤقت",
     "Wander DM1": "واندر الدمام 1",
     "Wander DM": "واندر الدمام",
@@ -5953,10 +5956,11 @@ class Component extends DCLogic {
       gokamp: { label: 'GO KAMP', logo: 'assets/gokamp-tag-header.png', logoMaxH: '16cqw', priceMaxMm: 32, accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-red.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' },
       kovea: { label: 'KOVEA', logo: 'assets/kovea-tag-header.png', logoMaxH: '14cqw', accent: '#e43a19', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
       nitecore: { label: 'NITECORE', logo: 'assets/nitecore-tag-header.png', logoMaxH: '12cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-white.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a', band: true },
+      alkhawy: { label: 'ALKHAWY', logo: 'assets/alkhawy-tag-header.png', logoMaxH: '16cqw', accent: '#e1261c', shade: '#8f120c', ry: 'assets/riyal-red.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' },
     };
     // Exact match on the normalised name, plus explicit aliases — never a prefix match,
     // or brands like "Arbortech" would inherit the ARB template.
-    const aliases = { 'arb': 'arb', 'arb 4x4': 'arb', 'arb 4x4 accessories': 'arb', 'arb accessories': 'arb', 'gamo': 'gamo', 'gamo outdoor': 'gamo', 'gamo outdoor usa': 'gamo', 'gamo usa': 'gamo', 'wander': 'wander', 'wander camping': 'wander', 'wander camping equipment': 'wander', 'wander outdoor': 'wander', 'stanley': 'stanley', 'stanley 1913': 'stanley', 'stanley pmi': 'stanley', 'nitecore': 'nitecore', 'nitecore systems': 'nitecore', 'al rimaya': 'alrimaya', 'alrimaya': 'alrimaya', 'al-rimaya': 'alrimaya', 'al rimaya camping': 'alrimaya', 'al rimaya camping & outdoor equipment': 'alrimaya', 'الرماية': 'alrimaya', 'go kamp': 'gokamp', 'gokamp': 'gokamp', 'go-kamp': 'gokamp', 'go kamp outdoor': 'gokamp', 'kovea': 'kovea', 'kovea korea': 'kovea', 'kovea outdoor': 'kovea' };
+    const aliases = { 'arb': 'arb', 'arb 4x4': 'arb', 'arb 4x4 accessories': 'arb', 'arb accessories': 'arb', 'gamo': 'gamo', 'gamo outdoor': 'gamo', 'gamo outdoor usa': 'gamo', 'gamo usa': 'gamo', 'wander': 'wander', 'wander camping': 'wander', 'wander camping equipment': 'wander', 'wander outdoor': 'wander', 'stanley': 'stanley', 'stanley 1913': 'stanley', 'stanley pmi': 'stanley', 'nitecore': 'nitecore', 'nitecore systems': 'nitecore', 'al rimaya': 'alrimaya', 'alrimaya': 'alrimaya', 'al-rimaya': 'alrimaya', 'al rimaya camping': 'alrimaya', 'al rimaya camping & outdoor equipment': 'alrimaya', 'الرماية': 'alrimaya', 'go kamp': 'gokamp', 'gokamp': 'gokamp', 'go-kamp': 'gokamp', 'go kamp outdoor': 'gokamp', 'kovea': 'kovea', 'kovea korea': 'kovea', 'kovea outdoor': 'kovea', 'alkhawy': 'alkhawy', 'al khawy': 'alkhawy', 'al-khawy': 'alkhawy', 'alkhawi': 'alkhawy', 'al khawi': 'alkhawy', 'الخوي': 'alkhawy' };
     const hit = themes[key] || themes[aliases[key]];
     if (hit) return hit;
     return { label: String(brand || '').trim(), logo: '', accent: '#1a1a1a', shade: '#5a5a5a', ry: 'assets/riyal-black.png', frame: '1.57cqw solid #1a1a1a', frameMm: '1.6mm solid #1a1a1a' };
